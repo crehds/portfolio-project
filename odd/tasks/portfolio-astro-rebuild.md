@@ -74,9 +74,10 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~3,390 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
-  T05 ~511 + T05b ~47 + T06 ~715, with tests, excluding lockfiles and the legacy removal).
-- Last reviewed boundary: `ecc0d35` (T05b + T06 slice; the merge `2ed745b` has the same tree).
+- Running count: ~3,500 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+  T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106, with tests, excluding lockfiles and the legacy removal).
+- Last reviewed boundary: `ecc0d35` (T05b + T06 slice; the merge `2ed745b` has the same tree). Pending in the next
+  slice: `44a84c9` (docs) + T06b, 136 lines, medium, under budget.
 
 ## Tasks
 
@@ -107,10 +108,10 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   switcher e2e test (a one-shot `page.url()` read could race), and cover the current-locale state (no link to the
   current page, `aria-current`). Route: inline (one test file). ~50.
 - [x] **T06** Content: profile + experience from the CV/LinkedIn PDFs (EN/ES), skills, the 6 legacy projects with basic data, documented case-study template. The profile `cv` field stays empty until T11 serves the file. Route: delegated. ~450.
-- [ ] **T06b** Follow-ups from the T05b + T06 review and the owner's content check: make the integrity test's
+- [x] **T06b** Follow-ups from the T05b + T06 review and the owner's content check: make the integrity test's
   frontmatter reader fail closed (CRLF line endings, quoted values, trailing comments, missing block) and require an
-  explicit `status` and `featured` in every project file; set the Cloudflare live URLs for expresión latina and
-  juego con teclado (owner: both moved to Cloudflare). Route: delegated. ~60.
+  explicit `status` and `featured` in every project file; set the live URLs for expresión latina and juego con
+  teclado (owner: still on Vercel). Route: delegated. ~60.
 
 ### Phase 2 · UI
 
@@ -161,6 +162,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 | T05 | done (merged `d5d0926`) | `9913d05` routing + path helpers, `9f5b69a` typed dictionary, `1f54e9f` Spanish home + switcher + hreflang | Strict TDD: RED (module not found for the helpers and dictionary; 5 e2e failures before the layout, switcher and `/es/` page existed), then GREEN · `pnpm test` 102/102 in 16 files · lint · format · `pnpm check` 0/0/0 · build 2 pages · `pnpm test:e2e` 7/7 · dry run: no bindings · parent re-ran: test 102/102, build 2 pages | T04b + T05 slice: medium (814 lines), 1 lens (reliability), approved (`review-d051703996c5d922`), 2 non-blocking findings fixed in T05b |
 | T05b | done (merged `062495a`) | `9c49fb1` switcher e2e: retrying URL wait + current-locale state | Test-only; mutation check: linking the current locale made both new tests fail (expected 0 links, received 1), then restored · lint · format · `pnpm check` 0/0/0 · `pnpm test:e2e` 9/9 | Reviewed with T06 (see T06) |
 | T06 | done (merged `2ed745b`) | `5ff0d1e` profile, experience, skills; `f191b45` projects; `7f10bc3` case-study template; `ecc0d35` headline years guard (parent) | Integrity test RED (no project folders; missing `es.md`), then GREEN; mutation check (draft + featured -> RED); headline guard RED ("5+ years"), then GREEN · `pnpm test` 106/106 · lint · format · `pnpm check` 0/0/0 · build 2 pages without empty-collection warnings · `pnpm test:e2e` 9/9 (writer) | T05b + T06 slice: medium (805 lines), 1 lens (reliability), approved (`review-0e6b4d7ee4133333`), 2 non-blocking findings routed to T06b |
+| T06b | done (merged `c3c6eef`) | `fd5b6b8` fail-closed frontmatter checks, `eb18b1a` live links | Helper tests RED (`parseFrontmatterField is not defined`), then GREEN; explicit status/featured rule teeth check (removed `status:` -> RED, restored) · `pnpm test` 113/113 · lint · format · `pnpm check` 0/0/0 · build 2 pages · `pnpm test:e2e` 9/9 · parent re-ran: test 113/113 | Medium, under budget (136 lines with `44a84c9`): pending in the next slice |
 
 ## Change log
 
@@ -239,8 +241,11 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 - 2026-09-28: after writes settled, the owner granted the stop hook's whole-branch review again (172 files, 31,014
   lines). It stopped with `lens_context_budget_exceeded` (terminal, nothing created) and will stop the same way until
   `feat/astro-rebuild` merges into `main`; per-task slices stay the review unit.
+- 2026-09-28: correction from the owner: expresión latina and juego con teclado are still on Vercel
+  (https://expresion-latina.vercel.app/ and https://game-with-keyboard.vercel.app/), not Cloudflare; T06b linked them.
+  T06b also made the integrity checks fail closed: a pure `parseFrontmatterField` helper with its own tests (CRLF,
+  quotes, trailing comments, missing block), and every project file must declare `status` and `featured`.
 
 ## Next step
 
-T06b on `feat/astro-rebuild-06b-content-hygiene` (needs the two Cloudflare URLs from the owner), then T07 design
-tokens, theme and base layout.
+T07 on `feat/astro-rebuild-07-layout`: design tokens, dark/light theme, fonts and the base layout.
