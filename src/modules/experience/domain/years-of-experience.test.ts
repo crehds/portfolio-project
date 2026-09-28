@@ -1,8 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { yearsOfExperience } from './years-of-experience';
 
 describe('yearsOfExperience', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('returns 0 for no entries', () => {
     expect(yearsOfExperience([])).toBe(0);
   });
@@ -78,8 +82,13 @@ describe('yearsOfExperience', () => {
   });
 
   it('defaults "now" to the current date when not provided', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(Date.UTC(2024, 5, 15))); // 2024-06-15
+
+    // 2020-01..2024-06 inclusive = 54 months = 4 whole years (matches the "treats a
+    // null end as ongoing" case above, which passes the same date explicitly).
     const entries = [{ start: '2020-01', end: null }];
 
-    expect(yearsOfExperience(entries)).toBeGreaterThan(0);
+    expect(yearsOfExperience(entries)).toBe(4);
   });
 });
