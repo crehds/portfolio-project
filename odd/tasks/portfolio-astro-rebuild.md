@@ -72,7 +72,8 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: 0.
+- Running count: ~270 authored lines (T01, excluding the lockfile and the legacy removal).
+- Last reviewed boundary: `f811b2a` (T01 scaffold review approved and acknowledged).
 
 ## Tasks
 
@@ -80,8 +81,8 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 
 ### Phase 0 · Foundations
 
-- [ ] **T01** Tag `v1-legacy`, remove the old app, scaffold Astro 7 (TS strict, pnpm, Node pin), README + LICENSE under the owner's name, `.gitignore` (source PDFs, `.codegraph/`, `.atl/`). Route: inline (mechanical). ~150 + legacy deletion.
-- [ ] **T02** Quality toolchain + CI: ESLint, Prettier, Vitest, Playwright + axe, `astro check`, GitHub Actions. Route: delegated. ~300.
+- [x] **T01** Tag `v1-legacy`, remove the old app, scaffold Astro 7 (TS strict, pnpm, Node pin), README + LICENSE under the owner's name, `.gitignore` (source PDFs, `.codegraph/`, `.atl/`). Route: inline (mechanical). ~150 + legacy deletion.
+- [ ] **T02** Quality toolchain + CI: ESLint, Prettier, Vitest, Playwright + axe, `astro check`, GitHub Actions. Also fix the README Node wording (22.12 minimum, 24 via `.nvmrc`) raised by the T01 review. Route: delegated. ~300.
 - [ ] **T03** Deploy: `@astrojs/cloudflare`, `wrangler.jsonc`, Workers Builds with PR previews (owner connects the repo in Cloudflare). Route: delegated + owner action. ~100.
 
 ### Phase 1 · Content model
@@ -130,13 +131,19 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 
 | Task | Status | Commit | Checks | Review |
 |---|---|---|---|---|
-| — | not started | — | — | — |
+| T01 | done (merged `fd7a95e`) | `3b9a198` removal, `4788004` scaffold, `f811b2a` license | `pnpm check`: 0 errors/warnings/hints · `pnpm build`: 1 page | Removal: accepted unreviewed by owner (too large for review). Scaffold: medium, reviewed, approved (`review-66453b14bc688b02`), 3 non-blocking suggestions |
 
 ## Change log
 
 - 2026-09-28: owner asked to keep a contact form ("more confident for some people"). T11 now ships a
   server-validated form next to WhatsApp and mailto; the site gains its first on-demand route.
+- 2026-09-28: the native review could not take the legacy removal (`lens_context_budget_exceeded`: 22k
+  deleted lines, ~17k from `package-lock.json`). The owner accepted it unreviewed; the review boundary
+  moved past it (`3b9a198`). The legacy app stays recoverable from the `v1-legacy` tag.
+- 2026-09-28: TypeScript pinned to `^6` because `@astrojs/check` 0.9.10 supports TS `^5 || ^6` (TS 7 is out).
+- 2026-09-28: T01 review suggestions: README Node wording vs `.nvmrc` (fixed in T02), no CI yet (T02),
+  roadmap link (false positive: the plan file is on this branch).
 
 ## Next step
 
-T01: preserve the legacy app, remove it, scaffold Astro 7.
+T02: quality toolchain and CI on `feat/astro-rebuild-02-quality` (delegated writer).
