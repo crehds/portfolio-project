@@ -1,0 +1,11 @@
+# Single entry consumed via the `file()` loader (see `src/content.config.ts`).
+# Schema: `src/modules/profile/schema.ts`.
+- id: profile
+  name: Carlos Rodríguez Huerta
+  role:
+    en: Full-stack web developer
+    es: Desarrollador web full-stack
+  email: carlos15erh@gmail.com
+  whatsapp: '+51970791041'
+  linkedin: https://www.linkedin.com/in/carlos-rodriguez-huerta-362ab716a/
+  github: https://github.com/crehds
