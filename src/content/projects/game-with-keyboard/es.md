@@ -8,6 +8,7 @@ stack:
   - Vite
   - styled-components
 links:
+  live: https://game-with-keyboard.vercel.app/
   repo: https://github.com/crehds/gameWithKeyboard
 featured: true
 status: published
