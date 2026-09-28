@@ -19,16 +19,18 @@ The dev server runs at http://localhost:4321.
 
 ## Scripts
 
-| Command             | What it does                             |
-| ------------------- | ---------------------------------------- |
-| `pnpm dev`          | Start the dev server                     |
-| `pnpm build`        | Build the production site into `dist/`   |
-| `pnpm preview`      | Serve the production build locally       |
-| `pnpm check`        | Type-check `.astro` and TypeScript files |
-| `pnpm lint`         | Lint the codebase with ESLint            |
-| `pnpm lint:fix`     | Lint and auto-fix what ESLint can        |
-| `pnpm format`       | Format the codebase with Prettier        |
-| `pnpm format:check` | Check formatting without writing changes |
+| Command             | What it does                                           |
+| ------------------- | ------------------------------------------------------ |
+| `pnpm dev`          | Start the dev server                                   |
+| `pnpm build`        | Build the production site into `dist/`                 |
+| `pnpm preview`      | Serve the production build locally                     |
+| `pnpm check`        | Type-check `.astro` and TypeScript files               |
+| `pnpm lint`         | Lint the codebase with ESLint                          |
+| `pnpm lint:fix`     | Lint and auto-fix what ESLint can                      |
+| `pnpm format`       | Format the codebase with Prettier                      |
+| `pnpm format:check` | Check formatting without writing changes               |
+| `pnpm test`         | Run unit tests with Vitest                             |
+| `pnpm test:e2e`     | Run end-to-end and accessibility tests with Playwright |
 
 ## Stack
 
