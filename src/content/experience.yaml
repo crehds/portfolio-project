@@ -1,3 +1,208 @@
 # Consumed via the `file()` loader (see `src/content.config.ts`).
-# Schema: `src/modules/experience/schema.ts`. Populated in T06.
-[]
+# Schema: `src/modules/experience/schema.ts`. Sourced from the owner's CV and LinkedIn
+# export (see `odd/tasks/portfolio-astro-rebuild.md`, T06). `id` is a stable slug, not
+# rendered.
+- id: fullstack-labs
+  company: FullStack Labs
+  role:
+    en: Mid-level Full-Stack Web Developer
+    es: Desarrollador Full-Stack de nivel medio
+  type: full-time
+  location:
+    en: United States
+    es: Estados Unidos
+  start: '2024-05'
+  end: null
+  highlights:
+    en:
+      - Automated the Compassion program's child-exit flow end to end, from
+        notification to replacement-child acceptance, by building a test data
+        generator that creates real exit events in Salesforce.
+      - Built a contextual, fully tested one-time-payment alert for donors who
+        still owe at month's end, translated into three languages.
+      - Co-developed Compassion's farewell-gift feature for donors, including
+        the gift engine, its unit tests and the user interface.
+      - Shipped an in-house SEO preview field (Google and social previews)
+        plus title/slug controls, auto-generated tables of contents and an
+        email-subscribe form for the content editor.
+      - Built a proxy API (AWS Lambda and API Gateway) and its SDK to
+        validate campaign source codes against Compassion's internal API,
+        designed for reuse by other teams.
+      - Led a system-wide migration from Pagy to will_paginate for WiddyUp,
+        refactoring the application's core pagination logic with full RSpec
+        coverage.
+    es:
+      - Automatizó de extremo a extremo el flujo de salida de niños del
+        programa Compassion, desde la notificación hasta la aceptación del
+        niño de reemplazo, construyendo un generador de datos de prueba que
+        crea eventos reales en Salesforce.
+      - Desarrolló una alerta contextual de pago único, completamente
+        probada, para donantes que aún deben al cierre del mes, traducida a
+        tres idiomas.
+      - Co-desarrolló la función de regalo de despedida de Compassion para
+        donantes, incluyendo el motor de regalos, sus pruebas unitarias y la
+        interfaz de usuario.
+      - Implementó un campo de vista previa SEO propio (Google y redes
+        sociales), controles de título/slug, tablas de contenido
+        autogeneradas y un formulario de suscripción por correo para el
+        editor de contenido.
+      - Construyó una API proxy (AWS Lambda y API Gateway) y su SDK para
+        validar códigos de campaña contra la API interna de Compassion,
+        diseñada para que otros equipos la reutilizaran.
+      - Lideró una migración integral de Pagy a will_paginate para WiddyUp,
+        refactorizando la lógica central de paginación con cobertura completa
+        de pruebas RSpec.
+  stack:
+    - Next.js
+    - TypeScript
+    - Playwright
+    - GitLab
+    - AWS Lambda
+    - API Gateway
+    - Salesforce
+    - Vitest
+    - Figma
+    - Contentful
+    - GraphQL
+    - Ruby on Rails
+    - Vanilla JavaScript
+    - Apache Kafka
+    - AWS EC2
+    - Docker
+    - RSpec
+
+- id: techywe
+  company: TechyWe
+  role:
+    en: Full-Stack Developer (Ruby on Rails, JavaScript)
+    es: Desarrollador Full-Stack (Ruby on Rails, JavaScript)
+  type: full-time
+  location:
+    en: El Salvador
+    es: El Salvador
+  start: '2023-01'
+  end: '2024-04'
+  highlights:
+    en:
+      - Built a third-party gamification module connected to and managed
+        through an external API.
+      - Developed and integrated services for communicating with
+        third-party systems.
+      - Worked with a Trailblazer-based architecture for Ruby on Rails
+        applications.
+      - Integrated the GWEN API with an Android application over WebSockets
+        and a REST API.
+      - Automated API testing with Postman.
+    es:
+      - Desarrolló un módulo de gamificación con terceros, conectado y
+        administrado a través de una API externa.
+      - Desarrolló e integró servicios para la comunicación con sistemas de
+        terceros.
+      - Trabajó con una arquitectura basada en Trailblazer para aplicaciones
+        Ruby on Rails.
+      - Integró la API de GWEN con una aplicación Android mediante
+        WebSockets y una API REST.
+      - Automatizó pruebas de API con Postman.
+  stack:
+    - Ruby on Rails
+    - JavaScript
+    - Trailblazer
+    - WebSockets
+    - Postman
+
+- id: freelance-independent
+  company: Freelance
+  role:
+    en: Full-Stack Full-Time Web Developer
+    es: Desarrollador Web Full-Stack a Tiempo Completo
+  type: freelance
+  location:
+    en: Lima, Peru
+    es: Lima, Perú
+  start: '2020-10'
+  end: '2023-01'
+  highlights:
+    en:
+      - Automated the grade-entry workflow for Escuela de Matemáticas
+        Frandic with a purpose-built API and web dashboard, plus a
+        class-schedule module with smart search for students and teachers.
+      - Designed and implemented a player ranking system for Pysa Gaming,
+        including its visual assets (logo, colors, animations) and an admin
+        panel for manual score entry.
+      - Automated task assignment for a work group and built a
+        server-side rendered (SSR) web app to improve the user experience.
+    es:
+      - Automatizó el flujo de ingreso de notas para la Escuela de
+        Matemáticas Frandic con una API y un panel web a medida, además de
+        un módulo de horarios con búsqueda inteligente para alumnos y
+        profesores.
+      - Diseñó e implementó un sistema de ranking de jugadores para Pysa
+        Gaming, incluyendo sus activos visuales (logo, colores,
+        animaciones) y un panel de administración para el ingreso manual de
+        puntuaciones.
+      - Automatizó la asignación de tareas para un grupo de trabajo y
+        construyó una aplicación web con renderizado del lado del servidor
+        (SSR) para mejorar la experiencia de usuario.
+  stack:
+    - React
+    - TypeScript
+    - Express
+    - Node.js
+    - Sequelize
+    - PostgreSQL
+    - MongoDB Atlas
+    - Ruby on Rails
+    - Railway
+
+- id: eiche
+  company: EICHE
+  role:
+    en: Front-End Developer
+    es: Desarrollador Front-End
+  type: full-time
+  location:
+    en: Antofagasta Region, Chile
+    es: Región de Antofagasta, Chile
+  start: '2019-02'
+  end: '2019-06'
+  highlights:
+    en:
+      - Grew Morapios CL's market digital presence by 100% by designing and
+        launching a landing page.
+      - Increased Transportes Fox's sales by 30% and market digital
+        presence by 50% by building a landing page.
+      - Increased Advisor Industrial's sales by 40% and market digital
+        presence by 30% by building a landing page.
+    es:
+      - Aumentó la presencia digital de Morapios CL en el mercado en un
+        100% mediante el diseño y lanzamiento de una landing page.
+      - Aumentó las ventas de Transportes Fox en un 30% y su presencia
+        digital en el mercado en un 50% mediante una landing page.
+      - Aumentó las ventas de Advisor Industrial en un 40% y su presencia
+        digital en el mercado en un 30% mediante una landing page.
+  stack:
+    - React
+
+- id: freelance-early
+  company: Freelance
+  role:
+    en: Front-End Developer
+    es: Desarrollador Front-End
+  type: freelance
+  location:
+    en: Lima, Peru
+    es: Lima, Perú
+  start: '2018-11'
+  end: '2019-01'
+  highlights:
+    en:
+      - Designed and built a digital brand and landing page for the
+        Bachatealo dance community, sharing its healthy entertainment
+        culture through dance.
+    es:
+      - Diseñó y desarrolló una marca digital y una landing page para la
+        comunidad de baile Bachatealo, transmitiendo su cultura de
+        entretenimiento sano a través del baile.
+  stack:
+    - React
+    - PostCSS
