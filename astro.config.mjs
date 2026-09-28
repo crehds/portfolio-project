@@ -3,8 +3,18 @@ import { defineConfig } from 'astro/config';
 
 import cloudflare from '@astrojs/cloudflare';
 
+import { DEFAULT_LOCALE, LOCALES } from './src/shared/i18n/locales.ts';
+
 // https://astro.build/config
 export default defineConfig({
+  site: 'https://portfolio-project.carlos15erh.workers.dev',
+  i18n: {
+    locales: [...LOCALES],
+    defaultLocale: DEFAULT_LOCALE,
+    routing: {
+      prefixDefaultLocale: false,
+    },
+  },
   // Skip the adapter under Vitest: `vitest.config.ts` reuses this config via `getViteConfig`,
   // and the Cloudflare adapter's own dev-server integration conflicts with Vitest's, failing
   // every run with "There is already a server associated with the config." Vitest always sets
