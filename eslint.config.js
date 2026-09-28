@@ -12,10 +12,20 @@ export default defineConfig([
     'coverage/**',
     'playwright-report/**',
     'test-results/**',
+    '.wrangler/**',
+    'worker-configuration.d.ts',
   ]),
   js.configs.recommended,
   tseslint.configs.recommended,
   eslintPluginAstro.configs.recommended,
   eslintPluginAstro.configs['jsx-a11y-strict'],
   eslintConfigPrettier,
+  {
+    // Node-only config file: it branches on process.env.VITEST, unlike the browser-facing
+    // site code, so it alone needs the Node `process` global.
+    files: ['astro.config.mjs'],
+    languageOptions: {
+      globals: { process: 'readonly' },
+    },
+  },
 ]);

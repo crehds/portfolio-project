@@ -2,4 +2,6 @@ pnpm-lock.yaml
 dist
 .astro
 node_modules
+# hand-maintained ODD planning documents (feature doc, task tracking); Prettier would fight
+# the owner's own tables and formatting there, so it's left alone
 odd/

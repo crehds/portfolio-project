@@ -25,10 +25,13 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "generate-types": "wrangler types"
   },
   "dependencies": {
-    "astro": "^7.3.5"
+    "@astrojs/cloudflare": "^14.3.3",
+    "astro": "^7.3.5",
+    "wrangler": "^4.142.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",

@@ -20,7 +20,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'pnpm build && pnpm preview',
+    // In CI the workflow's own Build step already produced dist/; only start the preview
+    // server there instead of building a second time. Locally, build then preview.
+    command: process.env.CI ? 'pnpm preview' : 'pnpm build && pnpm preview',
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
