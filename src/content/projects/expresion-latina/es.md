@@ -9,6 +9,7 @@ stack:
   - Vite
   - Supabase
 links:
+  live: https://expresion-latina.vercel.app/
   repo: https://github.com/crehds/expresion-latina
 featured: true
 status: published
