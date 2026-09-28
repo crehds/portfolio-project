@@ -36,6 +36,33 @@ describe('experienceSchema', () => {
     ).toThrow();
   });
 
+  it('accepts an entry where end equals start (a single-month role)', () => {
+    expect(() =>
+      experienceSchema.parse({
+        ...validEntry,
+        start: '2023-01',
+        end: '2023-01',
+      }),
+    ).not.toThrow();
+  });
+
+  it('rejects an entry whose end precedes start, with a message on the end path', () => {
+    const result = experienceSchema.safeParse({
+      ...validEntry,
+      start: '2023-06',
+      end: '2023-01',
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const endIssue = result.error.issues.find(
+        (issue) => issue.path.join('.') === 'end',
+      );
+      expect(endIssue).toBeDefined();
+      expect(endIssue?.message.length).toBeGreaterThan(0);
+    }
+  });
+
   it('rejects an invalid employment type', () => {
     expect(() =>
       experienceSchema.parse({ ...validEntry, type: 'internship' }),

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { isYearMonth, parseYearMonth, yearMonthToIndex } from './year-month';
+import {
+  isYearMonth,
+  isYearMonthAtOrAfter,
+  parseYearMonth,
+  yearMonthToIndex,
+} from './year-month';
 
 describe('isYearMonth', () => {
   it('accepts a valid YYYY-MM value', () => {
@@ -45,5 +50,24 @@ describe('yearMonthToIndex', () => {
     const fromNow = now.getUTCFullYear() * 12 + now.getUTCMonth();
 
     expect(yearMonthToIndex({ year: 2023, month: 1 })).toBe(fromNow);
+  });
+});
+
+describe('isYearMonthAtOrAfter', () => {
+  it('returns true when the first value is strictly after the second', () => {
+    expect(isYearMonthAtOrAfter('2023-06', '2023-01')).toBe(true);
+  });
+
+  it('returns true when both values are equal', () => {
+    expect(isYearMonthAtOrAfter('2023-01', '2023-01')).toBe(true);
+  });
+
+  it('returns false when the first value is before the second', () => {
+    expect(isYearMonthAtOrAfter('2023-01', '2023-06')).toBe(false);
+  });
+
+  it('compares correctly across a year boundary', () => {
+    expect(isYearMonthAtOrAfter('2024-01', '2023-12')).toBe(true);
+    expect(isYearMonthAtOrAfter('2023-12', '2024-01')).toBe(false);
   });
 });

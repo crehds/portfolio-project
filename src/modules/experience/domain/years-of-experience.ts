@@ -19,6 +19,17 @@ function toIndexRange(period: ExperiencePeriod, now: Date): IndexRange {
   return [start, end];
 }
 
+/**
+ * A range is inverted when its end precedes its start. This normally means an invalid
+ * `end < start` entry (rejected by the schema before it can reach here), but it can
+ * also happen legitimately for a `null`-end (ongoing) role whose `start` is after `now`.
+ * Either way, such a range describes no real coverage and must contribute 0 months
+ * rather than a negative number.
+ */
+function isValidRange([start, end]: IndexRange): boolean {
+  return end >= start;
+}
+
 function mergeRanges(ranges: IndexRange[]): IndexRange[] {
   const sorted = [...ranges].sort((a, b) => a[0] - b[0]);
   const merged: IndexRange[] = [];
@@ -48,7 +59,14 @@ export function yearsOfExperience(
     return 0;
   }
 
-  const ranges = entries.map((entry) => toIndexRange(entry, now));
+  const ranges = entries
+    .map((entry) => toIndexRange(entry, now))
+    .filter(isValidRange);
+
+  if (ranges.length === 0) {
+    return 0;
+  }
+
   const merged = mergeRanges(ranges);
   const totalMonths = merged.reduce(
     (sum, [start, end]) => sum + (end - start + 1),
