@@ -1,6 +1,15 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "compatibility_date": "2026-09-28",
+  // Pinned to the newest date the bundled Workers runtime actually supports, not to
+  // today. wrangler ships an exact workerd/miniflare pair (see pnpm-lock.yaml); a later
+  // date makes wrangler fall back with a warning instead of applying it. Bump this only
+  // after a `pnpm update wrangler` brings in a newer runtime build (currently
+  // workerd 1.20260925.1 / miniflare 5.20260925.0-alpha, both dated 2026-09-25).
+  "compatibility_date": "2026-09-25",
+  // global_fetch_strictly_public: makes the global fetch() always route as if the
+  // request came from the public Internet, even for requests to this Worker's own zone
+  // (they loop back through Cloudflare's edge instead of dispatching in-process, and may
+  // re-enter this same Worker). Avoids surprising same-zone fast-path behavior.
   "compatibility_flags": ["global_fetch_strictly_public"],
   "name": "portfolio-project",
   "main": "@astrojs/cloudflare/entrypoints/server",

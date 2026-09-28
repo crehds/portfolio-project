@@ -1,6 +1,5 @@
+# esbuild: postinstall only checks/selects the right platform binary, no arbitrary code.
+# workerd: postinstall downloads the local Workers runtime binary for the pinned version.
 allowBuilds:
   esbuild: true
   workerd: true
-minimumReleaseAgeExclude:
-  - miniflare@5.20260926.0-alpha
-  - wrangler@4.142.0
