@@ -5,7 +5,6 @@ import { configDefaults } from 'vitest/config';
 
 export default getViteConfig({
   test: {
-    passWithNoTests: true,
     // Playwright owns everything under e2e/; keep Vitest from trying to run those specs.
     exclude: [...configDefaults.exclude, 'e2e/**'],
   },
