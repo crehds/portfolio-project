@@ -1,0 +1,44 @@
+---
+import LanguageSwitcher from '../components/LanguageSwitcher.astro';
+import { hreflangAlternates, localeOfPathname } from '../shared/i18n/paths';
+
+// Minimal shared layout for T05; T07 extends this with header/nav/footer/theme/skip link.
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+
+const pathname = Astro.url.pathname;
+const locale = localeOfPathname(pathname);
+
+if (!Astro.site) {
+  throw new Error(
+    'astro.config.mjs must set "site" so hreflang alternates can be absolute URLs.',
+  );
+}
+
+const alternates = hreflangAlternates(pathname, Astro.site.href);
+---
+
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {alternates.map((alternate) => (
+      <link
+        rel="alternate"
+        hreflang={alternate.hreflang}
+        href={alternate.href}
+      />
+    ))}
+  </head>
+  <body>
+    <LanguageSwitcher />
+    <slot />
+  </body>
+</html>
