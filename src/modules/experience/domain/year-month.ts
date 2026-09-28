@@ -28,3 +28,13 @@ export function parseYearMonth(value: string): YearMonth {
 export function yearMonthToIndex(value: YearMonth): number {
   return value.year * 12 + (value.month - 1);
 }
+
+/**
+ * True when `a` is chronologically at or after `b` (equal counts as "at or after").
+ * Both values must already be valid 'YYYY-MM' strings; throws otherwise (see `parseYearMonth`).
+ */
+export function isYearMonthAtOrAfter(a: string, b: string): boolean {
+  return (
+    yearMonthToIndex(parseYearMonth(a)) >= yearMonthToIndex(parseYearMonth(b))
+  );
+}
