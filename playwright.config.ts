@@ -1,6 +1,15 @@
+import { existsSync } from 'node:fs';
 import { defineConfig, devices } from '@playwright/test';
 
 const baseURL = 'http://localhost:4321';
+
+if (process.env.CI && !existsSync(new URL('./dist', import.meta.url))) {
+  throw new Error(
+    `dist/ is missing. In CI, webServer only runs "pnpm preview" (it does not build, see ` +
+      `webServer.command below), so the workflow's own Build step ("pnpm build") must run ` +
+      `and succeed before the e2e step.`,
+  );
+}
 
 export default defineConfig({
   testDir: './e2e',

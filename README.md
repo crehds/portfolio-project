@@ -54,8 +54,9 @@ required.
 - `main` currently serves the legacy React app. Production switches to this Astro rebuild at
   launch (T14).
 - The build image reads the Node version from `.nvmrc` automatically. pnpm defaults to an older
-  version there, so the dashboard's build environment variables must include
-  `PNPM_VERSION=12.3.4` to match `packageManager` in `package.json`.
+  version there, so the dashboard's build environment variables must set `PNPM_VERSION` to the
+  version pinned in `packageManager` in `package.json` (currently `12.3.4`), not a literal copy
+  that can drift from it.
 
 ## Roadmap
 
