@@ -61,7 +61,7 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
 ## TDD
 
 - Mode: strict. Source: global CLAUDE.md ("Strict TDD Mode: enabled").
-- Runners: Vitest (unit/integration) and Playwright (e2e + axe), both introduced in T02. None exist yet.
+- Runners: Vitest 5 (`pnpm test`) and Playwright 1.63 + axe (`pnpm test:e2e`), introduced in T02.
 - Applies from T04 (first behavior). T01-T03 are scaffold/config: their checks are build, typecheck and lint.
 
 ## Delivery
@@ -72,8 +72,8 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~270 authored lines (T01, excluding the lockfile and the legacy removal).
-- Last reviewed boundary: `f811b2a` (T01 scaffold review approved and acknowledged).
+- Running count: ~485 authored lines (T01 ~270 + T02 ~215, excluding lockfiles and the legacy removal).
+- Last reviewed boundary: `5d51829` (T02 review approved and acknowledged).
 
 ## Tasks
 
@@ -82,12 +82,12 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 ### Phase 0 · Foundations
 
 - [x] **T01** Tag `v1-legacy`, remove the old app, scaffold Astro 7 (TS strict, pnpm, Node pin), README + LICENSE under the owner's name, `.gitignore` (source PDFs, `.codegraph/`, `.atl/`). Route: inline (mechanical). ~150 + legacy deletion.
-- [ ] **T02** Quality toolchain + CI: ESLint, Prettier, Vitest, Playwright + axe, `astro check`, GitHub Actions. Also fix the README Node wording (22.12 minimum, 24 via `.nvmrc`) raised by the T01 review. Route: delegated. ~300.
-- [ ] **T03** Deploy: `@astrojs/cloudflare`, `wrangler.jsonc`, Workers Builds with PR previews (owner connects the repo in Cloudflare). Route: delegated + owner action. ~100.
+- [x] **T02** Quality toolchain + CI: ESLint, Prettier, Vitest, Playwright + axe, `astro check`, GitHub Actions. Also fix the README Node wording (22.12 minimum, 24 via `.nvmrc`) raised by the T01 review. Route: delegated. ~300.
+- [ ] **T03** Deploy: `@astrojs/cloudflare`, `wrangler.jsonc`, Workers Builds with PR previews (owner connects the repo in Cloudflare). Also, from the T02 review: e2e `webServer` runs preview only in CI (reuse the Build step output), pin GitHub Actions to commit SHAs with Dependabot updates, explain the `odd/` entry in `.prettierignore`. Route: delegated + owner action. ~100.
 
 ### Phase 1 · Content model
 
-- [ ] **T04** Collections + Zod schemas (profile, experience, projects, skills) and pure domain rules (ordering, featured projects, years of experience computed from dates). Route: delegated. ~350.
+- [ ] **T04** Collections + Zod schemas (profile, experience, projects, skills) and pure domain rules (ordering, featured projects, years of experience computed from dates). Remove Vitest `passWithNoTests` once these first unit tests land (T02 review). Route: delegated. ~350.
 - [ ] **T05** i18n: routing config, typed UI dictionary, language switcher, hreflang helpers. Route: delegated. ~250.
 - [ ] **T06** Content: profile + experience from the CV/LinkedIn PDFs (EN/ES), skills, the 6 legacy projects with basic data, documented case-study template. Route: delegated. ~450.
 
@@ -132,6 +132,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 | Task | Status | Commit | Checks | Review |
 |---|---|---|---|---|
 | T01 | done (merged `fd7a95e`) | `3b9a198` removal, `4788004` scaffold, `f811b2a` license | `pnpm check`: 0 errors/warnings/hints · `pnpm build`: 1 page | Removal: accepted unreviewed by owner (too large for review). Scaffold: medium, reviewed, approved (`review-66453b14bc688b02`), 3 non-blocking suggestions |
+| T02 | done (merged `a8b7f06`) | `024bfa1` lint/format, `8d1783f` tests, `b404c79` CI, `5d51829` CI token | `pnpm lint` pass · `pnpm format:check` pass · `pnpm check` 0/0/0 · `pnpm test` pass (no tests yet) · `pnpm build` 1 page · `pnpm test:e2e` 2/2 (parent re-ran: 2/2) | High (CI shell), 4 lenses, approved (`review-51c99e8eda1bea15`), 8 non-blocking findings routed to T03/T04 |
 
 ## Change log
 
@@ -143,7 +144,16 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 - 2026-09-28: TypeScript pinned to `^6` because `@astrojs/check` 0.9.10 supports TS `^5 || ^6` (TS 7 is out).
 - 2026-09-28: T01 review suggestions: README Node wording vs `.nvmrc` (fixed in T02), no CI yet (T02),
   roadmap link (false positive: the plan file is on this branch).
+- 2026-09-28: the RDD stop hook reviews the whole branch against `main`. That candidate always contains the
+  legacy removal, so a granted review fails on budget until the branch merges into `main`. Per-task slices
+  remain the review unit.
+- 2026-09-28: T02 added `@types/node@^24` (Playwright config reads `process.env` under strict `astro check`)
+  and keeps `eslint-plugin-jsx-a11y` 6.10.2 despite its ESLint <= 9 peer range (works with ESLint 10;
+  `eslint-plugin-astro` pairs them). The parent limited the CI token to `contents: read` before review.
+- 2026-09-28: T02 review suggestions routed: double build in CI, action SHA pinning and the `odd/`
+  ignore comment to T03; `passWithNoTests` removal to T04; duplicated ignore lists left optional.
 
 ## Next step
 
-T02: quality toolchain and CI on `feat/astro-rebuild-02-quality` (delegated writer).
+T03 needs the owner: authorization to push `feat/astro-rebuild` to GitHub and a Cloudflare account to
+connect it. T04 (content model) can proceed locally in the meantime.
