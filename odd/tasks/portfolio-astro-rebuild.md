@@ -83,9 +83,9 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 
 - [x] **T01** Tag `v1-legacy`, remove the old app, scaffold Astro 7 (TS strict, pnpm, Node pin), README + LICENSE under the owner's name, `.gitignore` (source PDFs, `.codegraph/`, `.atl/`). Route: inline (mechanical). ~150 + legacy deletion.
 - [x] **T02** Quality toolchain + CI: ESLint, Prettier, Vitest, Playwright + axe, `astro check`, GitHub Actions. Also fix the README Node wording (22.12 minimum, 24 via `.nvmrc`) raised by the T01 review. Route: delegated. ~300.
-- [ ] **T03** Deploy: `@astrojs/cloudflare`, `wrangler.jsonc`, Workers Builds with PR previews (owner connects the repo in Cloudflare). Also, from the T02 review: e2e `webServer` runs preview only in CI (reuse the Build step output), pin GitHub Actions to commit SHAs with Dependabot updates, explain the `odd/` entry in `.prettierignore`. Route: delegated + owner action. ~100.
-  Status: code merged (`164019f`); the Worker `portfolio-project` exists and serves `main` (legacy). Pending: owner
-  approval to push, `PNPM_VERSION=12.3.4` build variable in Cloudflare, and a verified preview URL for the branch.
+- [x] **T03** Deploy: `@astrojs/cloudflare`, `wrangler.jsonc`, Workers Builds with PR previews (owner connects the repo in Cloudflare). Also, from the T02 review: e2e `webServer` runs preview only in CI (reuse the Build step output), pin GitHub Actions to commit SHAs with Dependabot updates, explain the `odd/` entry in `.prettierignore`. Route: delegated + owner action. ~100.
+  Status: verified. Branch preview: https://feat-astro-rebuild-portfolio-project.carlos15erh.workers.dev/ serves
+  the Astro page; production (`main`, legacy) is unchanged.
 - [ ] **T03b** Follow-ups from the T03 review: set `compatibility_date` to the bundled runtime's date and comment
   it and the compatibility flag in `wrangler.jsonc`; remove the `minimumReleaseAgeExclude` bypass (let pnpm
   resolve mature `wrangler`/`miniflare` versions) and comment the `allowBuilds` entries; fail fast in CI e2e when
@@ -140,7 +140,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 |---|---|---|---|---|
 | T01 | done (merged `fd7a95e`) | `3b9a198` removal, `4788004` scaffold, `f811b2a` license | `pnpm check`: 0 errors/warnings/hints · `pnpm build`: 1 page | Removal: accepted unreviewed by owner (too large for review). Scaffold: medium, reviewed, approved (`review-66453b14bc688b02`), 3 non-blocking suggestions |
 | T02 | done (merged `a8b7f06`) | `024bfa1` lint/format, `8d1783f` tests, `b404c79` CI, `5d51829` CI token | `pnpm lint` pass · `pnpm format:check` pass · `pnpm check` 0/0/0 · `pnpm test` pass (no tests yet) · `pnpm build` 1 page · `pnpm test:e2e` 2/2 (parent re-ran: 2/2) | High (CI shell), 4 lenses, approved (`review-51c99e8eda1bea15`), 8 non-blocking findings routed to T03/T04 |
-| T03 | code merged (`164019f`), preview pending push | `fde0993` adapter + `wrangler.jsonc`, `717ea51` CI SHA pins + e2e reuse, `1bbd29d` bindings off | `pnpm lint` pass · `pnpm format:check` pass · `pnpm check` 0/0/0 · `pnpm test` pass · `pnpm build` 1 page · `pnpm test:e2e` 2/2 (parent re-ran: 2/2) · `wrangler deploy --dry-run`: no bindings | High (CI shell), 4 lenses, approved (`review-02fe771a972ded47`), 9 non-blocking findings routed to T03b |
+| T03 | done (merged `164019f`, pushed `52fe1a3`; GitHub CI green, Workers Builds preview green) | `fde0993` adapter + `wrangler.jsonc`, `717ea51` CI SHA pins + e2e reuse, `1bbd29d` bindings off | `pnpm lint` pass · `pnpm format:check` pass · `pnpm check` 0/0/0 · `pnpm test` pass · `pnpm build` 1 page · `pnpm test:e2e` 2/2 (parent re-ran: 2/2) · `wrangler deploy --dry-run`: no bindings | High (CI shell), 4 lenses, approved (`review-02fe771a972ded47`), 9 non-blocking findings routed to T03b |
 
 ## Change log
 
@@ -168,8 +168,11 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   now reports no bindings. Vitest runs without the adapter (`process.env.VITEST`) because the adapter's dev
   server conflicts with Vitest's.
 - 2026-09-28: T03 review suggestions routed to the new task T03b.
+- 2026-09-28: owner approved the first push (`feat/astro-rebuild` + `v1-legacy`). GitHub CI passed on its first
+  run and Workers Builds produced the branch preview. The checks revealed that the repo is also connected to a
+  Vercel project (`portfolio-crehds`), where the legacy site is probably live and which builds every pushed
+  branch. Decide at T14 whether to retire it, redirect it, or limit its builds to `main`.
 
 ## Next step
 
-Owner: approve pushing `feat/astro-rebuild` (+ `v1-legacy` tag) and add `PNPM_VERSION=12.3.4` in Cloudflare;
-then verify the branch preview (closes T03). Meanwhile: T03b, then T04.
+T03b (dependency hygiene and config follow-ups) on `feat/astro-rebuild-03b-hygiene`, then T04.
