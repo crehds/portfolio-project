@@ -74,10 +74,9 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~2,670 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
-  T05 ~511 + T05b ~47, with tests, excluding lockfiles and the legacy removal).
-- Last reviewed boundary: `1f54e9f` (T04b + T05 slice; the merge `d5d0926` has the same tree). Pending in the next
-  slice: T05b (47 lines, medium, under budget) and the docs commits after it.
+- Running count: ~3,390 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+  T05 ~511 + T05b ~47 + T06 ~715, with tests, excluding lockfiles and the legacy removal).
+- Last reviewed boundary: `ecc0d35` (T05b + T06 slice; the merge `2ed745b` has the same tree).
 
 ## Tasks
 
@@ -107,7 +106,11 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 - [x] **T05b** Follow-ups from the T04b + T05 review: wait for navigation with the retrying `toHaveURL` in the
   switcher e2e test (a one-shot `page.url()` read could race), and cover the current-locale state (no link to the
   current page, `aria-current`). Route: inline (one test file). ~50.
-- [ ] **T06** Content: profile + experience from the CV/LinkedIn PDFs (EN/ES), skills, the 6 legacy projects with basic data, documented case-study template. The profile `cv` field stays empty until T11 serves the file. Route: delegated. ~450.
+- [x] **T06** Content: profile + experience from the CV/LinkedIn PDFs (EN/ES), skills, the 6 legacy projects with basic data, documented case-study template. The profile `cv` field stays empty until T11 serves the file. Route: delegated. ~450.
+- [ ] **T06b** Follow-ups from the T05b + T06 review and the owner's content check: make the integrity test's
+  frontmatter reader fail closed (CRLF line endings, quoted values, trailing comments, missing block) and require an
+  explicit `status` and `featured` in every project file; set the Cloudflare live URLs for expresión latina and
+  juego con teclado (owner: both moved to Cloudflare). Route: delegated. ~60.
 
 ### Phase 2 · UI
 
@@ -156,7 +159,8 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 | T04 | done (merged `9a8befc`) | `5ccdb82` collections + schemas, `35e9b69` experience rules, `ab6e082` project rules, `00a7109` skill grouping | Strict TDD: RED (module not found) before GREEN per behavior · `pnpm test` 69/69 in 13 files · lint · format · `pnpm check` 0/0/0 · build · `pnpm test:e2e` (writer) · parent re-ran after merge: test 69/69, check 0/0/0 | T03b + T04 slice: medium (1,355 lines), 1 lens (reliability), approved (`review-efa911754d4ac043`), 4 non-blocking findings routed to T04b |
 | T04b | done (merged `dfb0c60`) | `e876982` inverted periods, `02dab78` strict project ids, `a4a47a9` literal oracles + fixed clock | Strict TDD, RED observed per behavior (`isYearMonthAtOrAfter is not a function`; schema accepted an inverted period; years of experience 1/-4/-7 instead of 2/2/0; project-id tests expected a throw), then GREEN · `pnpm test` 83/83 · lint · format · `pnpm check` 0/0/0 · build 1 page · `pnpm test:e2e` 2/2 · parent re-ran: test 83/83 | Reviewed with T05 (see T05) |
 | T05 | done (merged `d5d0926`) | `9913d05` routing + path helpers, `9f5b69a` typed dictionary, `1f54e9f` Spanish home + switcher + hreflang | Strict TDD: RED (module not found for the helpers and dictionary; 5 e2e failures before the layout, switcher and `/es/` page existed), then GREEN · `pnpm test` 102/102 in 16 files · lint · format · `pnpm check` 0/0/0 · build 2 pages · `pnpm test:e2e` 7/7 · dry run: no bindings · parent re-ran: test 102/102, build 2 pages | T04b + T05 slice: medium (814 lines), 1 lens (reliability), approved (`review-d051703996c5d922`), 2 non-blocking findings fixed in T05b |
-| T05b | done (merged `062495a`) | `9c49fb1` switcher e2e: retrying URL wait + current-locale state | Test-only; mutation check: linking the current locale made both new tests fail (expected 0 links, received 1), then restored · lint · format · `pnpm check` 0/0/0 · `pnpm test:e2e` 9/9 | Medium, under budget (47 lines): pending in the next slice |
+| T05b | done (merged `062495a`) | `9c49fb1` switcher e2e: retrying URL wait + current-locale state | Test-only; mutation check: linking the current locale made both new tests fail (expected 0 links, received 1), then restored · lint · format · `pnpm check` 0/0/0 · `pnpm test:e2e` 9/9 | Reviewed with T06 (see T06) |
+| T06 | done (merged `2ed745b`) | `5ff0d1e` profile, experience, skills; `f191b45` projects; `7f10bc3` case-study template; `ecc0d35` headline years guard (parent) | Integrity test RED (no project folders; missing `es.md`), then GREEN; mutation check (draft + featured -> RED); headline guard RED ("5+ years"), then GREEN · `pnpm test` 106/106 · lint · format · `pnpm check` 0/0/0 · build 2 pages without empty-collection warnings · `pnpm test:e2e` 9/9 (writer) | T05b + T06 slice: medium (805 lines), 1 lens (reliability), approved (`review-0e6b4d7ee4133333`), 2 non-blocking findings routed to T06b |
 
 ## Change log
 
@@ -225,8 +229,18 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   records). The legacy "code metrics" (250 PRs, 5,436 commits, 53 code reviews, 25 issues, 1,197 Codewars) and the
   "+3 1/2 years" tagline are hand-typed, so T06 drops them (acceptance criteria: no fabricated metrics, years come
   from dates).
+- 2026-09-28: T06 content. Featured (owner): juego con teclado (`game-with-keyboard`), pysa and expresión latina;
+  bachatealo is published; hagalo verde and marielis stay drafts until the owner sends a one-line summary for each.
+  No covers until T09, because the legacy screenshots show outdated sites. A project's `date` is its repository's
+  latest commit date (rule in `docs/case-study-template.md`). Experience has 5 roles from the CV and the LinkedIn
+  export; the owner confirmed the merged TechyWe entry, the inferred full-time types, the role locations, the EICHE
+  figures and the client names. The parent removed a hand-typed "5+ years" from the headline (the dates give about
+  6.7 years) and added a guard test.
+- 2026-09-28: after writes settled, the owner granted the stop hook's whole-branch review again (172 files, 31,014
+  lines). It stopped with `lens_context_budget_exceeded` (terminal, nothing created) and will stop the same way until
+  `feat/astro-rebuild` merges into `main`; per-task slices stay the review unit.
 
 ## Next step
 
-T06 content on `feat/astro-rebuild-06-content`: first the owner picks the featured projects; then profile,
-experience and skills from the CV/LinkedIn PDFs (EN/ES), the 6 projects with basic data, and the case-study template.
+T06b on `feat/astro-rebuild-06b-content-hygiene` (needs the two Cloudflare URLs from the owner), then T07 design
+tokens, theme and base layout.
