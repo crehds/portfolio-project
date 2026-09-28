@@ -72,8 +72,9 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~610 authored lines (T01 ~270 + T02 ~215 + T03 ~125, excluding lockfiles and the legacy removal).
-- Last reviewed boundary: `1bbd29d` (T03 review approved and acknowledged).
+- Running count: ~645 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35, excluding lockfiles and the legacy removal).
+- Last reviewed boundary: `8be68a9`. T03b (`d2f5faa`, `2d8ed60`) assessed medium but under budget, so it stays pending
+  in the next review slice.
 
 ## Tasks
 
@@ -86,7 +87,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 - [x] **T03** Deploy: `@astrojs/cloudflare`, `wrangler.jsonc`, Workers Builds with PR previews (owner connects the repo in Cloudflare). Also, from the T02 review: e2e `webServer` runs preview only in CI (reuse the Build step output), pin GitHub Actions to commit SHAs with Dependabot updates, explain the `odd/` entry in `.prettierignore`. Route: delegated + owner action. ~100.
   Status: verified. Branch preview: https://feat-astro-rebuild-portfolio-project.carlos15erh.workers.dev/ serves
   the Astro page; production (`main`, legacy) is unchanged.
-- [ ] **T03b** Follow-ups from the T03 review: set `compatibility_date` to the bundled runtime's date and comment
+- [x] **T03b** Follow-ups from the T03 review: set `compatibility_date` to the bundled runtime's date and comment
   it and the compatibility flag in `wrangler.jsonc`; remove the `minimumReleaseAgeExclude` bypass (let pnpm
   resolve mature `wrangler`/`miniflare` versions) and comment the `allowBuilds` entries; fail fast in CI e2e when
   `dist/` is missing; drop the redundant `tsconfig` include; point the README to `packageManager` instead of a
@@ -141,6 +142,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 | T01 | done (merged `fd7a95e`) | `3b9a198` removal, `4788004` scaffold, `f811b2a` license | `pnpm check`: 0 errors/warnings/hints · `pnpm build`: 1 page | Removal: accepted unreviewed by owner (too large for review). Scaffold: medium, reviewed, approved (`review-66453b14bc688b02`), 3 non-blocking suggestions |
 | T02 | done (merged `a8b7f06`) | `024bfa1` lint/format, `8d1783f` tests, `b404c79` CI, `5d51829` CI token | `pnpm lint` pass · `pnpm format:check` pass · `pnpm check` 0/0/0 · `pnpm test` pass (no tests yet) · `pnpm build` 1 page · `pnpm test:e2e` 2/2 (parent re-ran: 2/2) | High (CI shell), 4 lenses, approved (`review-51c99e8eda1bea15`), 8 non-blocking findings routed to T03/T04 |
 | T03 | done (merged `164019f`, pushed `52fe1a3`; GitHub CI green, Workers Builds preview green) | `fde0993` adapter + `wrangler.jsonc`, `717ea51` CI SHA pins + e2e reuse, `1bbd29d` bindings off | `pnpm lint` pass · `pnpm format:check` pass · `pnpm check` 0/0/0 · `pnpm test` pass · `pnpm build` 1 page · `pnpm test:e2e` 2/2 (parent re-ran: 2/2) · `wrangler deploy --dry-run`: no bindings | High (CI shell), 4 lenses, approved (`review-02fe771a972ded47`), 9 non-blocking findings routed to T03b |
+| T03b | done (merged `f24f152`) | `d2f5faa` compat date + release-age bypass removed, `2d8ed60` CI e2e fail-fast, tsconfig, README | `pnpm install --frozen-lockfile` pass · lint · format · `pnpm check` 0/0/0 · `pnpm test` pass · build · `pnpm test:e2e` 2/2 · dry run: no bindings, no compat warning · CI fail-fast shown · parent re-ran install/build/dry run: pass | Medium, under budget: pending in the next slice |
 
 ## Change log
 
@@ -172,7 +174,10 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   run and Workers Builds produced the branch preview. The checks revealed that the repo is also connected to a
   Vercel project (`portfolio-crehds`), where the legacy site is probably live and which builds every pushed
   branch. Decide at T14 whether to retire it, redirect it, or limit its builds to `main`.
+- 2026-09-28: T03b set `compatibility_date` to 2026-09-25 (the bundled workerd 1.20260925.1) and removed the pnpm
+  release-age bypass: widening `wrangler` to the adapter's `^4.125.0` peer range resolves 4.141.0, which is past
+  pnpm's 24h minimum release age (it needed `pnpm clean --lockfile` to re-resolve).
 
 ## Next step
 
-T03b (dependency hygiene and config follow-ups) on `feat/astro-rebuild-03b-hygiene`, then T04.
+T04: content collections, Zod schemas and pure domain rules with strict TDD on `feat/astro-rebuild-04-content-model`.
