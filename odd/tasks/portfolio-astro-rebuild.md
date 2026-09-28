@@ -42,6 +42,7 @@ framework fixes them in one move, and the codebase itself proves the skills the 
 | Seams | Only where the source will change: `projects` (local, then GitHub) and contact email delivery (provider adapter) |
 | i18n | `en` default at `/`, `es` at `/es/`, hreflang in the sitemap |
 | Contact | Form (Astro Action -> `EmailSender` port -> provider adapter) + WhatsApp link + mailto |
+| CV download | PDF in a Cloudflare R2 bucket, served by the Worker at the site's own URL (`/cv/<locale>.pdf`); the owner uploads it, so it stays out of git and updates without a redeploy |
 | Styling | Tailwind v4 via `@tailwindcss/vite`, Astro Fonts API, `<Picture>` with AVIF/WebP |
 | JavaScript | Zero by default; islands only for real interactivity |
 | Quality | TS strict, `astro check`, ESLint + Prettier, Vitest, Playwright + axe, Lighthouse CI, GitHub Actions |
@@ -73,10 +74,10 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~2,110 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268,
-  with tests, excluding lockfiles and the legacy removal).
-- Last reviewed boundary: `00a7109` (T03b + T04 slice; the merge `9a8befc` has the same tree). Pending in the next
-  slice: `5da58aa` (docs) + T04b, 294 lines, medium, under budget.
+- Running count: ~2,670 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+  T05 ~511 + T05b ~47, with tests, excluding lockfiles and the legacy removal).
+- Last reviewed boundary: `1f54e9f` (T04b + T05 slice; the merge `d5d0926` has the same tree). Pending in the next
+  slice: T05b (47 lines, medium, under budget) and the docs commits after it.
 
 ## Tasks
 
@@ -102,16 +103,19 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   keep `yearsOfExperience` from subtracting months for inverted or future-dated ranges (warning); parse project ids
   at the last slash and fail loudly on nested ids or unsupported locale segments; give the `formatPeriod` tests a
   literal oracle; pin the clock (`vi.setSystemTime`) in the default-`now` test. Route: delegated. ~80.
-- [ ] **T05** i18n: routing config, typed UI dictionary, language switcher, hreflang helpers. Route: delegated. ~250.
-- [ ] **T06** Content: profile + experience from the CV/LinkedIn PDFs (EN/ES), skills, the 6 legacy projects with basic data, documented case-study template. Route: delegated. ~450.
+- [x] **T05** i18n: routing config, typed UI dictionary, language switcher, hreflang helpers. Route: delegated. ~250.
+- [x] **T05b** Follow-ups from the T04b + T05 review: wait for navigation with the retrying `toHaveURL` in the
+  switcher e2e test (a one-shot `page.url()` read could race), and cover the current-locale state (no link to the
+  current page, `aria-current`). Route: inline (one test file). ~50.
+- [ ] **T06** Content: profile + experience from the CV/LinkedIn PDFs (EN/ES), skills, the 6 legacy projects with basic data, documented case-study template. The profile `cv` field stays empty until T11 serves the file. Route: delegated. ~450.
 
 ### Phase 2 · UI
 
 - [ ] **T07** Design tokens, dark/light theme (no flash, persisted, OS default), fonts, base layout (header, nav, footer, skip link, landmarks). Route: delegated. ~400.
-- [ ] **T08** Home: hero, CTAs (form, WhatsApp, email, LinkedIn, GitHub, CV), featured projects, experience summary. Route: delegated. ~300.
+- [ ] **T08** Home: hero, CTAs (form, WhatsApp, email, LinkedIn, GitHub, CV), featured projects, experience summary. The CV button renders only when the profile `cv` field is set. Route: delegated. ~300.
 - [ ] **T09** Projects list + `/projects/[slug]` case-study pages with optimized images. Route: delegated. ~350.
 - [ ] **T10** Experience timeline + skills page. Route: delegated. ~250.
-- [ ] **T11** Contact: form via Astro Action (Zod validation, works without JS), `EmailSender` port + provider adapter, Turnstile + honeypot + rate limit, WhatsApp + mailto, CV download, 404 page. Route: delegated. ~450.
+- [ ] **T11** Contact: form via Astro Action (Zod validation, works without JS), `EmailSender` port + provider adapter, Turnstile + honeypot + rate limit, WhatsApp + mailto, CV download (R2 binding + on-demand `/cv/<locale>.pdf` route, then set the profile `cv` field; owner creates the bucket and uploads the PDF first), 404 page. Route: delegated + owner action. ~450.
 
 ### Phase 3 · Launch
 
@@ -150,7 +154,9 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 | T03 | done (merged `164019f`, pushed `52fe1a3`; GitHub CI green, Workers Builds preview green) | `fde0993` adapter + `wrangler.jsonc`, `717ea51` CI SHA pins + e2e reuse, `1bbd29d` bindings off | `pnpm lint` pass · `pnpm format:check` pass · `pnpm check` 0/0/0 · `pnpm test` pass · `pnpm build` 1 page · `pnpm test:e2e` 2/2 (parent re-ran: 2/2) · `wrangler deploy --dry-run`: no bindings | High (CI shell), 4 lenses, approved (`review-02fe771a972ded47`), 9 non-blocking findings routed to T03b |
 | T03b | done (merged `f24f152`) | `d2f5faa` compat date + release-age bypass removed, `2d8ed60` CI e2e fail-fast, tsconfig, README | `pnpm install --frozen-lockfile` pass · lint · format · `pnpm check` 0/0/0 · `pnpm test` pass · build · `pnpm test:e2e` 2/2 · dry run: no bindings, no compat warning · CI fail-fast shown · parent re-ran install/build/dry run: pass | Reviewed with T04 (see T04) |
 | T04 | done (merged `9a8befc`) | `5ccdb82` collections + schemas, `35e9b69` experience rules, `ab6e082` project rules, `00a7109` skill grouping | Strict TDD: RED (module not found) before GREEN per behavior · `pnpm test` 69/69 in 13 files · lint · format · `pnpm check` 0/0/0 · build · `pnpm test:e2e` (writer) · parent re-ran after merge: test 69/69, check 0/0/0 | T03b + T04 slice: medium (1,355 lines), 1 lens (reliability), approved (`review-efa911754d4ac043`), 4 non-blocking findings routed to T04b |
-| T04b | done (merged `dfb0c60`) | `e876982` inverted periods, `02dab78` strict project ids, `a4a47a9` literal oracles + fixed clock | Strict TDD, RED observed per behavior (`isYearMonthAtOrAfter is not a function`; schema accepted an inverted period; years of experience 1/-4/-7 instead of 2/2/0; project-id tests expected a throw), then GREEN · `pnpm test` 83/83 · lint · format · `pnpm check` 0/0/0 · build 1 page · `pnpm test:e2e` 2/2 · parent re-ran: test 83/83 | Medium, under budget (294 lines with `5da58aa`): pending in the next slice |
+| T04b | done (merged `dfb0c60`) | `e876982` inverted periods, `02dab78` strict project ids, `a4a47a9` literal oracles + fixed clock | Strict TDD, RED observed per behavior (`isYearMonthAtOrAfter is not a function`; schema accepted an inverted period; years of experience 1/-4/-7 instead of 2/2/0; project-id tests expected a throw), then GREEN · `pnpm test` 83/83 · lint · format · `pnpm check` 0/0/0 · build 1 page · `pnpm test:e2e` 2/2 · parent re-ran: test 83/83 | Reviewed with T05 (see T05) |
+| T05 | done (merged `d5d0926`) | `9913d05` routing + path helpers, `9f5b69a` typed dictionary, `1f54e9f` Spanish home + switcher + hreflang | Strict TDD: RED (module not found for the helpers and dictionary; 5 e2e failures before the layout, switcher and `/es/` page existed), then GREEN · `pnpm test` 102/102 in 16 files · lint · format · `pnpm check` 0/0/0 · build 2 pages · `pnpm test:e2e` 7/7 · dry run: no bindings · parent re-ran: test 102/102, build 2 pages | T04b + T05 slice: medium (814 lines), 1 lens (reliability), approved (`review-d051703996c5d922`), 2 non-blocking findings fixed in T05b |
+| T05b | done (merged `062495a`) | `9c49fb1` switcher e2e: retrying URL wait + current-locale state | Test-only; mutation check: linking the current locale made both new tests fail (expected 0 links, received 1), then restored · lint · format · `pnpm check` 0/0/0 · `pnpm test:e2e` 9/9 | Medium, under budget (47 lines): pending in the next slice |
 
 ## Change log
 
@@ -200,7 +206,27 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 - 2026-09-28: the stop hook offered its whole-branch review (branch vs `main`: 162 files, 30,291 lines). The owner
   granted it, but START refused with `stale_target_identity` (nothing started) because the T04b writer committed
   while the question was open. It must be re-derived once the branch stops moving.
+- 2026-09-28: T05. `astro.config.mjs` imports `LOCALES`/`DEFAULT_LOCALE` from `src/shared/i18n/locales.ts` (one
+  source of truth; works in build, Vitest and check). `site` is the production `workers.dev` URL until a domain
+  exists. `BaseLayout` derives the locale from the URL, so a page cannot pass a mismatched one, and throws if `site`
+  is missing. The switcher renders the current locale as a `span` with `aria-current` and the other one as a link
+  with `hreflang` and `lang`. The dictionary is typed from English, so a missing or extra Spanish key fails
+  `astro check`.
+- 2026-09-28: the T04b + T05 slice (medium, 814 lines) got one reliability lens and was approved. Its 2 findings
+  (an e2e URL race and the untested current-locale state) became T05b, done inline.
+- 2026-09-28: the owner decided the CV download (see Decisions). They first proposed S3 with "a dedicated URL";
+  S3 presigned URLs expire (7 days at most), so a permanent S3 link would need a public object, and R2 fits the
+  existing Cloudflare hosting.
+- 2026-09-28: legacy project inventory for T06 (from `v1-legacy`): the 6 projects only had a title, a live URL, a
+  repository URL and a screenshot; no descriptions or stack. Current state per the owner's project records: pysa
+  (Vite + React 19, still at pysa.vercel.app), expresion-latina (legacy "eyl"; Supabase attendance module, Vercel),
+  game with keyboard (React 19; repository default branch is now `main`), bachatealo (moved from GitHub Pages to
+  https://bachatealo.carlos15erh.workers.dev/ with a restructured repository), hagalo verde and marielis (no
+  records). The legacy "code metrics" (250 PRs, 5,436 commits, 53 code reviews, 25 issues, 1,197 Codewars) and the
+  "+3 1/2 years" tagline are hand-typed, so T06 drops them (acceptance criteria: no fabricated metrics, years come
+  from dates).
 
 ## Next step
 
-T05 i18n on `feat/astro-rebuild-05-i18n`: routing config, typed UI dictionary, language switcher, hreflang helpers.
+T06 content on `feat/astro-rebuild-06-content`: first the owner picks the featured projects; then profile,
+experience and skills from the CV/LinkedIn PDFs (EN/ES), the 6 projects with basic data, and the case-study template.
