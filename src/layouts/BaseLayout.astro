@@ -1,6 +1,9 @@
 ---
+import { Font } from 'astro:assets';
+
 import LanguageSwitcher from '../components/LanguageSwitcher.astro';
 import { hreflangAlternates, localeOfPathname } from '../shared/i18n/paths';
+import '../styles/global.css';
 
 // Minimal shared layout for T05; T07 extends this with header/nav/footer/theme/skip link.
 interface Props {
@@ -26,6 +29,7 @@ const alternates = hreflangAlternates(pathname, Astro.site.href);
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
     <meta name="description" content={description} />
@@ -36,6 +40,8 @@ const alternates = hreflangAlternates(pathname, Astro.site.href);
         href={alternate.href}
       />
     ))}
+    <Font cssVariable="--font-ubuntu" preload={[{ weight: '400' }]} />
+    <Font cssVariable="--font-ubuntu-mono" />
   </head>
   <body>
     <LanguageSwitcher />

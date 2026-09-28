@@ -1,0 +1,57 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+/* Static tokens: unlike colors, these never change between themes, so they need no
+   `data-theme` indirection and live directly in `@theme` (not `@theme inline`). */
+@theme {
+  --font-sans: var(--font-ubuntu), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-ubuntu-mono), ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Theme-switching tokens: `inline` makes each generated utility reference the
+   `--token-*` custom property directly (instead of a value resolved once for `:root`),
+   so the same utility class repaints when `tokens.css` swaps `--token-*` by theme. */
+@theme inline {
+  --color-bg: var(--token-bg);
+  --color-surface: var(--token-surface);
+  --color-text: var(--token-text);
+  --color-text-muted: var(--token-text-muted);
+  --color-accent: var(--token-accent);
+  --color-highlight: var(--token-highlight);
+  --color-border: var(--token-border);
+  --color-focus: var(--token-focus);
+}
+
+@layer base {
+  /* Tailwind v4's preflight resets the default border color to `currentColor`; restore
+     an explicit default so an unadorned `border` utility uses the `border` token. */
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    font-family: var(--font-sans);
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+  }
+
+  /* Visible everywhere, not opted into per component. */
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
