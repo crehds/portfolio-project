@@ -73,9 +73,10 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~1,840 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 with tests,
-  excluding lockfiles and the legacy removal).
-- Last reviewed boundary: `00a7109` (T03b + T04 slice; the merge `9a8befc` has the same tree).
+- Running count: ~2,110 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268,
+  with tests, excluding lockfiles and the legacy removal).
+- Last reviewed boundary: `00a7109` (T03b + T04 slice; the merge `9a8befc` has the same tree). Pending in the next
+  slice: `5da58aa` (docs) + T04b, 294 lines, medium, under budget.
 
 ## Tasks
 
@@ -97,7 +98,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 ### Phase 1 · Content model
 
 - [x] **T04** Collections + Zod schemas (profile, experience, projects, skills) and pure domain rules (ordering, featured projects, years of experience computed from dates). Remove Vitest `passWithNoTests` once these first unit tests land (T02 review). Route: delegated. ~350.
-- [ ] **T04b** Follow-ups from the T03b + T04 review: reject experience entries whose `end` precedes `start`, and
+- [x] **T04b** Follow-ups from the T03b + T04 review: reject experience entries whose `end` precedes `start`, and
   keep `yearsOfExperience` from subtracting months for inverted or future-dated ranges (warning); parse project ids
   at the last slash and fail loudly on nested ids or unsupported locale segments; give the `formatPeriod` tests a
   literal oracle; pin the clock (`vi.setSystemTime`) in the default-`now` test. Route: delegated. ~80.
@@ -149,6 +150,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 | T03 | done (merged `164019f`, pushed `52fe1a3`; GitHub CI green, Workers Builds preview green) | `fde0993` adapter + `wrangler.jsonc`, `717ea51` CI SHA pins + e2e reuse, `1bbd29d` bindings off | `pnpm lint` pass · `pnpm format:check` pass · `pnpm check` 0/0/0 · `pnpm test` pass · `pnpm build` 1 page · `pnpm test:e2e` 2/2 (parent re-ran: 2/2) · `wrangler deploy --dry-run`: no bindings | High (CI shell), 4 lenses, approved (`review-02fe771a972ded47`), 9 non-blocking findings routed to T03b |
 | T03b | done (merged `f24f152`) | `d2f5faa` compat date + release-age bypass removed, `2d8ed60` CI e2e fail-fast, tsconfig, README | `pnpm install --frozen-lockfile` pass · lint · format · `pnpm check` 0/0/0 · `pnpm test` pass · build · `pnpm test:e2e` 2/2 · dry run: no bindings, no compat warning · CI fail-fast shown · parent re-ran install/build/dry run: pass | Reviewed with T04 (see T04) |
 | T04 | done (merged `9a8befc`) | `5ccdb82` collections + schemas, `35e9b69` experience rules, `ab6e082` project rules, `00a7109` skill grouping | Strict TDD: RED (module not found) before GREEN per behavior · `pnpm test` 69/69 in 13 files · lint · format · `pnpm check` 0/0/0 · build · `pnpm test:e2e` (writer) · parent re-ran after merge: test 69/69, check 0/0/0 | T03b + T04 slice: medium (1,355 lines), 1 lens (reliability), approved (`review-efa911754d4ac043`), 4 non-blocking findings routed to T04b |
+| T04b | done (merged `dfb0c60`) | `e876982` inverted periods, `02dab78` strict project ids, `a4a47a9` literal oracles + fixed clock | Strict TDD, RED observed per behavior (`isYearMonthAtOrAfter is not a function`; schema accepted an inverted period; years of experience 1/-4/-7 instead of 2/2/0; project-id tests expected a throw), then GREEN · `pnpm test` 83/83 · lint · format · `pnpm check` 0/0/0 · build 1 page · `pnpm test:e2e` 2/2 · parent re-ran: test 83/83 | Medium, under budget (294 lines with `5da58aa`): pending in the next slice |
 
 ## Change log
 
@@ -191,7 +193,14 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 - 2026-09-28: the T03b + T04 slice (medium, 1,355 lines) got one reliability lens and was approved. Its 4
   non-blocking findings became T04b; the inverted-period warning goes first because it can lower the years of
   experience shown on the site.
+- 2026-09-28: T04b. The schema rejects an `end` before `start`, but it has no clock, so it cannot reject an
+  ongoing role that starts in the future; `yearsOfExperience` ignores such ranges instead. Project entry ids must be
+  exactly `<slug>/<locale>` with a supported locale, and anything else fails the build. The Spanish short month
+  renders as `ene 2023` with this ICU; the test uses a tolerant regex because CLDR data can change.
+- 2026-09-28: the stop hook offered its whole-branch review (branch vs `main`: 162 files, 30,291 lines). The owner
+  granted it, but START refused with `stale_target_identity` (nothing started) because the T04b writer committed
+  while the question was open. It must be re-derived once the branch stops moving.
 
 ## Next step
 
-T04b: review follow-ups with strict TDD on `feat/astro-rebuild-04b-content-hygiene`, then T05 i18n.
+T05 i18n on `feat/astro-rebuild-05-i18n`: routing config, typed UI dictionary, language switcher, hreflang helpers.
