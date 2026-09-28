@@ -12,6 +12,7 @@ import { describe, expect, it } from 'vitest';
 // `src/modules/projects/domain/featured-projects.ts`, even though drafts must stay hidden).
 
 const PROJECTS_DIR = fileURLToPath(new URL('./projects', import.meta.url));
+const PROFILE_FILE = fileURLToPath(new URL('./profile.yaml', import.meta.url));
 const LOCALES = ['en', 'es'] as const;
 
 function projectSlugs(): string[] {
@@ -64,5 +65,16 @@ describe('projects content integrity', () => {
     );
 
     expect(offenders).toEqual([]);
+  });
+});
+
+describe('profile content integrity', () => {
+  // Years of experience are computed from the experience dates (see
+  // `src/modules/experience/domain/years-of-experience.ts`). A number typed into the
+  // profile text goes stale and drifts from the computed value.
+  it('never hand-types years of experience', () => {
+    const profile = readFileSync(PROFILE_FILE, 'utf-8');
+
+    expect(profile).not.toMatch(/\d+\s*\+?\s*(?:years?|años)/i);
   });
 });
