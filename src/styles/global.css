@@ -55,3 +55,16 @@
     }
   }
 }
+
+/* Deliberately outside any `@layer`: unlayered rules always win over every `@layer`
+   (including Tailwind's own `utilities` layer) regardless of specificity, per the CSS
+   Cascade Layers spec. That is the point here - a JS-only control (currently only the
+   theme toggle) must stay hidden while `.no-js` is on `<html>` no matter which utility
+   classes (e.g. `inline-flex`) also target the same element. `BaseLayout.astro`'s inline
+   `<head>` script removes `.no-js` the moment JS runs, before first paint. This rule must
+   also live unscoped, here, not in a component's own `<style>`: a component-scoped
+   `<style>` would scope the `.no-js` ancestor selector too, which would then never match
+   `<html>` (see `ThemeToggle.astro`). */
+.no-js .theme-toggle {
+  display: none;
+}

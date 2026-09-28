@@ -2,6 +2,7 @@
 import { Font } from 'astro:assets';
 
 import LanguageSwitcher from '../components/LanguageSwitcher.astro';
+import ThemeToggle from '../components/ThemeToggle.astro';
 import { hreflangAlternates, localeOfPathname } from '../shared/i18n/paths';
 import '../styles/global.css';
 
@@ -25,11 +26,36 @@ if (!Astro.site) {
 const alternates = hreflangAlternates(pathname, Astro.site.href);
 ---
 
-<html lang={locale}>
+<html lang={locale} class="no-js">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
+    <script is:inline>
+      // Static, literal script (no server-interpolated values, so a future CSP hash for it
+      // stays stable - T13): applies the theme before first paint so there is no flash of
+      // the wrong theme. Mirrors `src/shared/theme/resolve-theme.ts`'s "stored preference
+      // wins, else the OS preference" order; it cannot import that module and stay static
+      // (a pre-paint script can't wait on a module fetch), so keep both in sync by hand.
+      // Also flips `.no-js` -> `.js` so CSS can hide JS-only controls (the theme toggle)
+      // until we know they will work.
+      (function () {
+        let stored = null;
+        try {
+          stored = localStorage.getItem('theme');
+        } catch {
+          // Private browsing / blocked storage: proceed as if nothing were stored.
+        }
+        const theme =
+          stored === 'light' || stored === 'dark'
+            ? stored
+            : window.matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.classList.remove('no-js');
+      })();
+    </script>
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
     <meta name="description" content={description} />
@@ -45,6 +71,7 @@ const alternates = hreflangAlternates(pathname, Astro.site.href);
   </head>
   <body>
     <LanguageSwitcher />
+    <ThemeToggle />
     <slot />
   </body>
 </html>

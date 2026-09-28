@@ -13,6 +13,7 @@ const en = {
     'Portfolio of Carlos Rodríguez Huerta, full-stack web developer. Rebuild in progress.',
   rebuildNotice: 'Portfolio rebuild in progress.',
   languageSwitcherLabel: 'Language switcher',
+  themeToggleLabel: 'Toggle color theme',
 };
 
 export type UiDictionary = typeof en;
@@ -23,6 +24,7 @@ const es: UiDictionary = {
     'Portafolio de Carlos Rodríguez Huerta, desarrollador web full-stack. Reconstrucción en curso.',
   rebuildNotice: 'Portafolio en reconstrucción.',
   languageSwitcherLabel: 'Selector de idioma',
+  themeToggleLabel: 'Cambiar tema de color',
 };
 
 const dictionaries: Record<Locale, UiDictionary> = { en, es };
