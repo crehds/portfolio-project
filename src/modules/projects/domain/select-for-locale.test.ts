@@ -59,11 +59,37 @@ describe('selectProjectsForLocale', () => {
     expect(selectProjectsForLocale([], 'en')).toEqual([]);
   });
 
-  it('ignores an entry whose id has no locale segment', () => {
+  it('throws for an entry whose id has no locale segment', () => {
     const entries: ProjectEntry[] = [
       { id: 'no-locale-segment', data: project() },
     ];
 
-    expect(selectProjectsForLocale(entries, 'en')).toEqual([]);
+    expect(() => selectProjectsForLocale(entries, 'en')).toThrow(
+      /no-locale-segment/,
+    );
+  });
+
+  it('throws for a nested project id instead of silently dropping it', () => {
+    const entries: ProjectEntry[] = [
+      { id: 'acme/case-study/en', data: project() },
+    ];
+
+    expect(() => selectProjectsForLocale(entries, 'en')).toThrow(
+      /acme\/case-study\/en/,
+    );
+  });
+
+  it('throws for an unsupported locale segment', () => {
+    const entries: ProjectEntry[] = [{ id: 'acme/fr', data: project() }];
+
+    expect(() => selectProjectsForLocale(entries, 'en')).toThrow(/acme\/fr/);
+  });
+
+  it('throws naming the expected "<slug>/<locale>" shape', () => {
+    const entries: ProjectEntry[] = [{ id: 'acme/fr', data: project() }];
+
+    expect(() => selectProjectsForLocale(entries, 'en')).toThrow(
+      /<slug>\/<locale>/,
+    );
   });
 });

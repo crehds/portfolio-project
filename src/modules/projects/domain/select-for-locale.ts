@@ -1,6 +1,6 @@
 // Pure domain logic: no Astro/Zod imports. `ProjectData` is a type-only import from the
 // sibling schema (erased at compile time), used here only to describe the data shape.
-import { DEFAULT_LOCALE } from '../../../shared/i18n/locales';
+import { DEFAULT_LOCALE, isLocale } from '../../../shared/i18n/locales';
 import type { Locale } from '../../../shared/i18n/locales';
 import type { ProjectData } from '../schema';
 
@@ -19,16 +19,23 @@ export interface LocalizedProject {
   data: ProjectData;
 }
 
-function parseProjectId(id: string): { slug: string; locale: string } | null {
-  const separatorIndex = id.indexOf('/');
-  if (separatorIndex === -1) {
-    return null;
+/**
+ * Parses a project entry id, requiring it to be exactly `<slug>/<locale>` with a
+ * supported locale. The `glob()` loader in `content.config.ts` accepts nested Markdown
+ * files (e.g. `acme/case-study/en.md`), so a misplaced or mislocaled file must fail
+ * loudly here instead of silently disappearing from every locale's project list.
+ */
+function parseProjectId(id: string): { slug: string; locale: Locale } {
+  const segments = id.split('/');
+  const [slug, locale] = segments;
+
+  if (segments.length !== 2 || !slug || !locale || !isLocale(locale)) {
+    throw new Error(
+      `Invalid project entry id "${id}": expected "<slug>/<locale>" with a supported locale.`,
+    );
   }
 
-  return {
-    slug: id.slice(0, separatorIndex),
-    locale: id.slice(separatorIndex + 1),
-  };
+  return { slug, locale };
 }
 
 /**
@@ -39,16 +46,13 @@ export function selectProjectsForLocale(
   entries: ProjectEntry[],
   locale: Locale,
 ): LocalizedProject[] {
-  const bySlug = new Map<string, Map<string, ProjectEntry>>();
+  const bySlug = new Map<string, Map<Locale, ProjectEntry>>();
 
   for (const entry of entries) {
     const parsed = parseProjectId(entry.id);
-    if (!parsed) {
-      continue;
-    }
 
     const localesForSlug =
-      bySlug.get(parsed.slug) ?? new Map<string, ProjectEntry>();
+      bySlug.get(parsed.slug) ?? new Map<Locale, ProjectEntry>();
     localesForSlug.set(parsed.locale, entry);
     bySlug.set(parsed.slug, localesForSlug);
   }
