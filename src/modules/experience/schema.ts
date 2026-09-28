@@ -1,6 +1,7 @@
 import { z } from 'astro/zod';
 
 import { localized } from '../../shared/i18n/localized';
+import { isYearMonth } from './domain/year-month';
 
 const EMPLOYMENT_TYPES = [
   'full-time',
@@ -9,11 +10,9 @@ const EMPLOYMENT_TYPES = [
   'contract',
 ] as const;
 
-// 'YYYY-MM' format check. Kept inline for now; T04's second commit extracts the pure
-// `isYearMonth` predicate into `domain/year-month.ts` and this schema switches to it.
-const yearMonth = z
-  .string()
-  .regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Expected format "YYYY-MM"');
+// 'YYYY-MM' format check, delegated to the domain's own pure predicate so the
+// validation rule and the parsing rule can never drift apart.
+const yearMonth = z.string().refine(isYearMonth, 'Expected format "YYYY-MM"');
 
 /**
  * The `experience` collection's contract (port): one role held by the owner.
