@@ -2,6 +2,11 @@
 dist/
 # generated types
 .astro/
+# generated from wrangler.jsonc by `wrangler types`; regenerate, don't commit
+worker-configuration.d.ts
+
+# Cloudflare Workers local dev/deploy state
+.wrangler/
 
 # test artifacts
 coverage/
