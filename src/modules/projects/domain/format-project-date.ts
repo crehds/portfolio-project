@@ -1,7 +1,6 @@
 // Pure domain logic: no Astro/Zod imports.
 import type { Locale } from '../../../shared/i18n/locales';
-
-const LOCALE_TAGS: Record<Locale, string> = { en: 'en-US', es: 'es-PE' };
+import { INTL_LOCALE_TAGS } from '../../../shared/i18n/locales';
 
 /**
  * Formats a project's `date` (its repository's latest commit date - see the "date" rule
@@ -16,7 +15,7 @@ const LOCALE_TAGS: Record<Locale, string> = { en: 'en-US', es: 'es-PE' };
  * dev machine, CI, or the Cloudflare build), regardless of the host's own timezone.
  */
 export function formatProjectDate(date: Date, locale: Locale): string {
-  return new Intl.DateTimeFormat(LOCALE_TAGS[locale], {
+  return new Intl.DateTimeFormat(INTL_LOCALE_TAGS[locale], {
     year: 'numeric',
     month: 'long',
     day: 'numeric',

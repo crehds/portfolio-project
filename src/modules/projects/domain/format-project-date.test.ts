@@ -15,10 +15,22 @@ describe('formatProjectDate', () => {
     );
   });
 
-  it('formats a spanish date with a tolerant pattern (CLDR month spelling can change - e.g. es-PE renders "setiembre")', () => {
+  it('formats a spanish date with a tolerant pattern (CLDR month spelling can vary across ICU versions)', () => {
     const result = formatProjectDate(new Date('2026-09-23'), 'es');
 
     expect(result).toMatch(/^23 de \p{L}+\.? de 2026$/u);
+  });
+
+  // Literal oracle: the shared `es-419` tag (see `INTL_LOCALE_TAGS` in
+  // `src/shared/i18n/locales.ts`) spells September "septiembre", unlike the `es-PE`
+  // region override this module used to pin, which renders "setiembre" - see the T09b
+  // entry in odd/tasks/portfolio-astro-rebuild.md. Verified with
+  // `Intl.DateTimeFormat('es-419', { year: 'numeric', month: 'long', day: 'numeric',
+  // timeZone: 'UTC' })` on Node v24.21.0 (ICU 78.3).
+  it('formats a spanish date with the shared es-419 tag, not the es-PE regionalism', () => {
+    expect(formatProjectDate(new Date('2026-09-23'), 'es')).toBe(
+      '23 de septiembre de 2026',
+    );
   });
 
   // `z.coerce.date()` parses a bare "YYYY-MM-DD" frontmatter value (e.g. `date:
