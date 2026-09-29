@@ -10,6 +10,20 @@ const homePages: { path: string; lang: string }[] = [
 
 for (const { path, lang } of homePages) {
   test.describe(`home page (${lang})`, () => {
+    // `featuredProjects` sorts by date descending, then by slug ascending as a
+    // deterministic tie-break for projects sharing the same date (see
+    // src/modules/projects/domain/featured-projects.ts): "expresion-latina" and
+    // "pysa" both date 2026-09-28 (expresion-latina sorts first, alphabetically),
+    // and "game-with-keyboard" (2026-09-26) is strictly older, so it is always
+    // last. The slug tie-break is locale-independent, so this exact order holds in
+    // both locales. Shared by every featured-card test below, so a card that stops
+    // rendering (or renders out of order) fails loudly instead of an "at least one
+    // card" check silently passing with fewer cards checked.
+    const expectedFeaturedTitles =
+      lang === 'en'
+        ? ['Expresión Latina', 'Pysa', 'Game With Keyboard']
+        : ['Expresión Latina', 'Pysa Gaming', 'Juego con Teclado'];
+
     test('has the expected landmarks and metadata', async ({ page }) => {
       await page.goto(path);
 
@@ -150,18 +164,7 @@ for (const { path, lang } of homePages) {
       const section = page.locator('section').filter({ has: heading });
       const cardHeadings = section.getByRole('heading', { level: 3 });
 
-      // `featuredProjects` sorts by date descending, then by slug ascending as a
-      // deterministic tie-break for projects sharing the same date (see
-      // src/modules/projects/domain/featured-projects.ts): "expresion-latina" and
-      // "pysa" both date 2026-09-28 (expresion-latina sorts first, alphabetically),
-      // and "game-with-keyboard" (2026-09-26) is strictly older, so it is always
-      // last. The slug tie-break is locale-independent, so this exact order holds in
-      // both locales.
-      await expect(cardHeadings).toHaveText(
-        lang === 'en'
-          ? ['Expresión Latina', 'Pysa', 'Game With Keyboard']
-          : ['Expresión Latina', 'Pysa Gaming', 'Juego con Teclado'],
-      );
+      await expect(cardHeadings).toHaveText(expectedFeaturedTitles);
     });
 
     test('every featured project card title links to its own project page', async ({
@@ -191,10 +194,12 @@ for (const { path, lang } of homePages) {
               'Juego con Teclado': '/es/projects/game-with-keyboard/',
             };
 
-      const count = await cardHeadings.count();
-      expect(count).toBeGreaterThan(0);
+      // Exact count and order, not "at least one card": a featured card that stops
+      // rendering must fail this test instead of silently passing with fewer cards
+      // checked.
+      await expect(cardHeadings).toHaveText(expectedFeaturedTitles);
 
-      for (let i = 0; i < count; i++) {
+      for (let i = 0; i < expectedFeaturedTitles.length; i++) {
         const cardHeading = cardHeadings.nth(i);
         const text = await cardHeading.innerText();
         const expectedHref = expectedHrefByHeading[text];
@@ -258,14 +263,18 @@ for (const { path, lang } of homePages) {
         },
       };
 
-      const cardCount = await cards.count();
-      expect(cardCount).toBeGreaterThan(0);
+      // Exact count and order, not "at least one card": a featured card that stops
+      // rendering must fail this test instead of silently passing with fewer cards
+      // checked.
+      await expect(cards).toHaveCount(expectedFeaturedTitles.length);
 
-      for (let i = 0; i < cardCount; i++) {
+      for (let i = 0; i < expectedFeaturedTitles.length; i++) {
         const card = cards.nth(i);
         const cardHeading = await card
           .getByRole('heading', { level: 3 })
           .innerText();
+        expect(cardHeading).toBe(expectedFeaturedTitles[i]);
+
         const expected = expectedLinksByHeading[cardHeading];
         if (!expected) {
           throw new Error(

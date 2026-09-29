@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page, type Locator } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 const PAGES: { path: string; lang: string }[] = [
@@ -165,4 +165,45 @@ test.describe('layout alignment', () => {
 
     expect(hasHorizontalOverflow).toBe(false);
   });
+});
+
+async function computedMarkerStyle(link: Locator) {
+  return link.evaluate((el) => {
+    const style = getComputedStyle(el);
+    return {
+      color: style.color,
+      borderBottomColor: style.borderBottomColor,
+      borderBottomWidth: style.borderBottomWidth,
+    };
+  });
+}
+
+test.describe('current-page nav marker', () => {
+  for (const colorScheme of ['light', 'dark'] as const) {
+    test(`the current nav item's computed style differs from a non-current item's (${colorScheme})`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      // On `/projects/`, "Projects" is the current page and "Home" is not - see
+      // `NAV_ITEMS`/`BaseLayout.astro`. Both `aria-current="page"` (this page) and
+      // `aria-current="true"` (a nested section, e.g. a project detail page - see
+      // projects-detail.spec.ts) share the same conditional styling, so checking one
+      // value exercises that shared code path.
+      await page.goto('/projects/');
+
+      const nav = page.getByRole('navigation', { name: 'Primary navigation' });
+      const current = nav.getByRole('link', { name: 'Projects' });
+      const notCurrent = nav.getByRole('link', { name: 'Home' });
+
+      await expect(current).toHaveAttribute('aria-current', 'page');
+      await expect(notCurrent).not.toHaveAttribute('aria-current');
+
+      const [currentStyle, notCurrentStyle] = await Promise.all([
+        computedMarkerStyle(current),
+        computedMarkerStyle(notCurrent),
+      ]);
+
+      expect(currentStyle).not.toEqual(notCurrentStyle);
+    });
+  }
 });

@@ -91,6 +91,12 @@ for (const {
         'href',
         `${SITE}${lang === 'es' ? detailPath : otherDetailPath}`,
       );
+      await expect(
+        page.locator('link[rel="alternate"][hreflang="x-default"]'),
+      ).toHaveAttribute(
+        'href',
+        `${SITE}${lang === 'en' ? detailPath : otherDetailPath}`,
+      );
     });
 
     test('marks the Projects nav item as within the current section, not as the exact current page', async ({

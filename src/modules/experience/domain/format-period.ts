@@ -1,5 +1,6 @@
 // Pure domain logic: no Astro/Zod imports.
 import type { Locale } from '../../../shared/i18n/locales';
+import { INTL_LOCALE_TAGS } from '../../../shared/i18n/locales';
 import { parseYearMonth } from './year-month';
 
 const PRESENT_LABEL: Record<Locale, string> = {
@@ -11,7 +12,7 @@ function formatYearMonth(value: string, locale: Locale): string {
   const { year, month } = parseYearMonth(value);
   const date = new Date(Date.UTC(year, month - 1, 1));
 
-  return new Intl.DateTimeFormat(locale, {
+  return new Intl.DateTimeFormat(INTL_LOCALE_TAGS[locale], {
     month: 'short',
     year: 'numeric',
     timeZone: 'UTC',
