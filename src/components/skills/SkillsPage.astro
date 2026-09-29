@@ -1,0 +1,33 @@
+---
+import { getCollection } from 'astro:content';
+
+import { skillCategoryLabel } from '../../modules/skills/domain/category-label';
+import { groupSkillsByCategory } from '../../modules/skills/domain/group-by-category';
+import { localeOfPathname } from '../../shared/i18n/paths';
+import { getDictionary } from '../../shared/i18n/ui';
+
+// Self-contained, like the other dedicated list pages (`ProjectsListPage.astro`):
+// derives its own locale and content instead of taking props. See T10 in
+// odd/tasks/portfolio-astro-rebuild.md.
+const locale = localeOfPathname(Astro.url.pathname);
+const dictionary = getDictionary(locale);
+
+const skillEntries = await getCollection('skills');
+// Grouped in the stable SKILL_CATEGORIES order; empty categories are omitted (none are
+// empty today - see src/content/skills.yaml).
+const groups = groupSkillsByCategory(skillEntries.map((entry) => entry.data));
+---
+
+<div class="flex flex-col gap-8">
+  <h1>{dictionary.skillsPageHeading}</h1>
+  {groups.map((group) => (
+    <section class="flex flex-col gap-3">
+      <h2>{skillCategoryLabel(group.category, dictionary)}</h2>
+      <ul class="flex flex-wrap gap-2 font-mono text-sm text-text-muted">
+        {group.skills.map((skill) => (
+          <li class="rounded border border-border px-3 py-1">{skill.name}</li>
+        ))}
+      </ul>
+    </section>
+  ))}
+</div>

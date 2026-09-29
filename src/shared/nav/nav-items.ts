@@ -12,7 +12,7 @@ export interface NavItem {
 
 /**
  * The site's primary navigation, in display order. Lists only routes that exist today
- * (home, projects, experience); later tasks (T11+) add their own pages and
+ * (home, projects, experience, skills); later tasks (T11+) add their own pages and
  * entries here.
  */
 export const NAV_ITEMS: readonly NavItem[] = [
@@ -24,5 +24,9 @@ export const NAV_ITEMS: readonly NavItem[] = [
   {
     labelKey: 'navExperience',
     href: (locale) => pathnameInLocale('/experience/', locale),
+  },
+  {
+    labelKey: 'navSkills',
+    href: (locale) => pathnameInLocale('/skills/', locale),
   },
 ];

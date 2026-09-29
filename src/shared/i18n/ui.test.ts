@@ -38,6 +38,7 @@ describe('getDictionary', () => {
       navHome: 'Home',
       navProjects: 'Projects',
       navExperience: 'Experience',
+      navSkills: 'Skills',
       footerGithubLabel: 'GitHub',
       footerLinkedinLabel: 'LinkedIn',
       footerEmailLabel: 'Email',
@@ -67,6 +68,16 @@ describe('getDictionary', () => {
       employmentTypePartTime: 'Part-time',
       employmentTypeFreelance: 'Freelance',
       employmentTypeContract: 'Contract',
+      skillsPageTitle: 'Skills — Carlos Rodríguez Huerta',
+      skillsPageDescription:
+        'Technical skills of Carlos Rodríguez Huerta, full-stack web developer.',
+      skillsPageHeading: 'Skills',
+      skillCategoryFrontend: 'Frontend',
+      skillCategoryBackend: 'Backend',
+      skillCategoryData: 'Data',
+      skillCategoryDevops: 'DevOps',
+      skillCategoryTesting: 'Testing',
+      skillCategoryTools: 'Tools',
     });
   });
 
@@ -83,6 +94,7 @@ describe('getDictionary', () => {
       navHome: 'Inicio',
       navProjects: 'Proyectos',
       navExperience: 'Experiencia',
+      navSkills: 'Habilidades',
       footerGithubLabel: 'GitHub',
       footerLinkedinLabel: 'LinkedIn',
       footerEmailLabel: 'Correo electrónico',
@@ -112,6 +124,16 @@ describe('getDictionary', () => {
       employmentTypePartTime: 'Medio tiempo',
       employmentTypeFreelance: 'Freelance',
       employmentTypeContract: 'Contrato',
+      skillsPageTitle: 'Habilidades — Carlos Rodríguez Huerta',
+      skillsPageDescription:
+        'Habilidades técnicas de Carlos Rodríguez Huerta, desarrollador web full-stack.',
+      skillsPageHeading: 'Habilidades',
+      skillCategoryFrontend: 'Frontend',
+      skillCategoryBackend: 'Backend',
+      skillCategoryData: 'Datos',
+      skillCategoryDevops: 'DevOps',
+      skillCategoryTesting: 'Testing',
+      skillCategoryTools: 'Herramientas',
     });
   });
 });
