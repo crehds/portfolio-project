@@ -18,6 +18,7 @@ const en = {
   primaryNavLabel: 'Primary navigation',
   navHome: 'Home',
   navProjects: 'Projects',
+  navExperience: 'Experience',
   footerGithubLabel: 'GitHub',
   footerLinkedinLabel: 'LinkedIn',
   footerEmailLabel: 'Email',
@@ -38,6 +39,15 @@ const en = {
   projectsPageHeading: 'Projects',
   projectsBackLabel: 'Back to projects',
   experienceHeading: 'Experience',
+  experiencePageTitle: 'Experience — Carlos Rodríguez Huerta',
+  experiencePageDescription:
+    'Professional experience of Carlos Rodríguez Huerta, full-stack web developer.',
+  experiencePageHeading: 'Experience',
+  experienceSeeFullLabel: 'See full experience',
+  employmentTypeFullTime: 'Full-time',
+  employmentTypePartTime: 'Part-time',
+  employmentTypeFreelance: 'Freelance',
+  employmentTypeContract: 'Contract',
 };
 
 export type UiDictionary = typeof en;
@@ -53,6 +63,7 @@ const es: UiDictionary = {
   primaryNavLabel: 'Navegación principal',
   navHome: 'Inicio',
   navProjects: 'Proyectos',
+  navExperience: 'Experiencia',
   footerGithubLabel: 'GitHub',
   footerLinkedinLabel: 'LinkedIn',
   footerEmailLabel: 'Correo electrónico',
@@ -73,6 +84,15 @@ const es: UiDictionary = {
   projectsPageHeading: 'Proyectos',
   projectsBackLabel: 'Volver a proyectos',
   experienceHeading: 'Experiencia',
+  experiencePageTitle: 'Experiencia — Carlos Rodríguez Huerta',
+  experiencePageDescription:
+    'Experiencia profesional de Carlos Rodríguez Huerta, desarrollador web full-stack.',
+  experiencePageHeading: 'Experiencia',
+  experienceSeeFullLabel: 'Ver experiencia completa',
+  employmentTypeFullTime: 'Tiempo completo',
+  employmentTypePartTime: 'Medio tiempo',
+  employmentTypeFreelance: 'Freelance',
+  employmentTypeContract: 'Contrato',
 };
 
 const dictionaries: Record<Locale, UiDictionary> = { en, es };
