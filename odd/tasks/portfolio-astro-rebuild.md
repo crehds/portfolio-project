@@ -75,11 +75,10 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~4,910 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
-  T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321, with tests, excluding lockfiles and the
-  legacy removal). It already passes the ~4,300 forecast, mostly from tests and the review follow-up tasks.
-- Last reviewed boundary: `5f1ef4d` (T06b + T07 slice; the merge `9fb1467` has the same tree). Pending in the next
-  slice: `f9b2431` (docs) + T07b, 355 lines, medium, under budget.
+- Running count: ~5,930 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+  T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321 + T08 ~1,021, with tests, excluding lockfiles
+  and the legacy removal). It already passes the ~4,300 forecast, mostly from tests and the review follow-up tasks.
+- Last reviewed boundary: `fdaf66a` (T07b + T08 slice; the merge `fac2766` has the same tree).
 
 ## Tasks
 
@@ -124,8 +123,10 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   pathnames without the trailing slash (reuse the path normalization); fix the inline script's `.no-js` comment;
   align the main column's left edge with the header and footer on wide screens and space the heading from the
   text below it. Route: delegated. ~120.
-- [ ] **T08** Home: hero, CTAs (form, WhatsApp, email, LinkedIn, GitHub, CV), featured projects, experience summary. The CV button renders only when the profile `cv` field is set. Route: delegated. ~300.
-- [ ] **T09** Projects list + `/projects/[slug]` case-study pages with optimized images. Route: delegated. ~350.
+- [x] **T08** Home: hero, CTAs (form, WhatsApp, email, LinkedIn, GitHub, CV), featured projects, experience summary. The CV button renders only when the profile `cv` field is set. Route: delegated. ~300.
+- [ ] **T09** Projects list + `/projects/[slug]` case-study pages with optimized images. Also, from the T07b + T08
+  review: compare project slugs by code point instead of `localeCompare` in the featured tie-break, and check the
+  live and repository links of every featured card in the e2e test. Route: delegated. ~350.
 - [ ] **T10** Experience timeline + skills page. Route: delegated. ~250.
 - [ ] **T11** Contact: form via Astro Action (Zod validation, works without JS), `EmailSender` port + provider adapter, Turnstile + honeypot + rate limit, WhatsApp + mailto, CV download (R2 binding + on-demand `/cv/<locale>.pdf` route, then set the profile `cv` field; owner creates the bucket and uploads the PDF first), 404 page. Route: delegated + owner action. ~450.
 
@@ -172,7 +173,8 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 | T06 | done (merged `2ed745b`) | `5ff0d1e` profile, experience, skills; `f191b45` projects; `7f10bc3` case-study template; `ecc0d35` headline years guard (parent) | Integrity test RED (no project folders; missing `es.md`), then GREEN; mutation check (draft + featured -> RED); headline guard RED ("5+ years"), then GREEN · `pnpm test` 106/106 · lint · format · `pnpm check` 0/0/0 · build 2 pages without empty-collection warnings · `pnpm test:e2e` 9/9 (writer) | T05b + T06 slice: medium (805 lines), 1 lens (reliability), approved (`review-0e6b4d7ee4133333`), 2 non-blocking findings routed to T06b |
 | T06b | done (merged `c3c6eef`) | `fd5b6b8` fail-closed frontmatter checks, `eb18b1a` live links | Helper tests RED (`parseFrontmatterField is not defined`), then GREEN; explicit status/featured rule teeth check (removed `status:` -> RED, restored) · `pnpm test` 113/113 · lint · format · `pnpm check` 0/0/0 · build 2 pages · `pnpm test:e2e` 9/9 · parent re-ran: test 113/113 | Reviewed with T07 (see T07) |
 | T07 | done (merged `9fb1467`) | `ee381a6` tokens, Tailwind, fonts; `ad6cf9c` theme toggle; `5f1ef4d` base layout | Strict TDD, RED observed per behavior (missing modules; missing token file; e2e: 4/5 theme and 7/13 layout tests failing before the implementation), then GREEN · `pnpm install --frozen-lockfile` · lint · format · `pnpm check` 0/0/0 · `pnpm test` 157/157 · build 2 pages, 3 font files, one preload · `pnpm test:e2e` 27/27 (twice) · dry run: no bindings · parent re-ran: test 157/157, build; screenshots in both themes at 1280 and 390 px | T06b + T07 slice: medium (1,701 lines with the lockfile), 1 lens (reliability), approved (`review-526a4756c980ea7e`), 4 non-blocking findings routed to T07b |
-| T07b | done (merged `5e2cf34`) | `c769721` pre-paint theme test, `daa9ce8` live OS theme, `11506d5` trailing-slash-safe `aria-current`, `c225950` column alignment + heading spacing | RED observed per behavior (e2e: deferred bootstrap -> `null` theme; OS switch ignored; 132 px column offset; 0 px heading gap; unit: missing `isStoredTheme`/`pathnamesMatch`), then GREEN · lint · format · `pnpm check` 0/0/0 · `pnpm test` 162/162 · build 2 pages · `pnpm test:e2e` 33/33 · dry run: no bindings · parent re-ran: test 162/162; inline script still static | Medium, under budget (355 lines with `f9b2431`): pending in the next slice |
+| T07b | done (merged `5e2cf34`) | `c769721` pre-paint theme test, `daa9ce8` live OS theme, `11506d5` trailing-slash-safe `aria-current`, `c225950` column alignment + heading spacing | RED observed per behavior (e2e: deferred bootstrap -> `null` theme; OS switch ignored; 132 px column offset; 0 px heading gap; unit: missing `isStoredTheme`/`pathnamesMatch`), then GREEN · lint · format · `pnpm check` 0/0/0 · `pnpm test` 162/162 · build 2 pages · `pnpm test:e2e` 33/33 · dry run: no bindings · parent re-ran: test 162/162; inline script still static | Reviewed with T08 (see T08) |
+| T08 | done (merged `fac2766`) | `3ef3908` hero + photo, `2eeecae` CTAs, `b9c61a0` featured projects + experience summary; polish: `4dccd9d` square photo, `275e458` slug tie-break, `0566f2d` full-width cards, `38800db` headline without the role, `fdaf66a` brand icons | Strict TDD, RED observed per behavior (missing modules and dictionary keys; e2e: missing hero, CTAs and sections; photo 72-80 px off square; grid 248 px short of the container; equal-date order flipped with input order; headline starting with the role), then GREEN · `pnpm install --frozen-lockfile` · lint · format · `pnpm check` 0/0/0 · `pnpm test` 188/188 · build 2 pages · `pnpm test:e2e` 55/55 · dry run: no bindings · parent re-ran: test 188/188, build; screenshots before and after the polish | T07b + T08 slice: medium (1,385 lines), 1 lens (reliability), approved (`review-dbbf3b93069d2ee1`), 2 non-blocking suggestions routed to T09 |
 
 ## Change log
 
@@ -274,7 +276,18 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   Test lessons: a stored theme must be set independently of the OS value, and a non-retrying read right after
   `page.emulateMedia()` can race the `change` event. Header, main and footer now share one container (left edges at
   192 px in a 1280 px viewport), with a 70ch reading measure inside it.
+- 2026-09-29: T08 home. The owner chose their public GitHub avatar for the hero (downloaded once to
+  `src/assets/profile-photo.jpg`, 460x460 JPEG; served as AVIF/WebP at 192 px). The years line reads "6+ years of
+  experience" / "Más de 6 años de experiencia", formatted from `yearsOfExperience`. CTAs: WhatsApp, email, LinkedIn
+  and GitHub; the CV button waits for the R2 route and the form button for T11. After the parent's screenshots, the
+  owner approved three polish items: full-width project cards (prose keeps the 70ch measure), a headline without the
+  repeated role (guarded by the integrity test), and real brand icons. Simple Icons no longer ships LinkedIn, so the
+  WhatsApp, LinkedIn and GitHub icons come from Tabler Icons (MIT, notice in `THIRD_PARTY_NOTICES.md`). Equal-date
+  featured projects now tie-break by slug. Gotchas: `<Picture>`'s `class` lands on the inner `<img>`, so flex sizing
+  goes through `pictureAttributes`; `jsx-a11y` rejects "photo" in alt text, so the alt reads "Portrait of ...".
+- 2026-09-29: the owner granted the stop hook's whole-branch review a fifth time (212 files, 34,530 lines); it stopped
+  with `lens_context_budget_exceeded` like the others.
 
 ## Next step
 
-T08 home on `feat/astro-rebuild-08-home`: hero, CTAs, featured projects and experience summary.
+T09 projects on `feat/astro-rebuild-09-projects` (owner decides how covers are sourced first).
