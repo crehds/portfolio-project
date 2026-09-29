@@ -164,7 +164,7 @@ for (const { path, lang } of homePages) {
       );
     });
 
-    test('each featured project card links to its live site and repository', async ({
+    test('every featured project card links to its live site and repository', async ({
       page,
     }) => {
       await page.goto(path);
@@ -174,19 +174,63 @@ for (const { path, lang } of homePages) {
         name: lang === 'en' ? 'Featured projects' : 'Proyectos destacados',
       });
       const section = page.locator('section').filter({ has: heading });
+      // A direct-child selector, not `getByRole('listitem')`: Chromium drops the
+      // implicit list/listitem role from a `<ul>`/`<li>` pair once the `<ul>` gets a
+      // non-list `display` (here Tailwind's `grid`), so an ARIA-role locator would
+      // silently match zero cards instead of the 3 rendered ones.
+      const cards = section
+        .getByTestId('featured-projects-grid')
+        .locator(':scope > li');
 
-      await expect(
-        section.locator('a[href="https://game-with-keyboard.vercel.app/"]'),
-      ).toHaveCount(1);
-      await expect(
-        section.locator('a[href="https://github.com/crehds/gameWithKeyboard"]'),
-      ).toHaveCount(1);
-      await expect(
-        section.locator('a[href="https://pysa.vercel.app"]'),
-      ).toHaveCount(1);
-      await expect(
-        section.locator('a[href="https://github.com/crehds/pysa"]'),
-      ).toHaveCount(1);
+      // Keyed by each card's own heading text (localized), so every rendered card is
+      // checked - not just however many the test happens to name explicitly. A card
+      // whose heading is missing from this map fails loudly below instead of the test
+      // silently skipping it, which is how this test previously checked only 2 of the
+      // 3 rendered cards (missing "Expresión Latina").
+      const expectedLinksByHeading: Record<
+        string,
+        { live: string; repo: string }
+      > = {
+        'Expresión Latina': {
+          live: 'https://expresion-latina.vercel.app/',
+          repo: 'https://github.com/crehds/expresion-latina',
+        },
+        Pysa: {
+          live: 'https://pysa.vercel.app',
+          repo: 'https://github.com/crehds/pysa',
+        },
+        'Pysa Gaming': {
+          live: 'https://pysa.vercel.app',
+          repo: 'https://github.com/crehds/pysa',
+        },
+        'Game With Keyboard': {
+          live: 'https://game-with-keyboard.vercel.app/',
+          repo: 'https://github.com/crehds/gameWithKeyboard',
+        },
+        'Juego con Teclado': {
+          live: 'https://game-with-keyboard.vercel.app/',
+          repo: 'https://github.com/crehds/gameWithKeyboard',
+        },
+      };
+
+      const cardCount = await cards.count();
+      expect(cardCount).toBeGreaterThan(0);
+
+      for (let i = 0; i < cardCount; i++) {
+        const card = cards.nth(i);
+        const cardHeading = await card
+          .getByRole('heading', { level: 3 })
+          .innerText();
+        const expected = expectedLinksByHeading[cardHeading];
+        if (!expected) {
+          throw new Error(
+            `No expected live/repository links recorded for featured card "${cardHeading}".`,
+          );
+        }
+
+        await expect(card.locator(`a[href="${expected.live}"]`)).toHaveCount(1);
+        await expect(card.locator(`a[href="${expected.repo}"]`)).toHaveCount(1);
+      }
     });
 
     test('the featured projects grid spans the full container width at 1280px', async ({
