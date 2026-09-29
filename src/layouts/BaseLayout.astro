@@ -135,13 +135,20 @@ if (!profile) {
                 : isCurrentSection
                   ? 'true'
                   : undefined;
+              // A visible marker, not just the ARIA attribute: `text-accent` reuses
+              // the accent token already verified at AA contrast against this header's
+              // `bg-surface` (see tokens.test.ts's "accent (links) on a surface panel"
+              // case, >= 4.5:1 in both themes - comfortably over the 3:1 a border
+              // needs too), and the bottom border repeats the cue for anyone who
+              // perceives the color change less reliably than contrast alone. The
+              // non-current branch reserves the same 2px transparent border so
+              // switching pages never shifts neighboring items.
+              const linkClass = ariaCurrent
+                ? 'inline-block min-h-6 border-b-2 border-accent py-1 text-accent'
+                : 'inline-block min-h-6 border-b-2 border-transparent py-1 text-text';
               return (
                 <li>
-                  <a
-                    href={href}
-                    aria-current={ariaCurrent}
-                    class="inline-block min-h-6 py-1 text-text"
-                  >
+                  <a href={href} aria-current={ariaCurrent} class={linkClass}>
                     {dictionary[item.labelKey]}
                   </a>
                 </li>
