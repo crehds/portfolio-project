@@ -17,6 +17,7 @@ const en = {
   skipLinkLabel: 'Skip to main content',
   primaryNavLabel: 'Primary navigation',
   navHome: 'Home',
+  navProjects: 'Projects',
   footerGithubLabel: 'GitHub',
   footerLinkedinLabel: 'LinkedIn',
   footerEmailLabel: 'Email',
@@ -29,6 +30,13 @@ const en = {
   featuredProjectsHeading: 'Featured projects',
   projectLiveLabel: 'Live site',
   projectRepoLabel: 'Repository',
+  projectCoverAlt: 'Screenshot of',
+  projectLastUpdatedLabel: 'Last updated',
+  projectsPageTitle: 'Projects — Carlos Rodríguez Huerta',
+  projectsPageDescription:
+    'Projects built by Carlos Rodríguez Huerta, full-stack web developer.',
+  projectsPageHeading: 'Projects',
+  projectsBackLabel: 'Back to projects',
   experienceHeading: 'Experience',
 };
 
@@ -44,6 +52,7 @@ const es: UiDictionary = {
   skipLinkLabel: 'Saltar al contenido principal',
   primaryNavLabel: 'Navegación principal',
   navHome: 'Inicio',
+  navProjects: 'Proyectos',
   footerGithubLabel: 'GitHub',
   footerLinkedinLabel: 'LinkedIn',
   footerEmailLabel: 'Correo electrónico',
@@ -56,6 +65,13 @@ const es: UiDictionary = {
   featuredProjectsHeading: 'Proyectos destacados',
   projectLiveLabel: 'Sitio en vivo',
   projectRepoLabel: 'Repositorio',
+  projectCoverAlt: 'Captura de pantalla de',
+  projectLastUpdatedLabel: 'Última actualización',
+  projectsPageTitle: 'Proyectos — Carlos Rodríguez Huerta',
+  projectsPageDescription:
+    'Proyectos construidos por Carlos Rodríguez Huerta, desarrollador web full-stack.',
+  projectsPageHeading: 'Proyectos',
+  projectsBackLabel: 'Volver a proyectos',
   experienceHeading: 'Experiencia',
 };
 

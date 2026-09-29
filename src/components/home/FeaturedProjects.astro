@@ -5,6 +5,7 @@ import { featuredProjects } from '../../modules/projects/domain/featured-project
 import { selectProjectsForLocale } from '../../modules/projects/domain/select-for-locale';
 import { localeOfPathname } from '../../shared/i18n/paths';
 import { getDictionary } from '../../shared/i18n/ui';
+import ProjectCard from '../projects/ProjectCard.astro';
 
 // Self-contained, like `Hero.astro`/`ContactCtas.astro`: derives its own locale and
 // content. See T08 in odd/tasks/portfolio-astro-rebuild.md.
@@ -24,28 +25,11 @@ const projects = featuredProjects(
     data-testid="featured-projects-grid"
     class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
   >
-    {projects.map(({ data }) => (
-      <li class="flex flex-col gap-3 rounded border border-border p-4">
-        <h3>{data.title}</h3>
-        <p class="text-sm text-text-muted">{data.summary}</p>
-        <ul class="flex flex-wrap gap-2 font-mono text-xs text-text-muted">
-          {data.stack.map((tech) => (
-            <li class="rounded border border-border px-2 py-0.5">{tech}</li>
-          ))}
-        </ul>
-        <ul class="flex gap-4 text-sm">
-          {data.links.live && (
-            <li>
-              <a href={data.links.live}>{dictionary.projectLiveLabel}</a>
-            </li>
-          )}
-          {data.links.repo && (
-            <li>
-              <a href={data.links.repo}>{dictionary.projectRepoLabel}</a>
-            </li>
-          )}
-        </ul>
-      </li>
+    {projects.map((project) => (
+      // The cover stays off here: the hero photo must remain the only `<img>` on the
+      // home page (see e2e/home.spec.ts's "the hero photo has localized alt text..."
+      // test). The dedicated projects list page (T09) shows covers.
+      <ProjectCard project={project} locale={locale} showCover={false} />
     ))}
   </ul>
 </section>

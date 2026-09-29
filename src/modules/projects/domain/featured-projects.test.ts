@@ -127,5 +127,22 @@ describe('featuredProjects', () => {
 
       expect(result).toEqual([zLater, aEarlier]);
     });
+
+    it('breaks the tie by comparing slugs by UTF-16 code point, not localeCompare', () => {
+      // On Node's ICU, 'a'.localeCompare('B') is negative (case-insensitive collation
+      // sorts 'a' before 'B'), but 'B' < 'a' by plain code-unit comparison (0x42 < 0x61).
+      // A code-point tie-break must therefore rank "B" before "a", the opposite of what
+      // `localeCompare` would produce - and, unlike `localeCompare`, give the same order
+      // regardless of the host's ICU/CLDR data.
+      expect('a'.localeCompare('B')).toBeLessThan(0);
+      expect('B' < 'a').toBe(true);
+
+      const lower = project({ slug: 'a', date: new Date('2026-01-01') });
+      const upper = project({ slug: 'B', date: new Date('2026-01-01') });
+
+      const result = featuredProjects([lower, upper]);
+
+      expect(result).toEqual([upper, lower]);
+    });
   });
 });

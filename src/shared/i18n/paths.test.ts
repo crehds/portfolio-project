@@ -4,6 +4,7 @@ import {
   hreflangAlternates,
   localeOfPathname,
   pathnameInLocale,
+  pathnameIsWithinSection,
   pathnamesMatch,
 } from './paths';
 
@@ -70,6 +71,42 @@ describe('pathnamesMatch', () => {
   it('returns false for genuinely different pages', () => {
     expect(pathnamesMatch('/es/', '/')).toBe(false);
     expect(pathnamesMatch('/projects/x/', '/projects/y/')).toBe(false);
+  });
+});
+
+describe('pathnameIsWithinSection', () => {
+  it('treats the exact section page as within itself', () => {
+    expect(pathnameIsWithinSection('/projects/', '/projects/')).toBe(true);
+  });
+
+  it('treats a nested page as within its section', () => {
+    expect(
+      pathnameIsWithinSection('/projects/game-with-keyboard/', '/projects/'),
+    ).toBe(true);
+  });
+
+  it('is trailing-slash-safe, like pathnamesMatch', () => {
+    expect(pathnameIsWithinSection('/projects', '/projects/')).toBe(true);
+    expect(
+      pathnameIsWithinSection('/projects/game-with-keyboard', '/projects/'),
+    ).toBe(true);
+  });
+
+  it('respects the locale prefix on both sides', () => {
+    expect(pathnameIsWithinSection('/es/projects/pysa/', '/es/projects/')).toBe(
+      true,
+    );
+  });
+
+  it('returns false for an unrelated top-level page', () => {
+    expect(pathnameIsWithinSection('/experience/', '/projects/')).toBe(false);
+  });
+
+  it('never treats another page as within the home section', () => {
+    // The root has no nested pages under this definition: only an exact match counts
+    // as "home", so every other top-level page isn't a false-positive descendant of it.
+    expect(pathnameIsWithinSection('/projects/', '/')).toBe(false);
+    expect(pathnameIsWithinSection('/', '/')).toBe(true);
   });
 });
 

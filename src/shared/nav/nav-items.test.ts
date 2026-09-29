@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { NAV_ITEMS } from './nav-items';
 
 describe('NAV_ITEMS', () => {
-  it('lists only the routes that exist today: the home page', () => {
-    expect(NAV_ITEMS).toHaveLength(1);
-    expect(NAV_ITEMS[0].labelKey).toBe('navHome');
+  it('lists the routes that exist today: home and projects, in order', () => {
+    expect(NAV_ITEMS.map((item) => item.labelKey)).toEqual([
+      'navHome',
+      'navProjects',
+    ]);
   });
 
   it("resolves the home entry's href per locale", () => {
@@ -13,5 +15,12 @@ describe('NAV_ITEMS', () => {
 
     expect(home.href('en')).toBe('/');
     expect(home.href('es')).toBe('/es/');
+  });
+
+  it("resolves the projects entry's href per locale", () => {
+    const [, projects] = NAV_ITEMS;
+
+    expect(projects.href('en')).toBe('/projects/');
+    expect(projects.href('es')).toBe('/es/projects/');
   });
 });

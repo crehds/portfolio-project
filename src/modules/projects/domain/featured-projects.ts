@@ -20,11 +20,16 @@ interface ProjectLike {
 
 /**
  * Selects and orders projects for display: featured first, then by date descending,
- * then by slug ascending. The slug tie-break exists because `Array.prototype.sort` is
- * stable but two projects can share the same `date` (see `expresion-latina` and
- * `pysa`): without an explicit tie-break, their relative order would silently depend
- * on the content loader's file enumeration order, which is not guaranteed sorted and
- * could differ across environments. Drafts are excluded unless `includeDrafts` is set.
+ * then by slug ascending, compared by UTF-16 code point rather than
+ * `String.prototype.localeCompare`. The tie-break exists because `Array.prototype.sort`
+ * is stable but two projects can share the same `date` (see `expresion-latina` and
+ * `pysa`): without an explicit tie-break, their relative order would silently depend on
+ * the content loader's file enumeration order, which is not guaranteed sorted and could
+ * differ across environments. `localeCompare` would undermine that same determinism: its
+ * ICU-based collation can order two slugs differently depending on the host's ICU/CLDR
+ * data (e.g. it sorts "a" before "B", while code-point order sorts "B" before "a") - a
+ * plain `<`/`>` comparison gives one order everywhere. Drafts are excluded unless
+ * `includeDrafts` is set.
  */
 export function featuredProjects<T extends ProjectLike>(
   projects: T[],
@@ -44,7 +49,7 @@ export function featuredProjects<T extends ProjectLike>(
       return dateDiff;
     }
 
-    return a.slug.localeCompare(b.slug);
+    return a.slug < b.slug ? -1 : a.slug > b.slug ? 1 : 0;
   });
 
   return typeof limit === 'number' ? sorted.slice(0, limit) : sorted;

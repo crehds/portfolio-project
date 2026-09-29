@@ -1,0 +1,34 @@
+---
+import { getCollection, getEntry } from 'astro:content';
+
+import ProjectDetailPage from '../../../components/projects/ProjectDetailPage.astro';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { selectProjectsForLocale } from '../../../modules/projects/domain/select-for-locale';
+import { getDictionary } from '../../../shared/i18n/ui';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('projects');
+  // Draft projects get no page: a request for one 404s (no static path is generated).
+  const projects = selectProjectsForLocale(entries, 'es').filter(
+    (project) => project.data.status === 'published',
+  );
+
+  return projects.map((project) => ({
+    params: { slug: project.slug },
+    props: { entryId: `${project.slug}/${project.locale}` },
+  }));
+}
+
+const { entryId } = Astro.props;
+const entry = await getEntry('projects', entryId);
+if (!entry) {
+  throw new Error(`Missing project entry "${entryId}".`);
+}
+
+const dictionary = getDictionary('es');
+const title = `${entry.data.title} — ${dictionary.siteTitle}`;
+---
+
+<BaseLayout title={title} description={entry.data.summary}>
+  <ProjectDetailPage entryId={entryId} />
+</BaseLayout>
