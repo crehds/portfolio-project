@@ -44,6 +44,7 @@ framework fixes them in one move, and the codebase itself proves the skills the 
 | Contact | Form (Astro Action -> `EmailSender` port -> provider adapter) + WhatsApp link + mailto |
 | CV download | PDF in a Cloudflare R2 bucket, served by the Worker at the site's own URL (`/cv/<locale>.pdf`); the owner uploads it, so it stays out of git and updates without a redeploy |
 | Styling | Tailwind v4 via `@tailwindcss/vite`, Astro Fonts API, `<Picture>` with AVIF/WebP |
+| Visual direction | Legacy identity, content first (owner): Ubuntu + Ubuntu Mono, self-hosted; dark `#161a17` with a cyan accent, light navy text with a blue accent; every text/background token pair meets WCAG AA (unit-tested) |
 | JavaScript | Zero by default; islands only for real interactivity |
 | Quality | TS strict, `astro check`, ESLint + Prettier, Vitest, Playwright + axe, Lighthouse CI, GitHub Actions |
 | Commits | Conventional Commits, no AI attribution |
@@ -74,10 +75,10 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~3,500 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
-  T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106, with tests, excluding lockfiles and the legacy removal).
-- Last reviewed boundary: `ecc0d35` (T05b + T06 slice; the merge `2ed745b` has the same tree). Pending in the next
-  slice: `44a84c9` (docs) + T06b, 136 lines, medium, under budget.
+- Running count: ~4,590 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+  T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092, with tests, excluding lockfiles and the legacy removal).
+  It already passes the ~4,300 forecast, mostly from tests and the review follow-up tasks.
+- Last reviewed boundary: `5f1ef4d` (T06b + T07 slice; the merge `9fb1467` has the same tree).
 
 ## Tasks
 
@@ -115,7 +116,13 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 
 ### Phase 2 · UI
 
-- [ ] **T07** Design tokens, dark/light theme (no flash, persisted, OS default), fonts, base layout (header, nav, footer, skip link, landmarks). Route: delegated. ~400.
+- [x] **T07** Design tokens, dark/light theme (no flash, persisted, OS default), fonts, base layout (header, nav, footer, skip link, landmarks). Route: delegated. ~400.
+- [ ] **T07b** Follow-ups from the T06b + T07 review and the parent's readback: make the no-flash e2e test read
+  `data-theme` once before first paint instead of with a retrying assertion; follow live OS theme changes while no
+  choice is stored; an e2e case where a corrupted stored value falls back to the OS theme; `aria-current` for
+  pathnames without the trailing slash (reuse the path normalization); fix the inline script's `.no-js` comment;
+  align the main column's left edge with the header and footer on wide screens and space the heading from the
+  text below it. Route: delegated. ~120.
 - [ ] **T08** Home: hero, CTAs (form, WhatsApp, email, LinkedIn, GitHub, CV), featured projects, experience summary. The CV button renders only when the profile `cv` field is set. Route: delegated. ~300.
 - [ ] **T09** Projects list + `/projects/[slug]` case-study pages with optimized images. Route: delegated. ~350.
 - [ ] **T10** Experience timeline + skills page. Route: delegated. ~250.
@@ -162,7 +169,8 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 | T05 | done (merged `d5d0926`) | `9913d05` routing + path helpers, `9f5b69a` typed dictionary, `1f54e9f` Spanish home + switcher + hreflang | Strict TDD: RED (module not found for the helpers and dictionary; 5 e2e failures before the layout, switcher and `/es/` page existed), then GREEN · `pnpm test` 102/102 in 16 files · lint · format · `pnpm check` 0/0/0 · build 2 pages · `pnpm test:e2e` 7/7 · dry run: no bindings · parent re-ran: test 102/102, build 2 pages | T04b + T05 slice: medium (814 lines), 1 lens (reliability), approved (`review-d051703996c5d922`), 2 non-blocking findings fixed in T05b |
 | T05b | done (merged `062495a`) | `9c49fb1` switcher e2e: retrying URL wait + current-locale state | Test-only; mutation check: linking the current locale made both new tests fail (expected 0 links, received 1), then restored · lint · format · `pnpm check` 0/0/0 · `pnpm test:e2e` 9/9 | Reviewed with T06 (see T06) |
 | T06 | done (merged `2ed745b`) | `5ff0d1e` profile, experience, skills; `f191b45` projects; `7f10bc3` case-study template; `ecc0d35` headline years guard (parent) | Integrity test RED (no project folders; missing `es.md`), then GREEN; mutation check (draft + featured -> RED); headline guard RED ("5+ years"), then GREEN · `pnpm test` 106/106 · lint · format · `pnpm check` 0/0/0 · build 2 pages without empty-collection warnings · `pnpm test:e2e` 9/9 (writer) | T05b + T06 slice: medium (805 lines), 1 lens (reliability), approved (`review-0e6b4d7ee4133333`), 2 non-blocking findings routed to T06b |
-| T06b | done (merged `c3c6eef`) | `fd5b6b8` fail-closed frontmatter checks, `eb18b1a` live links | Helper tests RED (`parseFrontmatterField is not defined`), then GREEN; explicit status/featured rule teeth check (removed `status:` -> RED, restored) · `pnpm test` 113/113 · lint · format · `pnpm check` 0/0/0 · build 2 pages · `pnpm test:e2e` 9/9 · parent re-ran: test 113/113 | Medium, under budget (136 lines with `44a84c9`): pending in the next slice |
+| T06b | done (merged `c3c6eef`) | `fd5b6b8` fail-closed frontmatter checks, `eb18b1a` live links | Helper tests RED (`parseFrontmatterField is not defined`), then GREEN; explicit status/featured rule teeth check (removed `status:` -> RED, restored) · `pnpm test` 113/113 · lint · format · `pnpm check` 0/0/0 · build 2 pages · `pnpm test:e2e` 9/9 · parent re-ran: test 113/113 | Reviewed with T07 (see T07) |
+| T07 | done (merged `9fb1467`) | `ee381a6` tokens, Tailwind, fonts; `ad6cf9c` theme toggle; `5f1ef4d` base layout | Strict TDD, RED observed per behavior (missing modules; missing token file; e2e: 4/5 theme and 7/13 layout tests failing before the implementation), then GREEN · `pnpm install --frozen-lockfile` · lint · format · `pnpm check` 0/0/0 · `pnpm test` 157/157 · build 2 pages, 3 font files, one preload · `pnpm test:e2e` 27/27 (twice) · dry run: no bindings · parent re-ran: test 157/157, build; screenshots in both themes at 1280 and 390 px | T06b + T07 slice: medium (1,701 lines with the lockfile), 1 lens (reliability), approved (`review-526a4756c980ea7e`), 4 non-blocking findings routed to T07b |
 
 ## Change log
 
@@ -245,7 +253,19 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   (https://expresion-latina.vercel.app/ and https://game-with-keyboard.vercel.app/), not Cloudflare; T06b linked them.
   T06b also made the integrity checks fail closed: a pure `parseFrontmatterField` helper with its own tests (CRLF,
   quotes, trailing comments, missing block), and every project file must declare `status` and `featured`.
+- 2026-09-28: the owner chose the visual direction (see Decisions) after comparing keeping Ubuntu Mono, the system
+  monospace, or Ubuntu only. The legacy light theme's body text measured about 2.6:1, so T07 kept the legacy colors
+  but changed their roles and re-tuned the light values to pass AA.
+- 2026-09-28: T07. Tokens live in `src/styles/tokens.css`; `src/styles/tokens.test.ts` checks every text/background
+  pair in both themes with `src/shared/color/contrast.ts` (lowest: dark border 3.6:1 against a 3:1 target). The
+  Fonts API is stable since Astro 6 (top-level `fonts`); the files are downloaded at build time and served from the
+  site; only Ubuntu 400 is preloaded. The theme is applied by a static inline script before first paint (a stable
+  CSP hash for T13) and mirrors `src/shared/theme/resolve-theme.ts` by hand. Gotchas: Astro scopes every class in a
+  component `<style>` selector, so the `.no-js` rule lives in `global.css`; Tailwind v4 cascade layers beat
+  specificity, so that rule stays unlayered. The nav lists only existing routes (Home) until T09-T11 add pages.
+- 2026-09-28: the T06b + T07 slice got one reliability lens and was approved. Its 4 findings, a stale comment and a
+  column misalignment seen in the parent's screenshots became T07b.
 
 ## Next step
 
-T07 on `feat/astro-rebuild-07-layout`: design tokens, dark/light theme, fonts and the base layout.
+T07b on `feat/astro-rebuild-07b-layout-hygiene`, then T08 home.
