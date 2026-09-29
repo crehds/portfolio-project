@@ -1,0 +1,101 @@
+---
+import { localeOfPathname } from '../shared/i18n/paths';
+import { getDictionary } from '../shared/i18n/ui';
+
+// Self-contained, like `LanguageSwitcher.astro`: needs no props from the page or layout.
+const locale = localeOfPathname(Astro.url.pathname);
+const dictionary = getDictionary(locale);
+---
+
+<button
+  type="button"
+  id="theme-toggle"
+  class="theme-toggle inline-flex h-9 w-9 items-center justify-center rounded border border-border text-text"
+  aria-label={dictionary.themeToggleLabel}
+  aria-pressed="false"
+>
+  <svg
+    class="theme-toggle-icon-sun"
+    aria-hidden="true"
+    focusable="false"
+    viewBox="0 0 24 24"
+    width="18"
+    height="18"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <circle cx="12" cy="12" r="5"></circle>
+    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+  </svg>
+  <svg
+    class="theme-toggle-icon-moon"
+    aria-hidden="true"
+    focusable="false"
+    viewBox="0 0 24 24"
+    width="18"
+    height="18"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+  </svg>
+</button>
+
+<style>
+  /* Icon swap follows the resolved theme; the light default shows the sun (click -> dark). */
+  .theme-toggle-icon-moon {
+    display: none;
+  }
+
+  :root[data-theme='dark'] .theme-toggle-icon-sun {
+    display: none;
+  }
+
+  :root[data-theme='dark'] .theme-toggle-icon-moon {
+    display: block;
+  }
+
+  /* The `.no-js` -> hide-the-toggle rule lives in `global.css`, not here: Astro scopes
+     every class in a scoped `<style>` selector, including ancestor ones, so `.no-js
+     .theme-toggle` written in this file would compile to `.no-js[data-astro-cid-…]
+     .theme-toggle[…]` - which can never match, because `<html>` (BaseLayout's element,
+     not this component's) never receives this component's scope attribute. */
+</style>
+
+<script is:inline>
+  // Static, literal script (no server-interpolated values): mirrors
+  // `src/shared/theme/resolve-theme.ts`'s "stored wins, else OS" order, applied to the one
+  // button already on the page instead of the whole-document bootstrap in `BaseLayout.astro`.
+  (function () {
+    const button = document.getElementById('theme-toggle');
+    if (!button) return;
+
+    function syncButton() {
+      const isDark =
+        document.documentElement.getAttribute('data-theme') === 'dark';
+      button.setAttribute('aria-pressed', String(isDark));
+    }
+
+    syncButton();
+
+    button.addEventListener('click', function () {
+      const isDark =
+        document.documentElement.getAttribute('data-theme') === 'dark';
+      const next = isDark ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      syncButton();
+      try {
+        localStorage.setItem('theme', next);
+      } catch {
+        // Private browsing / blocked storage: the theme still applies for this page load,
+        // it just will not be remembered.
+      }
+    });
+  })();
+</script>

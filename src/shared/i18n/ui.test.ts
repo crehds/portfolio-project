@@ -32,6 +32,13 @@ describe('getDictionary', () => {
         'Portfolio of Carlos Rodríguez Huerta, full-stack web developer. Rebuild in progress.',
       rebuildNotice: 'Portfolio rebuild in progress.',
       languageSwitcherLabel: 'Language switcher',
+      themeToggleLabel: 'Toggle color theme',
+      skipLinkLabel: 'Skip to main content',
+      primaryNavLabel: 'Primary navigation',
+      navHome: 'Home',
+      footerGithubLabel: 'GitHub',
+      footerLinkedinLabel: 'LinkedIn',
+      footerEmailLabel: 'Email',
     });
   });
 
@@ -42,6 +49,13 @@ describe('getDictionary', () => {
         'Portafolio de Carlos Rodríguez Huerta, desarrollador web full-stack. Reconstrucción en curso.',
       rebuildNotice: 'Portafolio en reconstrucción.',
       languageSwitcherLabel: 'Selector de idioma',
+      themeToggleLabel: 'Cambiar tema de color',
+      skipLinkLabel: 'Saltar al contenido principal',
+      primaryNavLabel: 'Navegación principal',
+      navHome: 'Inicio',
+      footerGithubLabel: 'GitHub',
+      footerLinkedinLabel: 'LinkedIn',
+      footerEmailLabel: 'Correo electrónico',
     });
   });
 });

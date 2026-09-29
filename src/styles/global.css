@@ -1,0 +1,99 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+/* Static tokens: unlike colors, these never change between themes, so they need no
+   `data-theme` indirection and live directly in `@theme` (not `@theme inline`). */
+@theme {
+  --font-sans: var(--font-ubuntu), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-ubuntu-mono), ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Theme-switching tokens: `inline` makes each generated utility reference the
+   `--token-*` custom property directly (instead of a value resolved once for `:root`),
+   so the same utility class repaints when `tokens.css` swaps `--token-*` by theme. */
+@theme inline {
+  --color-bg: var(--token-bg);
+  --color-surface: var(--token-surface);
+  --color-text: var(--token-text);
+  --color-text-muted: var(--token-text-muted);
+  --color-accent: var(--token-accent);
+  --color-highlight: var(--token-highlight);
+  --color-border: var(--token-border);
+  --color-focus: var(--token-focus);
+}
+
+@layer base {
+  /* Tailwind v4's preflight resets the default border color to `currentColor`; restore
+     an explicit default so an unadorned `border` utility uses the `border` token. */
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    font-family: var(--font-sans);
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+  }
+
+  /* The AA-verified accent token, not the browser's UA default link color (which is
+     never contrast-checked against `tokens.css` and would not track the theme). A
+     component can still opt out to a neutral color (see the header's site name and
+     current-page nav link in `BaseLayout.astro`), so this is a default, not a lock. */
+  a {
+    color: var(--color-accent);
+  }
+
+  /* A small, deliberate type scale (values match Tailwind's own default `text-3xl`/`2xl`/
+     `xl` steps) so semantic headings carry real hierarchy before any page adds its own
+     styles; Ubuntu's bold weight (700) is otherwise unused. */
+  h1 {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+    font-weight: 700;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 700;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+    font-weight: 700;
+  }
+
+  /* Visible everywhere, not opted into per component. */
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Deliberately outside any `@layer`: unlayered rules always win over every `@layer`
+   (including Tailwind's own `utilities` layer) regardless of specificity, per the CSS
+   Cascade Layers spec. That is the point here - a JS-only control (currently only the
+   theme toggle) must stay hidden while `.no-js` is on `<html>` no matter which utility
+   classes (e.g. `inline-flex`) also target the same element. `BaseLayout.astro`'s inline
+   `<head>` script removes `.no-js` the moment JS runs, before first paint. This rule must
+   also live unscoped, here, not in a component's own `<style>`: a component-scoped
+   `<style>` would scope the `.no-js` ancestor selector too, which would then never match
+   `<html>` (see `ThemeToggle.astro`). */
+.no-js .theme-toggle {
+  display: none;
+}
