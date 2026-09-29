@@ -75,10 +75,11 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~4,590 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
-  T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092, with tests, excluding lockfiles and the legacy removal).
-  It already passes the ~4,300 forecast, mostly from tests and the review follow-up tasks.
-- Last reviewed boundary: `5f1ef4d` (T06b + T07 slice; the merge `9fb1467` has the same tree).
+- Running count: ~4,910 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+  T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321, with tests, excluding lockfiles and the
+  legacy removal). It already passes the ~4,300 forecast, mostly from tests and the review follow-up tasks.
+- Last reviewed boundary: `5f1ef4d` (T06b + T07 slice; the merge `9fb1467` has the same tree). Pending in the next
+  slice: `f9b2431` (docs) + T07b, 355 lines, medium, under budget.
 
 ## Tasks
 
@@ -117,7 +118,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 ### Phase 2 · UI
 
 - [x] **T07** Design tokens, dark/light theme (no flash, persisted, OS default), fonts, base layout (header, nav, footer, skip link, landmarks). Route: delegated. ~400.
-- [ ] **T07b** Follow-ups from the T06b + T07 review and the parent's readback: make the no-flash e2e test read
+- [x] **T07b** Follow-ups from the T06b + T07 review and the parent's readback: make the no-flash e2e test read
   `data-theme` once before first paint instead of with a retrying assertion; follow live OS theme changes while no
   choice is stored; an e2e case where a corrupted stored value falls back to the OS theme; `aria-current` for
   pathnames without the trailing slash (reuse the path normalization); fix the inline script's `.no-js` comment;
@@ -171,6 +172,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 | T06 | done (merged `2ed745b`) | `5ff0d1e` profile, experience, skills; `f191b45` projects; `7f10bc3` case-study template; `ecc0d35` headline years guard (parent) | Integrity test RED (no project folders; missing `es.md`), then GREEN; mutation check (draft + featured -> RED); headline guard RED ("5+ years"), then GREEN · `pnpm test` 106/106 · lint · format · `pnpm check` 0/0/0 · build 2 pages without empty-collection warnings · `pnpm test:e2e` 9/9 (writer) | T05b + T06 slice: medium (805 lines), 1 lens (reliability), approved (`review-0e6b4d7ee4133333`), 2 non-blocking findings routed to T06b |
 | T06b | done (merged `c3c6eef`) | `fd5b6b8` fail-closed frontmatter checks, `eb18b1a` live links | Helper tests RED (`parseFrontmatterField is not defined`), then GREEN; explicit status/featured rule teeth check (removed `status:` -> RED, restored) · `pnpm test` 113/113 · lint · format · `pnpm check` 0/0/0 · build 2 pages · `pnpm test:e2e` 9/9 · parent re-ran: test 113/113 | Reviewed with T07 (see T07) |
 | T07 | done (merged `9fb1467`) | `ee381a6` tokens, Tailwind, fonts; `ad6cf9c` theme toggle; `5f1ef4d` base layout | Strict TDD, RED observed per behavior (missing modules; missing token file; e2e: 4/5 theme and 7/13 layout tests failing before the implementation), then GREEN · `pnpm install --frozen-lockfile` · lint · format · `pnpm check` 0/0/0 · `pnpm test` 157/157 · build 2 pages, 3 font files, one preload · `pnpm test:e2e` 27/27 (twice) · dry run: no bindings · parent re-ran: test 157/157, build; screenshots in both themes at 1280 and 390 px | T06b + T07 slice: medium (1,701 lines with the lockfile), 1 lens (reliability), approved (`review-526a4756c980ea7e`), 4 non-blocking findings routed to T07b |
+| T07b | done (merged `5e2cf34`) | `c769721` pre-paint theme test, `daa9ce8` live OS theme, `11506d5` trailing-slash-safe `aria-current`, `c225950` column alignment + heading spacing | RED observed per behavior (e2e: deferred bootstrap -> `null` theme; OS switch ignored; 132 px column offset; 0 px heading gap; unit: missing `isStoredTheme`/`pathnamesMatch`), then GREEN · lint · format · `pnpm check` 0/0/0 · `pnpm test` 162/162 · build 2 pages · `pnpm test:e2e` 33/33 · dry run: no bindings · parent re-ran: test 162/162; inline script still static | Medium, under budget (355 lines with `f9b2431`): pending in the next slice |
 
 ## Change log
 
@@ -265,7 +267,14 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   specificity, so that rule stays unlayered. The nav lists only existing routes (Home) until T09-T11 add pages.
 - 2026-09-28: the T06b + T07 slice got one reliability lens and was approved. Its 4 findings, a stale comment and a
   column misalignment seen in the parent's screenshots became T07b.
+- 2026-09-28: T07b. While nothing is stored, the inline script follows live OS changes through a `matchMedia` listener
+  that re-reads storage on every change and dispatches a `themechange` event, which the toggle uses to update its
+  pressed state. The `aria-current` fix is defensive: prerendered routes get a build-time, slash-terminated
+  `Astro.url.pathname` (and `astro preview` redirects `/es` to `/es/`), so it matters for on-demand routes (T11).
+  Test lessons: a stored theme must be set independently of the OS value, and a non-retrying read right after
+  `page.emulateMedia()` can race the `change` event. Header, main and footer now share one container (left edges at
+  192 px in a 1280 px viewport), with a 70ch reading measure inside it.
 
 ## Next step
 
-T07b on `feat/astro-rebuild-07b-layout-hygiene`, then T08 home.
+T08 home on `feat/astro-rebuild-08-home`: hero, CTAs, featured projects and experience summary.
