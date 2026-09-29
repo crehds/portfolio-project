@@ -10,6 +10,9 @@ const locales: {
   projectsLabel: string;
   // In domain order: featured first (date desc, slug tie-break), then the rest.
   expectedTitles: string[];
+  // Keyed by heading text (localized): every rendered card's title must link to its
+  // own project page, not just the first one.
+  expectedHrefByTitle: Record<string, string>;
 }[] = [
   {
     lang: 'en',
@@ -22,6 +25,12 @@ const locales: {
       'Game With Keyboard',
       'Bachatealo',
     ],
+    expectedHrefByTitle: {
+      'Expresión Latina': '/projects/expresion-latina/',
+      Pysa: '/projects/pysa/',
+      'Game With Keyboard': '/projects/game-with-keyboard/',
+      Bachatealo: '/projects/bachatealo/',
+    },
   },
   {
     lang: 'es',
@@ -34,6 +43,12 @@ const locales: {
       'Juego con Teclado',
       'Bachatealo',
     ],
+    expectedHrefByTitle: {
+      'Expresión Latina': '/es/projects/expresion-latina/',
+      'Pysa Gaming': '/es/projects/pysa/',
+      'Juego con Teclado': '/es/projects/game-with-keyboard/',
+      Bachatealo: '/es/projects/bachatealo/',
+    },
   },
 ];
 
@@ -43,6 +58,7 @@ for (const {
   primaryNavLabel,
   projectsLabel,
   expectedTitles,
+  expectedHrefByTitle,
 } of locales) {
   test.describe(`projects list page (${lang})`, () => {
     test('lists exactly the published projects, featured first then newest, with no drafts', async ({
@@ -62,18 +78,27 @@ for (const {
     test('each card title links to its own project page', async ({ page }) => {
       await page.goto(listPath);
 
-      const firstCardHeading = page
+      const cardHeadings = page
         .getByTestId('projects-list-grid')
-        .getByRole('heading', { level: 3 })
-        .first();
-      const link = firstCardHeading.getByRole('link');
+        .getByRole('heading', { level: 3 });
 
-      await expect(link).toHaveAttribute(
-        'href',
-        lang === 'en'
-          ? '/projects/expresion-latina/'
-          : '/es/projects/expresion-latina/',
-      );
+      // Every rendered card, not just the first: a wrong href on any later card must
+      // fail this test too.
+      await expect(cardHeadings).toHaveText(expectedTitles);
+
+      for (let i = 0; i < expectedTitles.length; i++) {
+        const cardHeading = cardHeadings.nth(i);
+        const text = await cardHeading.innerText();
+        const expectedHref = expectedHrefByTitle[text];
+        if (!expectedHref) {
+          throw new Error(`No expected project href recorded for "${text}".`);
+        }
+
+        await expect(cardHeading.getByRole('link')).toHaveAttribute(
+          'href',
+          expectedHref,
+        );
+      }
     });
 
     test('marks the Projects nav item as the current page', async ({
