@@ -75,11 +75,12 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~6,850 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
-  T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321 + T08 ~1,021 + T09 ~923, with tests, excluding
-  lockfiles and the legacy removal). It already passes the ~4,300 forecast, mostly from tests and the review
-  follow-up tasks.
-- Last reviewed boundary: `a3c518d` (T09 slice; the merge `85895d5` has the same tree).
+- Running count: ~7,070 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+  T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321 + T08 ~1,021 + T09 ~923 + T09b ~217, with
+  tests, excluding lockfiles and the legacy removal). It already passes the ~4,300 forecast, mostly from tests and
+  the review follow-up tasks.
+- Last reviewed boundary: `a3c518d` (T09 slice; the merge `85895d5` has the same tree). Pending in the next slice:
+  `91a001d` (docs) + T09b, 247 lines, medium, under budget.
 
 ## Tasks
 
@@ -128,7 +129,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 - [x] **T09** Projects list + `/projects/[slug]` case-study pages with optimized images. Also, from the T07b + T08
   review: compare project slugs by code point instead of `localeCompare` in the featured tie-break, and check the
   live and repository links of every featured card in the e2e test. Route: delegated. ~350.
-- [ ] **T09b** Follow-ups from the T09 review and the parent's readback: assert the exact featured cards on the home
+- [x] **T09b** Follow-ups from the T09 review and the parent's readback: assert the exact featured cards on the home
   page (count and headings per locale) instead of "at least one"; check every list card's title link; check the
   `x-default` alternate on project pages; one shared `Intl` locale map for every date formatter (neutral `es-419`;
   today project dates use `es-PE`, "setiembre", while experience periods use `es`); a visible current-page marker
@@ -182,6 +183,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 | T07b | done (merged `5e2cf34`) | `c769721` pre-paint theme test, `daa9ce8` live OS theme, `11506d5` trailing-slash-safe `aria-current`, `c225950` column alignment + heading spacing | RED observed per behavior (e2e: deferred bootstrap -> `null` theme; OS switch ignored; 132 px column offset; 0 px heading gap; unit: missing `isStoredTheme`/`pathnamesMatch`), then GREEN · lint · format · `pnpm check` 0/0/0 · `pnpm test` 162/162 · build 2 pages · `pnpm test:e2e` 33/33 · dry run: no bindings · parent re-ran: test 162/162; inline script still static | Reviewed with T08 (see T08) |
 | T08 | done (merged `fac2766`) | `3ef3908` hero + photo, `2eeecae` CTAs, `b9c61a0` featured projects + experience summary; polish: `4dccd9d` square photo, `275e458` slug tie-break, `0566f2d` full-width cards, `38800db` headline without the role, `fdaf66a` brand icons | Strict TDD, RED observed per behavior (missing modules and dictionary keys; e2e: missing hero, CTAs and sections; photo 72-80 px off square; grid 248 px short of the container; equal-date order flipped with input order; headline starting with the role), then GREEN · `pnpm install --frozen-lockfile` · lint · format · `pnpm check` 0/0/0 · `pnpm test` 188/188 · build 2 pages · `pnpm test:e2e` 55/55 · dry run: no bindings · parent re-ran: test 188/188, build; screenshots before and after the polish | T07b + T08 slice: medium (1,385 lines), 1 lens (reliability), approved (`review-dbbf3b93069d2ee1`), 2 non-blocking suggestions routed to T09 |
 | T09 | done (merged `85895d5`) | `490532d` code-point tie-break + home e2e links, `6fa4e2c` covers, `ad5eb33` list page + nav entry, `a3c518d` project pages | Strict TDD, RED observed per behavior (`localeCompare` order `[a, B]` vs expected `[B, a]`; missing nav and section helpers; missing date formatter; with the new pages stashed, 26 e2e failures: 404s, missing links and alternates), then GREEN · lint · format · `pnpm check` 0/0/0 · `pnpm test` 199/199 · build 12 pages · `pnpm test:e2e` 81/81 · dry run: no bindings · parent re-ran: test 199/199, build 12 pages; screenshots of the list, a project page and the Spanish list; draft URL returns 404 | T09 slice with `8dfb6a5`: medium (954 lines), 1 lens (reliability), approved (`review-fe50adbcbf1b75cd`), 3 non-blocking findings routed to T09b |
+| T09b | done (merged `dbe64c3`) | `16944ec` exact featured cards, `239c57a` every list link + `x-default`, `962a9f9` shared `es-419` date locale, `f67e22f` visible nav marker | Test-only items proven by temporary breaks (card limit 2 -> 6 failures; second card href -> failure at `.nth(1)`; `x-default` target -> failure), restored; locale: RED "23 de setiembre de 2026" vs expected "septiembre", then GREEN; nav: RED identical current/non-current styles, then GREEN in both themes · lint · format · `pnpm check` 0/0/0 · `pnpm test` 202/202 · build 12 pages · `pnpm test:e2e` 83/83 · dry run: no bindings · parent re-ran: test 202/202 | Medium, under budget (247 lines with `91a001d`): pending in the next slice |
 
 ## Change log
 
@@ -305,7 +307,11 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   `:scope > li`.
 - 2026-09-29: the owner granted the stop hook's whole-branch review a sixth time (227 files, 35,372 lines); it stopped
   with `lens_context_budget_exceeded` again.
+- 2026-09-29: T09b. `INTL_LOCALE_TAGS` in `src/shared/i18n/locales.ts` (`en-US`, `es-419`) now feeds every date
+  formatter; project dates changed from "setiembre" to "septiembre", and experience periods render the same as
+  before (`es` and `es-419` share month names). The nav marks the current item with the accent color and a bottom
+  border (contrast 9.0-10.3:1 in both themes).
 
 ## Next step
 
-T09b on `feat/astro-rebuild-09b-projects-hygiene`, then T10 experience timeline + skills page.
+T10 on `feat/astro-rebuild-10-experience`: the experience timeline page and the skills page, with their nav entries.
