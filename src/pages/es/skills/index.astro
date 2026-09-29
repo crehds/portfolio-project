@@ -1,0 +1,14 @@
+---
+import SkillsPage from '../../../components/skills/SkillsPage.astro';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getDictionary } from '../../../shared/i18n/ui';
+
+const dictionary = getDictionary('es');
+---
+
+<BaseLayout
+  title={dictionary.skillsPageTitle}
+  description={dictionary.skillsPageDescription}
+>
+  <SkillsPage />
+</BaseLayout>

@@ -1,0 +1,14 @@
+---
+import ExperienceTimelinePage from '../../../components/experience/ExperienceTimelinePage.astro';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getDictionary } from '../../../shared/i18n/ui';
+
+const dictionary = getDictionary('es');
+---
+
+<BaseLayout
+  title={dictionary.experiencePageTitle}
+  description={dictionary.experiencePageDescription}
+>
+  <ExperienceTimelinePage />
+</BaseLayout>

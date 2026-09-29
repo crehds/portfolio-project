@@ -37,6 +37,8 @@ describe('getDictionary', () => {
       primaryNavLabel: 'Primary navigation',
       navHome: 'Home',
       navProjects: 'Projects',
+      navExperience: 'Experience',
+      navSkills: 'Skills',
       footerGithubLabel: 'GitHub',
       footerLinkedinLabel: 'LinkedIn',
       footerEmailLabel: 'Email',
@@ -57,6 +59,25 @@ describe('getDictionary', () => {
       projectsPageHeading: 'Projects',
       projectsBackLabel: 'Back to projects',
       experienceHeading: 'Experience',
+      experiencePageTitle: 'Experience — Carlos Rodríguez Huerta',
+      experiencePageDescription:
+        'Professional experience of Carlos Rodríguez Huerta, full-stack web developer.',
+      experiencePageHeading: 'Experience',
+      experienceSeeFullLabel: 'See full experience',
+      employmentTypeFullTime: 'Full-time',
+      employmentTypePartTime: 'Part-time',
+      employmentTypeFreelance: 'Freelance',
+      employmentTypeContract: 'Contract',
+      skillsPageTitle: 'Skills — Carlos Rodríguez Huerta',
+      skillsPageDescription:
+        'Technical skills of Carlos Rodríguez Huerta, full-stack web developer.',
+      skillsPageHeading: 'Skills',
+      skillCategoryFrontend: 'Frontend',
+      skillCategoryBackend: 'Backend',
+      skillCategoryData: 'Data',
+      skillCategoryDevops: 'DevOps',
+      skillCategoryTesting: 'Testing',
+      skillCategoryTools: 'Tools',
     });
   });
 
@@ -72,6 +93,8 @@ describe('getDictionary', () => {
       primaryNavLabel: 'Navegación principal',
       navHome: 'Inicio',
       navProjects: 'Proyectos',
+      navExperience: 'Experiencia',
+      navSkills: 'Habilidades',
       footerGithubLabel: 'GitHub',
       footerLinkedinLabel: 'LinkedIn',
       footerEmailLabel: 'Correo electrónico',
@@ -92,6 +115,25 @@ describe('getDictionary', () => {
       projectsPageHeading: 'Proyectos',
       projectsBackLabel: 'Volver a proyectos',
       experienceHeading: 'Experiencia',
+      experiencePageTitle: 'Experiencia — Carlos Rodríguez Huerta',
+      experiencePageDescription:
+        'Experiencia profesional de Carlos Rodríguez Huerta, desarrollador web full-stack.',
+      experiencePageHeading: 'Experiencia',
+      experienceSeeFullLabel: 'Ver experiencia completa',
+      employmentTypeFullTime: 'Tiempo completo',
+      employmentTypePartTime: 'Medio tiempo',
+      employmentTypeFreelance: 'Freelance',
+      employmentTypeContract: 'Contrato',
+      skillsPageTitle: 'Habilidades — Carlos Rodríguez Huerta',
+      skillsPageDescription:
+        'Habilidades técnicas de Carlos Rodríguez Huerta, desarrollador web full-stack.',
+      skillsPageHeading: 'Habilidades',
+      skillCategoryFrontend: 'Frontend',
+      skillCategoryBackend: 'Backend',
+      skillCategoryData: 'Datos',
+      skillCategoryDevops: 'DevOps',
+      skillCategoryTesting: 'Testing',
+      skillCategoryTools: 'Herramientas',
     });
   });
 });

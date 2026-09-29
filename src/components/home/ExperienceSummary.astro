@@ -3,12 +3,12 @@ import { getCollection } from 'astro:content';
 
 import { formatPeriod } from '../../modules/experience/domain/format-period';
 import { sortExperience } from '../../modules/experience/domain/sort-experience';
-import { localeOfPathname } from '../../shared/i18n/paths';
+import { localeOfPathname, pathnameInLocale } from '../../shared/i18n/paths';
 import { getDictionary } from '../../shared/i18n/ui';
 
 // Self-contained, like the other home sections: derives its own locale and content.
-// The full timeline page (with every role, not just the latest 3) arrives in T10 - no
-// link to it yet. See T08 in odd/tasks/portfolio-astro-rebuild.md.
+// Links to the full timeline page (every role, not just the latest 3 - see T10 in
+// odd/tasks/portfolio-astro-rebuild.md). See T08 for this section's own origin.
 const locale = localeOfPathname(Astro.url.pathname);
 const dictionary = getDictionary(locale);
 
@@ -31,4 +31,7 @@ const latestRoles = sortExperience(
       </li>
     ))}
   </ul>
+  <a href={pathnameInLocale('/experience/', locale)}>
+    {dictionary.experienceSeeFullLabel}
+  </a>
 </section>

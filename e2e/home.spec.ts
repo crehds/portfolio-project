@@ -343,5 +343,26 @@ for (const { path, lang } of homePages) {
         'Freelance',
       ]);
     });
+
+    test('the experience summary links to the full experience page', async ({
+      page,
+    }) => {
+      await page.goto(path);
+
+      const heading = page.getByRole('heading', {
+        level: 2,
+        name: lang === 'en' ? 'Experience' : 'Experiencia',
+      });
+      const section = page.locator('section').filter({ has: heading });
+      const link = section.getByRole('link', {
+        name:
+          lang === 'en' ? 'See full experience' : 'Ver experiencia completa',
+      });
+
+      await expect(link).toHaveAttribute(
+        'href',
+        lang === 'en' ? '/experience/' : '/es/experience/',
+      );
+    });
   });
 }
