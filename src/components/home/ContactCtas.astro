@@ -1,0 +1,53 @@
+---
+import { getEntry } from 'astro:content';
+
+import {
+  buildContactCtas,
+  type ContactCtaId,
+} from '../../modules/profile/domain/build-contact-ctas';
+import { localeOfPathname } from '../../shared/i18n/paths';
+import { getDictionary, type UiDictionary } from '../../shared/i18n/ui';
+import { CONTACT_CTA_ICONS } from './contact-cta-icons';
+
+// Self-contained, like `Hero.astro`: derives its own locale and content. See T08 in
+// odd/tasks/portfolio-astro-rebuild.md.
+const locale = localeOfPathname(Astro.url.pathname);
+const dictionary = getDictionary(locale);
+
+const profile = await getEntry('profile', 'profile');
+if (!profile) {
+  throw new Error(
+    'The "profile" content entry is missing; the contact CTAs need it for their hrefs.',
+  );
+}
+
+const LABEL_KEYS: Record<ContactCtaId, keyof UiDictionary> = {
+  whatsapp: 'ctaWhatsappLabel',
+  email: 'ctaEmailLabel',
+  linkedin: 'ctaLinkedinLabel',
+  github: 'ctaGithubLabel',
+  cv: 'ctaCvLabel',
+};
+
+const ctas = buildContactCtas({
+  whatsapp: profile.data.whatsapp,
+  email: profile.data.email,
+  linkedin: profile.data.linkedin,
+  github: profile.data.github,
+  cv: profile.data.cv?.[locale],
+});
+---
+
+<ul class="flex flex-wrap gap-3">
+  {ctas.map((cta) => (
+    <li>
+      <a
+        href={cta.href}
+        class="inline-flex min-h-11 items-center gap-2 rounded border border-border px-3 py-2 text-text"
+      >
+        <Fragment set:html={CONTACT_CTA_ICONS[cta.id]} />
+        <span>{dictionary[LABEL_KEYS[cta.id]]}</span>
+      </a>
+    </li>
+  ))}
+</ul>

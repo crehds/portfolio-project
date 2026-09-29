@@ -149,9 +149,12 @@ if (!profile) {
       tabindex="-1"
       class="mx-auto w-full max-w-4xl flex-1 px-4 py-8"
     >
-      <div class="max-w-[70ch]">
-        <slot />
-      </div>
+      <!-- No blanket reading-width wrapper here (T08 follow-up): a page's own
+           prose-like content applies its own `max-w-[70ch]`, so a wide element (e.g.
+           the featured projects grid) can still use this full container instead of
+           being force-clipped. This keeps the shared left/right edges (matching the
+           header/footer above and below) on every child regardless of its own width. -->
+      <slot />
     </main>
     <footer class="border-t border-border bg-surface">
       <div class="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-between gap-4 px-4 py-6 text-sm text-text-muted">

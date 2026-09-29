@@ -69,6 +69,91 @@ function readFrontmatterField(
   return parseFrontmatterField(readFileSync(filePath, 'utf-8'), field);
 }
 
+/**
+ * Reads a nested `en`/`es` pair from a top-level YAML field shaped like:
+ *   field:
+ *     en: value, possibly
+ *       wrapped onto more lines
+ *     es: value
+ * Folds a wrapped scalar's continuation lines the way YAML itself would (each line
+ * break becomes a single space). Only handles `profile.yaml`'s actual shape - a
+ * top-level list item's fields indented 2 spaces, their `en`/`es` sub-keys indented 4
+ * - so this is not a general YAML parser, just enough to compare two of its fields.
+ */
+function parseLocalizedField(
+  content: string,
+  field: string,
+): { en: string; es: string } | undefined {
+  const lines = content.replace(/\r\n?/g, '\n').split('\n');
+  const headerIndex = lines.findIndex((line) => line === `  ${field}:`);
+  if (headerIndex === -1) return undefined;
+
+  const block: string[] = [];
+  for (let i = headerIndex + 1; i < lines.length; i++) {
+    if (/^ {0,2}\S/.test(lines[i])) break; // next sibling field, or less indented
+    block.push(lines[i]);
+  }
+
+  const en = foldLocalizedSubKey(block, 'en');
+  const es = foldLocalizedSubKey(block, 'es');
+  if (en === undefined || es === undefined) return undefined;
+
+  return { en, es };
+}
+
+function foldLocalizedSubKey(
+  block: string[],
+  subKey: 'en' | 'es',
+): string | undefined {
+  const prefix = `    ${subKey}: `;
+  const startIndex = block.findIndex((line) => line.startsWith(prefix));
+  if (startIndex === -1) return undefined;
+
+  const parts = [block[startIndex].slice(prefix.length)];
+  for (let i = startIndex + 1; i < block.length; i++) {
+    if (/^ {0,4}\S/.test(block[i])) break; // the other sub-key, or less indented
+    parts.push(block[i].trim());
+  }
+
+  const joined = parts.join(' ').trim();
+  const quoted = /^(['"])([\s\S]*)\1$/.exec(joined);
+  return quoted ? quoted[2] : joined;
+}
+
+describe('parseLocalizedField', () => {
+  it('reads a single-line en/es pair', () => {
+    const yaml =
+      '  role:\n    en: Developer\n    es: Desarrollador\n  email: x\n';
+
+    expect(parseLocalizedField(yaml, 'role')).toEqual({
+      en: 'Developer',
+      es: 'Desarrollador',
+    });
+  });
+
+  it("folds a wrapped scalar's continuation lines into one value", () => {
+    const yaml =
+      '  headline:\n' +
+      '    en: First line and\n' +
+      '      second line.\n' +
+      '    es: Primera línea y\n' +
+      '      segunda línea.\n' +
+      '  location:\n' +
+      '    en: Lima\n';
+
+    expect(parseLocalizedField(yaml, 'headline')).toEqual({
+      en: 'First line and second line.',
+      es: 'Primera línea y segunda línea.',
+    });
+  });
+
+  it('returns undefined when the field is absent', () => {
+    const yaml = '  role:\n    en: Developer\n    es: Desarrollador\n';
+
+    expect(parseLocalizedField(yaml, 'headline')).toBeUndefined();
+  });
+});
+
 describe('parseFrontmatterField', () => {
   // Positive control for "never marks a draft project as featured" below: proves the
   // helper actually extracts a value instead of silently no-oping on every input, which
@@ -168,5 +253,22 @@ describe('profile content integrity', () => {
     const profile = readFileSync(PROFILE_FILE, 'utf-8');
 
     expect(profile).not.toMatch(/\d+\s*\+?\s*(?:years?|años)/i);
+  });
+
+  // The hero renders the role directly above the headline (see
+  // `src/components/home/Hero.astro`), so a headline that repeats it verbatim reads
+  // as redundant to a visitor.
+  it('does not start the headline with the role text already shown above it', () => {
+    const profile = readFileSync(PROFILE_FILE, 'utf-8');
+    const role = parseLocalizedField(profile, 'role');
+    const headline = parseLocalizedField(profile, 'headline');
+    if (!role || !headline) {
+      throw new Error(
+        'Expected both "role" and "headline" to be present in profile.yaml.',
+      );
+    }
+
+    expect(headline.en.startsWith(role.en)).toBe(false);
+    expect(headline.es.startsWith(role.es)).toBe(false);
   });
 });

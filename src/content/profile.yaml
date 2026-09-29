@@ -10,10 +10,14 @@
   linkedin: https://www.linkedin.com/in/carlos-rodriguez-huerta-362ab716a/
   github: https://github.com/crehds
   headline:
-    en: Full-stack web developer building JavaScript/TypeScript front-ends and
-      Ruby on Rails and Node.js back-ends.
-    es: Desarrollador web full-stack que construye interfaces en
-      JavaScript/TypeScript y back-ends en Ruby on Rails y Node.js.
+    en: Building JavaScript/TypeScript front-ends and Ruby on Rails and Node.js
+      back-ends.
+    es: Creo interfaces en JavaScript/TypeScript y back-ends en Ruby on Rails y
+      Node.js.
   location:
     en: Lima, Peru
     es: Lima, Perú
+  # Owner's public GitHub avatar, downloaded once into `src/assets/` (see T08 in
+  # odd/tasks/portfolio-astro-rebuild.md). Relative to this file's own directory
+  # (`src/content/`), per the `file()` loader's `image()` path resolution.
+  photo: ../assets/profile-photo.jpg

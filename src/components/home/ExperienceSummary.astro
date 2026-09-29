@@ -1,0 +1,34 @@
+---
+import { getCollection } from 'astro:content';
+
+import { formatPeriod } from '../../modules/experience/domain/format-period';
+import { sortExperience } from '../../modules/experience/domain/sort-experience';
+import { localeOfPathname } from '../../shared/i18n/paths';
+import { getDictionary } from '../../shared/i18n/ui';
+
+// Self-contained, like the other home sections: derives its own locale and content.
+// The full timeline page (with every role, not just the latest 3) arrives in T10 - no
+// link to it yet. See T08 in odd/tasks/portfolio-astro-rebuild.md.
+const locale = localeOfPathname(Astro.url.pathname);
+const dictionary = getDictionary(locale);
+
+const experienceEntries = await getCollection('experience');
+const latestRoles = sortExperience(
+  experienceEntries.map((entry) => entry.data),
+).slice(0, 3);
+---
+
+<section class="flex flex-col gap-6">
+  <h2>{dictionary.experienceHeading}</h2>
+  <ul class="flex flex-col gap-4">
+    {latestRoles.map((role) => (
+      <li class="flex flex-col gap-1 rounded border border-border p-4">
+        <h3>{role.company}</h3>
+        <p class="text-sm text-text-muted">{role.role[locale]}</p>
+        <p class="font-mono text-sm text-text-muted">
+          {formatPeriod(role.start, role.end, locale)}
+        </p>
+      </li>
+    ))}
+  </ul>
+</section>

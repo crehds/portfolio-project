@@ -39,6 +39,16 @@ describe('getDictionary', () => {
       footerGithubLabel: 'GitHub',
       footerLinkedinLabel: 'LinkedIn',
       footerEmailLabel: 'Email',
+      heroPhotoAlt: 'Portrait of',
+      ctaWhatsappLabel: 'WhatsApp',
+      ctaEmailLabel: 'Email',
+      ctaLinkedinLabel: 'LinkedIn',
+      ctaGithubLabel: 'GitHub',
+      ctaCvLabel: 'Download CV',
+      featuredProjectsHeading: 'Featured projects',
+      projectLiveLabel: 'Live site',
+      projectRepoLabel: 'Repository',
+      experienceHeading: 'Experience',
     });
   });
 
@@ -56,6 +66,16 @@ describe('getDictionary', () => {
       footerGithubLabel: 'GitHub',
       footerLinkedinLabel: 'LinkedIn',
       footerEmailLabel: 'Correo electrónico',
+      heroPhotoAlt: 'Retrato de',
+      ctaWhatsappLabel: 'WhatsApp',
+      ctaEmailLabel: 'Correo electrónico',
+      ctaLinkedinLabel: 'LinkedIn',
+      ctaGithubLabel: 'GitHub',
+      ctaCvLabel: 'Descargar CV',
+      featuredProjectsHeading: 'Proyectos destacados',
+      projectLiveLabel: 'Sitio en vivo',
+      projectRepoLabel: 'Repositorio',
+      experienceHeading: 'Experiencia',
     });
   });
 });
