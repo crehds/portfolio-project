@@ -147,9 +147,11 @@ if (!profile) {
     <main
       id="main"
       tabindex="-1"
-      class="mx-auto w-full max-w-[70ch] flex-1 px-4 py-8"
+      class="mx-auto w-full max-w-4xl flex-1 px-4 py-8"
     >
-      <slot />
+      <div class="max-w-[70ch]">
+        <slot />
+      </div>
     </main>
     <footer class="border-t border-border bg-surface">
       <div class="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-between gap-4 px-4 py-6 text-sm text-text-muted">

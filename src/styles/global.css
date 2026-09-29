@@ -48,23 +48,28 @@
 
   /* A small, deliberate type scale (values match Tailwind's own default `text-3xl`/`2xl`/
      `xl` steps) so semantic headings carry real hierarchy before any page adds its own
-     styles; Ubuntu's bold weight (700) is otherwise unused. */
+     styles; Ubuntu's bold weight (700) is otherwise unused. A shared bottom margin gives
+     every heading vertical rhythm from whatever text follows it, without each page needing
+     to add its own spacing. */
   h1 {
     font-size: 1.875rem;
     line-height: 2.25rem;
     font-weight: 700;
+    margin-bottom: 1rem;
   }
 
   h2 {
     font-size: 1.5rem;
     line-height: 2rem;
     font-weight: 700;
+    margin-bottom: 1rem;
   }
 
   h3 {
     font-size: 1.25rem;
     line-height: 1.75rem;
     font-weight: 700;
+    margin-bottom: 1rem;
   }
 
   /* Visible everywhere, not opted into per component. */
