@@ -10,6 +10,7 @@ stack:
 links:
   live: https://pysa.vercel.app
   repo: https://github.com/crehds/pysa
+cover: ./cover.jpg
 featured: true
 status: published
 date: 2026-09-28
