@@ -8,6 +8,7 @@ import {
   hreflangAlternates,
   localeOfPathname,
   pathnameInLocale,
+  pathnamesMatch,
 } from '../shared/i18n/paths';
 import { getDictionary } from '../shared/i18n/ui';
 import { NAV_ITEMS } from '../shared/nav/nav-items';
@@ -122,7 +123,7 @@ if (!profile) {
           <ul class="flex items-center gap-4">
             {NAV_ITEMS.map((item) => {
               const href = item.href(locale);
-              const isCurrent = pathname === href;
+              const isCurrent = pathnamesMatch(pathname, href);
               return (
                 <li>
                   <a
