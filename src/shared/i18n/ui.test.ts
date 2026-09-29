@@ -40,6 +40,11 @@ describe('getDictionary', () => {
       footerLinkedinLabel: 'LinkedIn',
       footerEmailLabel: 'Email',
       heroPhotoAlt: 'Portrait of',
+      ctaWhatsappLabel: 'WhatsApp',
+      ctaEmailLabel: 'Email',
+      ctaLinkedinLabel: 'LinkedIn',
+      ctaGithubLabel: 'GitHub',
+      ctaCvLabel: 'Download CV',
     });
   });
 
@@ -58,6 +63,11 @@ describe('getDictionary', () => {
       footerLinkedinLabel: 'LinkedIn',
       footerEmailLabel: 'Correo electrónico',
       heroPhotoAlt: 'Retrato de',
+      ctaWhatsappLabel: 'WhatsApp',
+      ctaEmailLabel: 'Correo electrónico',
+      ctaLinkedinLabel: 'LinkedIn',
+      ctaGithubLabel: 'GitHub',
+      ctaCvLabel: 'Descargar CV',
     });
   });
 });

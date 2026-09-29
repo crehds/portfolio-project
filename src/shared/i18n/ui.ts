@@ -21,6 +21,11 @@ const en = {
   footerLinkedinLabel: 'LinkedIn',
   footerEmailLabel: 'Email',
   heroPhotoAlt: 'Portrait of',
+  ctaWhatsappLabel: 'WhatsApp',
+  ctaEmailLabel: 'Email',
+  ctaLinkedinLabel: 'LinkedIn',
+  ctaGithubLabel: 'GitHub',
+  ctaCvLabel: 'Download CV',
 };
 
 export type UiDictionary = typeof en;
@@ -39,6 +44,11 @@ const es: UiDictionary = {
   footerLinkedinLabel: 'LinkedIn',
   footerEmailLabel: 'Correo electrónico',
   heroPhotoAlt: 'Retrato de',
+  ctaWhatsappLabel: 'WhatsApp',
+  ctaEmailLabel: 'Correo electrónico',
+  ctaLinkedinLabel: 'LinkedIn',
+  ctaGithubLabel: 'GitHub',
+  ctaCvLabel: 'Descargar CV',
 };
 
 const dictionaries: Record<Locale, UiDictionary> = { en, es };

@@ -3,9 +3,11 @@
 // one shared component; each section below derives its own locale and content instead
 // of taking props, matching `LanguageSwitcher.astro`/`ThemeToggle.astro`. See T08 in
 // odd/tasks/portfolio-astro-rebuild.md.
+import ContactCtas from './ContactCtas.astro';
 import Hero from './Hero.astro';
 ---
 
 <div class="flex flex-col gap-12">
   <Hero />
+  <ContactCtas />
 </div>

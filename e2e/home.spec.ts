@@ -87,5 +87,37 @@ for (const { path, lang } of homePages) {
       expect(width).toBeGreaterThan(0);
       expect(height).toBeGreaterThan(0);
     });
+
+    test('renders the whatsapp, email, linkedin and github calls to action', async ({
+      page,
+    }) => {
+      await page.goto(path);
+
+      const main = page.locator('main');
+      await expect(
+        main.locator('a[href="https://wa.me/51970791041"]'),
+      ).toHaveCount(1);
+      await expect(
+        main.locator('a[href="mailto:carlos15erh@gmail.com"]'),
+      ).toHaveCount(1);
+      await expect(
+        main.locator(
+          'a[href="https://www.linkedin.com/in/carlos-rodriguez-huerta-362ab716a/"]',
+        ),
+      ).toHaveCount(1);
+      await expect(
+        main.locator('a[href="https://github.com/crehds"]'),
+      ).toHaveCount(1);
+    });
+
+    test('does not render a CV link while the profile cv field is unset', async ({
+      page,
+    }) => {
+      await page.goto(path);
+
+      await expect(
+        page.locator('main').getByRole('link', { name: /cv/i }),
+      ).toHaveCount(0);
+    });
   });
 }
