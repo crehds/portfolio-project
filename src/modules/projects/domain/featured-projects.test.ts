@@ -4,17 +4,20 @@ import { featuredProjects } from './featured-projects';
 
 function project(
   overrides: Partial<{
+    slug: string;
     featured: boolean;
     status: 'draft' | 'published';
     date: Date;
   }> = {},
 ) {
+  const { slug = 'project', ...dataOverrides } = overrides;
   return {
+    slug,
     data: {
       featured: false,
       status: 'published' as const,
       date: new Date('2026-01-01'),
-      ...overrides,
+      ...dataOverrides,
     },
   };
 }
@@ -81,5 +84,48 @@ describe('featuredProjects', () => {
     featuredProjects(entries);
 
     expect(entries).toEqual(copy);
+  });
+
+  describe('tie-break on identical featured status and date', () => {
+    it('orders tied projects by slug, ascending', () => {
+      const beta = project({ slug: 'beta', date: new Date('2026-01-01') });
+      const alpha = project({ slug: 'alpha', date: new Date('2026-01-01') });
+
+      const result = featuredProjects([beta, alpha]);
+
+      expect(result).toEqual([alpha, beta]);
+    });
+
+    it('gives the same order regardless of input order (deterministic)', () => {
+      // Without an explicit tie-break, `Array.prototype.sort`'s stability means two
+      // equally-ranked entries keep whatever relative order the input happened to
+      // have - which for real content depends on the loader's file enumeration
+      // order, not a guaranteed sort. Both calls below must agree.
+      const alpha = project({ slug: 'alpha', date: new Date('2026-01-01') });
+      const beta = project({ slug: 'beta', date: new Date('2026-01-01') });
+
+      const orderOne = featuredProjects([alpha, beta]).map((p) => p.slug);
+      const orderTwo = featuredProjects([beta, alpha]).map((p) => p.slug);
+
+      expect(orderOne).toEqual(['alpha', 'beta']);
+      expect(orderTwo).toEqual(['alpha', 'beta']);
+    });
+
+    it('still ranks featured status and date ahead of the slug tie-break', () => {
+      const zLater = project({
+        slug: 'z',
+        featured: true,
+        date: new Date('2026-06-01'),
+      });
+      const aEarlier = project({
+        slug: 'a',
+        featured: true,
+        date: new Date('2026-01-01'),
+      });
+
+      const result = featuredProjects([aEarlier, zLater]);
+
+      expect(result).toEqual([zLater, aEarlier]);
+    });
   });
 });

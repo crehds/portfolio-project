@@ -149,19 +149,19 @@ for (const { path, lang } of homePages) {
 
       const section = page.locator('section').filter({ has: heading });
       const cardHeadings = section.getByRole('heading', { level: 3 });
-      await expect(cardHeadings).toHaveCount(3);
 
-      const titles = await cardHeadings.allTextContents();
-      expect(new Set(titles).size).toBe(3);
-
-      // game-with-keyboard (2026-09-26) is strictly older than pysa and expresión
-      // latina (both 2026-09-28), so `featuredProjects`' date-desc sort always places
-      // it last (see src/modules/projects/domain/featured-projects.ts). The relative
-      // order between the two same-date projects isn't guaranteed by that sort's
-      // tie-break, so this only asserts what the domain actually promises.
-      const olderTitle =
-        lang === 'en' ? 'Game With Keyboard' : 'Juego con Teclado';
-      expect(titles.at(-1)).toBe(olderTitle);
+      // `featuredProjects` sorts by date descending, then by slug ascending as a
+      // deterministic tie-break for projects sharing the same date (see
+      // src/modules/projects/domain/featured-projects.ts): "expresion-latina" and
+      // "pysa" both date 2026-09-28 (expresion-latina sorts first, alphabetically),
+      // and "game-with-keyboard" (2026-09-26) is strictly older, so it is always
+      // last. The slug tie-break is locale-independent, so this exact order holds in
+      // both locales.
+      await expect(cardHeadings).toHaveText(
+        lang === 'en'
+          ? ['Expresión Latina', 'Pysa', 'Game With Keyboard']
+          : ['Expresión Latina', 'Pysa Gaming', 'Juego con Teclado'],
+      );
     });
 
     test('each featured project card links to its live site and repository', async ({
