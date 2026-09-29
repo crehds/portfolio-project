@@ -8,6 +8,7 @@ import {
   hreflangAlternates,
   localeOfPathname,
   pathnameInLocale,
+  pathnamesMatch,
 } from '../shared/i18n/paths';
 import { getDictionary } from '../shared/i18n/ui';
 import { NAV_ITEMS } from '../shared/nav/nav-items';
@@ -50,26 +51,50 @@ if (!profile) {
     <script is:inline>
       // Static, literal script (no server-interpolated values, so a future CSP hash for it
       // stays stable - T13): applies the theme before first paint so there is no flash of
-      // the wrong theme. Mirrors `src/shared/theme/resolve-theme.ts`'s "stored preference
-      // wins, else the OS preference" order; it cannot import that module and stay static
-      // (a pre-paint script can't wait on a module fetch), so keep both in sync by hand.
-      // Also flips `.no-js` -> `.js` so CSS can hide JS-only controls (the theme toggle)
-      // until we know they will work.
+      // the wrong theme, then keeps following the OS preference live while nothing is
+      // stored (the legacy site did too; once the visitor picks a theme - see
+      // ThemeToggle.astro's click handler, which persists it - a later OS change is
+      // ignored). `isStoredTheme` mirrors the export of the same name in
+      // `src/shared/theme/resolve-theme.ts`, which `resolveTheme` itself also uses for the
+      // identical "stored preference wins, else the OS preference" order; this script cannot
+      // import that module and stay static (a pre-paint script can't wait on a module
+      // fetch), so keep both in sync by hand. Also removes `.no-js` (there is no positive
+      // `.js` class to add - `global.css`'s `.no-js .theme-toggle` rule only needs that
+      // class's absence to show the toggle again) so CSS stops hiding JS-only controls once
+      // we know they will work.
       (function () {
-        let stored = null;
-        try {
-          stored = localStorage.getItem('theme');
-        } catch {
-          // Private browsing / blocked storage: proceed as if nothing were stored.
+        function isStoredTheme(value) {
+          return value === 'light' || value === 'dark';
         }
-        const theme =
-          stored === 'light' || stored === 'dark'
-            ? stored
-            : window.matchMedia('(prefers-color-scheme: dark)').matches
-              ? 'dark'
-              : 'light';
+
+        function readStoredTheme() {
+          try {
+            return localStorage.getItem('theme');
+          } catch {
+            // Private browsing / blocked storage: proceed as if nothing were stored.
+            return null;
+          }
+        }
+
+        const media = window.matchMedia('(prefers-color-scheme: dark)');
+        const stored = readStoredTheme();
+        const theme = isStoredTheme(stored)
+          ? stored
+          : media.matches
+            ? 'dark'
+            : 'light';
         document.documentElement.setAttribute('data-theme', theme);
         document.documentElement.classList.remove('no-js');
+
+        media.addEventListener('change', function (event) {
+          if (isStoredTheme(readStoredTheme())) return;
+
+          const nextTheme = event.matches ? 'dark' : 'light';
+          document.documentElement.setAttribute('data-theme', nextTheme);
+          document.documentElement.dispatchEvent(
+            new CustomEvent('themechange'),
+          );
+        });
       })();
     </script>
     <meta name="generator" content={Astro.generator} />
@@ -98,7 +123,7 @@ if (!profile) {
           <ul class="flex items-center gap-4">
             {NAV_ITEMS.map((item) => {
               const href = item.href(locale);
-              const isCurrent = pathname === href;
+              const isCurrent = pathnamesMatch(pathname, href);
               return (
                 <li>
                   <a
@@ -122,9 +147,11 @@ if (!profile) {
     <main
       id="main"
       tabindex="-1"
-      class="mx-auto w-full max-w-[70ch] flex-1 px-4 py-8"
+      class="mx-auto w-full max-w-4xl flex-1 px-4 py-8"
     >
-      <slot />
+      <div class="max-w-[70ch]">
+        <slot />
+      </div>
     </main>
     <footer class="border-t border-border bg-surface">
       <div class="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-between gap-4 px-4 py-6 text-sm text-text-muted">

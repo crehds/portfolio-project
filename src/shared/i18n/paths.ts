@@ -67,6 +67,15 @@ export function pathnameInLocale(
   return rest === '/' ? `/${targetLocale}/` : `/${targetLocale}${rest}`;
 }
 
+/**
+ * Whether two pathnames refer to the same page once both are normalized to this module's
+ * canonical (slash-terminated) form - so `/es` and `/es/` (a missing trailing slash) compare
+ * equal. Used to find the current nav item without depending on the href's trailing slash.
+ */
+export function pathnamesMatch(a: string, b: string): boolean {
+  return pathFromSegments(segmentsOf(a)) === pathFromSegments(segmentsOf(b));
+}
+
 export interface HreflangAlternate {
   hreflang: Locale | 'x-default';
   href: string;

@@ -4,6 +4,7 @@ import {
   hreflangAlternates,
   localeOfPathname,
   pathnameInLocale,
+  pathnamesMatch,
 } from './paths';
 
 describe('localeOfPathname', () => {
@@ -53,6 +54,22 @@ describe('pathnameInLocale', () => {
   it('does not mistake a path that merely starts with a locale code for that locale', () => {
     expect(pathnameInLocale('/escape/', 'es')).toBe('/es/escape/');
     expect(pathnameInLocale('/es/escape/', 'en')).toBe('/escape/');
+  });
+});
+
+describe('pathnamesMatch', () => {
+  it('treats a pathname with and without a trailing slash as the same page', () => {
+    expect(pathnamesMatch('/es', '/es/')).toBe(true);
+    expect(pathnamesMatch('/es/', '/es')).toBe(true);
+  });
+
+  it('treats the unprefixed root and an empty path as the same page', () => {
+    expect(pathnamesMatch('/', '')).toBe(true);
+  });
+
+  it('returns false for genuinely different pages', () => {
+    expect(pathnamesMatch('/es/', '/')).toBe(false);
+    expect(pathnamesMatch('/projects/x/', '/projects/y/')).toBe(false);
   });
 });
 
