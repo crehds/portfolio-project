@@ -1,12 +1,20 @@
 ---
+import { getEntry } from 'astro:content';
 import { Font } from 'astro:assets';
 
 import LanguageSwitcher from '../components/LanguageSwitcher.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
-import { hreflangAlternates, localeOfPathname } from '../shared/i18n/paths';
+import {
+  hreflangAlternates,
+  localeOfPathname,
+  pathnameInLocale,
+} from '../shared/i18n/paths';
+import { getDictionary } from '../shared/i18n/ui';
+import { NAV_ITEMS } from '../shared/nav/nav-items';
 import '../styles/global.css';
 
-// Minimal shared layout for T05; T07 extends this with header/nav/footer/theme/skip link.
+// Shared layout: skip link, header (site name, primary nav, language switcher, theme
+// toggle), main and a profile-sourced footer. See T07 in odd/tasks/portfolio-astro-rebuild.md.
 interface Props {
   title: string;
   description: string;
@@ -16,6 +24,7 @@ const { title, description } = Astro.props;
 
 const pathname = Astro.url.pathname;
 const locale = localeOfPathname(pathname);
+const dictionary = getDictionary(locale);
 
 if (!Astro.site) {
   throw new Error(
@@ -24,6 +33,13 @@ if (!Astro.site) {
 }
 
 const alternates = hreflangAlternates(pathname, Astro.site.href);
+
+const profile = await getEntry('profile', 'profile');
+if (!profile) {
+  throw new Error(
+    'The "profile" content entry is missing; the footer needs it for the name and contact links.',
+  );
+}
 ---
 
 <html lang={locale} class="no-js">
@@ -69,9 +85,99 @@ const alternates = hreflangAlternates(pathname, Astro.site.href);
     <Font cssVariable="--font-ubuntu" preload={[{ weight: '400' }]} />
     <Font cssVariable="--font-ubuntu-mono" />
   </head>
-  <body>
-    <LanguageSwitcher />
-    <ThemeToggle />
-    <slot />
+  <body class="flex min-h-screen flex-col">
+    <a href="#main" class="skip-link">
+      {dictionary.skipLinkLabel}
+    </a>
+    <header class="border-b border-border bg-surface">
+      <div class="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-between gap-4 px-4 py-3">
+        <a href={pathnameInLocale('/', locale)} class="font-bold text-text">
+          {dictionary.siteTitle}
+        </a>
+        <nav aria-label={dictionary.primaryNavLabel}>
+          <ul class="flex items-center gap-4">
+            {NAV_ITEMS.map((item) => {
+              const href = item.href(locale);
+              const isCurrent = pathname === href;
+              return (
+                <li>
+                  <a
+                    href={href}
+                    aria-current={isCurrent ? 'page' : undefined}
+                    class="inline-block min-h-6 py-1 text-text"
+                  >
+                    {dictionary[item.labelKey]}
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+        <div class="flex items-center gap-3">
+          <LanguageSwitcher />
+          <ThemeToggle />
+        </div>
+      </div>
+    </header>
+    <main
+      id="main"
+      tabindex="-1"
+      class="mx-auto w-full max-w-[70ch] flex-1 px-4 py-8"
+    >
+      <slot />
+    </main>
+    <footer class="border-t border-border bg-surface">
+      <div class="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-between gap-4 px-4 py-6 text-sm text-text-muted">
+        <p>{profile.data.name}</p>
+        <ul class="flex items-center gap-4">
+          <li>
+            <a href={profile.data.github} class="inline-block min-h-6 py-1">
+              {dictionary.footerGithubLabel}
+            </a>
+          </li>
+          <li>
+            <a href={profile.data.linkedin} class="inline-block min-h-6 py-1">
+              {dictionary.footerLinkedinLabel}
+            </a>
+          </li>
+          <li>
+            <a
+              href={`mailto:${profile.data.email}`}
+              class="inline-block min-h-6 py-1"
+            >
+              {dictionary.footerEmailLabel}
+            </a>
+          </li>
+        </ul>
+      </div>
+    </footer>
   </body>
 </html>
+
+<style>
+  /* Visually hidden until focused, then the first thing on the page: a sighted keyboard
+     user tabs straight to it, activates it, and lands on `#main` without hearing/seeing
+     every header link first. `top: -3rem` (not `sr-only`'s clip/position trick) keeps the
+     transform-free, one-property change that `prefers-reduced-motion` below can disable. */
+  .skip-link {
+    position: absolute;
+    top: -3rem;
+    left: 1rem;
+    z-index: 50;
+    border-radius: 0.25rem;
+    background-color: var(--color-surface);
+    color: var(--color-accent);
+    padding: 0.5rem 1rem;
+    transition: top 0.2s ease-in-out;
+  }
+
+  .skip-link:focus {
+    top: 1rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skip-link {
+      transition-duration: 0.01ms;
+    }
+  }
+</style>

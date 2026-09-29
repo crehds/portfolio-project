@@ -38,6 +38,35 @@
     color: var(--color-text);
   }
 
+  /* The AA-verified accent token, not the browser's UA default link color (which is
+     never contrast-checked against `tokens.css` and would not track the theme). A
+     component can still opt out to a neutral color (see the header's site name and
+     current-page nav link in `BaseLayout.astro`), so this is a default, not a lock. */
+  a {
+    color: var(--color-accent);
+  }
+
+  /* A small, deliberate type scale (values match Tailwind's own default `text-3xl`/`2xl`/
+     `xl` steps) so semantic headings carry real hierarchy before any page adds its own
+     styles; Ubuntu's bold weight (700) is otherwise unused. */
+  h1 {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+    font-weight: 700;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 700;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+    font-weight: 700;
+  }
+
   /* Visible everywhere, not opted into per component. */
   :focus-visible {
     outline: 2px solid var(--color-focus);

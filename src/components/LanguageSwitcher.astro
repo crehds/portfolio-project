@@ -12,16 +12,19 @@ const dictionary = getDictionary(locale);
 ---
 
 <nav aria-label={dictionary.languageSwitcherLabel}>
-  <ul>
+  <ul class="flex items-center gap-2">
     {LOCALES.map((target) => (
       <li>
         {target === locale ? (
-          <span aria-current="true">{LOCALE_NAMES[target]}</span>
+          <span aria-current="true" class="inline-block min-h-6 py-1">
+            {LOCALE_NAMES[target]}
+          </span>
         ) : (
           <a
             href={pathnameInLocale(pathname, target)}
             hreflang={target}
             lang={target}
+            class="inline-block min-h-6 py-1"
           >
             {LOCALE_NAMES[target]}
           </a>

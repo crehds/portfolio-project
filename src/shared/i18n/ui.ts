@@ -14,6 +14,12 @@ const en = {
   rebuildNotice: 'Portfolio rebuild in progress.',
   languageSwitcherLabel: 'Language switcher',
   themeToggleLabel: 'Toggle color theme',
+  skipLinkLabel: 'Skip to main content',
+  primaryNavLabel: 'Primary navigation',
+  navHome: 'Home',
+  footerGithubLabel: 'GitHub',
+  footerLinkedinLabel: 'LinkedIn',
+  footerEmailLabel: 'Email',
 };
 
 export type UiDictionary = typeof en;
@@ -25,6 +31,12 @@ const es: UiDictionary = {
   rebuildNotice: 'Portafolio en reconstrucción.',
   languageSwitcherLabel: 'Selector de idioma',
   themeToggleLabel: 'Cambiar tema de color',
+  skipLinkLabel: 'Saltar al contenido principal',
+  primaryNavLabel: 'Navegación principal',
+  navHome: 'Inicio',
+  footerGithubLabel: 'GitHub',
+  footerLinkedinLabel: 'LinkedIn',
+  footerEmailLabel: 'Correo electrónico',
 };
 
 const dictionaries: Record<Locale, UiDictionary> = { en, es };
