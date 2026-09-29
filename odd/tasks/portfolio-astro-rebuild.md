@@ -75,10 +75,11 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~5,930 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
-  T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321 + T08 ~1,021, with tests, excluding lockfiles
-  and the legacy removal). It already passes the ~4,300 forecast, mostly from tests and the review follow-up tasks.
-- Last reviewed boundary: `fdaf66a` (T07b + T08 slice; the merge `fac2766` has the same tree).
+- Running count: ~6,850 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+  T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321 + T08 ~1,021 + T09 ~923, with tests, excluding
+  lockfiles and the legacy removal). It already passes the ~4,300 forecast, mostly from tests and the review
+  follow-up tasks.
+- Last reviewed boundary: `a3c518d` (T09 slice; the merge `85895d5` has the same tree).
 
 ## Tasks
 
@@ -124,9 +125,14 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   align the main column's left edge with the header and footer on wide screens and space the heading from the
   text below it. Route: delegated. ~120.
 - [x] **T08** Home: hero, CTAs (form, WhatsApp, email, LinkedIn, GitHub, CV), featured projects, experience summary. The CV button renders only when the profile `cv` field is set. Route: delegated. ~300.
-- [ ] **T09** Projects list + `/projects/[slug]` case-study pages with optimized images. Also, from the T07b + T08
+- [x] **T09** Projects list + `/projects/[slug]` case-study pages with optimized images. Also, from the T07b + T08
   review: compare project slugs by code point instead of `localeCompare` in the featured tie-break, and check the
   live and repository links of every featured card in the e2e test. Route: delegated. ~350.
+- [ ] **T09b** Follow-ups from the T09 review and the parent's readback: assert the exact featured cards on the home
+  page (count and headings per locale) instead of "at least one"; check every list card's title link; check the
+  `x-default` alternate on project pages; one shared `Intl` locale map for every date formatter (neutral `es-419`;
+  today project dates use `es-PE`, "setiembre", while experience periods use `es`); a visible current-page marker
+  in the nav. Route: delegated. ~120.
 - [ ] **T10** Experience timeline + skills page. Route: delegated. ~250.
 - [ ] **T11** Contact: form via Astro Action (Zod validation, works without JS), `EmailSender` port + provider adapter, Turnstile + honeypot + rate limit, WhatsApp + mailto, CV download (R2 binding + on-demand `/cv/<locale>.pdf` route, then set the profile `cv` field; owner creates the bucket and uploads the PDF first), 404 page. Route: delegated + owner action. ~450.
 
@@ -175,6 +181,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 | T07 | done (merged `9fb1467`) | `ee381a6` tokens, Tailwind, fonts; `ad6cf9c` theme toggle; `5f1ef4d` base layout | Strict TDD, RED observed per behavior (missing modules; missing token file; e2e: 4/5 theme and 7/13 layout tests failing before the implementation), then GREEN · `pnpm install --frozen-lockfile` · lint · format · `pnpm check` 0/0/0 · `pnpm test` 157/157 · build 2 pages, 3 font files, one preload · `pnpm test:e2e` 27/27 (twice) · dry run: no bindings · parent re-ran: test 157/157, build; screenshots in both themes at 1280 and 390 px | T06b + T07 slice: medium (1,701 lines with the lockfile), 1 lens (reliability), approved (`review-526a4756c980ea7e`), 4 non-blocking findings routed to T07b |
 | T07b | done (merged `5e2cf34`) | `c769721` pre-paint theme test, `daa9ce8` live OS theme, `11506d5` trailing-slash-safe `aria-current`, `c225950` column alignment + heading spacing | RED observed per behavior (e2e: deferred bootstrap -> `null` theme; OS switch ignored; 132 px column offset; 0 px heading gap; unit: missing `isStoredTheme`/`pathnamesMatch`), then GREEN · lint · format · `pnpm check` 0/0/0 · `pnpm test` 162/162 · build 2 pages · `pnpm test:e2e` 33/33 · dry run: no bindings · parent re-ran: test 162/162; inline script still static | Reviewed with T08 (see T08) |
 | T08 | done (merged `fac2766`) | `3ef3908` hero + photo, `2eeecae` CTAs, `b9c61a0` featured projects + experience summary; polish: `4dccd9d` square photo, `275e458` slug tie-break, `0566f2d` full-width cards, `38800db` headline without the role, `fdaf66a` brand icons | Strict TDD, RED observed per behavior (missing modules and dictionary keys; e2e: missing hero, CTAs and sections; photo 72-80 px off square; grid 248 px short of the container; equal-date order flipped with input order; headline starting with the role), then GREEN · `pnpm install --frozen-lockfile` · lint · format · `pnpm check` 0/0/0 · `pnpm test` 188/188 · build 2 pages · `pnpm test:e2e` 55/55 · dry run: no bindings · parent re-ran: test 188/188, build; screenshots before and after the polish | T07b + T08 slice: medium (1,385 lines), 1 lens (reliability), approved (`review-dbbf3b93069d2ee1`), 2 non-blocking suggestions routed to T09 |
+| T09 | done (merged `85895d5`) | `490532d` code-point tie-break + home e2e links, `6fa4e2c` covers, `ad5eb33` list page + nav entry, `a3c518d` project pages | Strict TDD, RED observed per behavior (`localeCompare` order `[a, B]` vs expected `[B, a]`; missing nav and section helpers; missing date formatter; with the new pages stashed, 26 e2e failures: 404s, missing links and alternates), then GREEN · lint · format · `pnpm check` 0/0/0 · `pnpm test` 199/199 · build 12 pages · `pnpm test:e2e` 81/81 · dry run: no bindings · parent re-ran: test 199/199, build 12 pages; screenshots of the list, a project page and the Spanish list; draft URL returns 404 | T09 slice with `8dfb6a5`: medium (954 lines), 1 lens (reliability), approved (`review-fe50adbcbf1b75cd`), 3 non-blocking findings routed to T09b |
 
 ## Change log
 
@@ -287,7 +294,18 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   goes through `pictureAttributes`; `jsx-a11y` rejects "photo" in alt text, so the alt reads "Portrait of ...".
 - 2026-09-29: the owner granted the stop hook's whole-branch review a fifth time (212 files, 34,530 lines); it stopped
   with `lens_context_budget_exceeded` like the others.
+- 2026-09-29: T09. The owner chose fresh covers: one-time Playwright captures (1280x800) of the 4 live sites, saved
+  as `src/content/projects/<slug>/cover.jpg` and served as AVIF/WebP. The game with keyboard capture shows its
+  settings dialog, because the site opens with it; the owner may replace that file. The list shows every published
+  project (featured first, then newest); only published projects get pages, so drafts return 404. The nav marks the
+  list with `aria-current="page"` and a project page's section with `aria-current="true"`. Project pages show
+  "Last updated" (the repository's latest commit date), formatted in UTC: in Lima (UTC-5) a local-time format showed
+  the previous day. The Spanish date formatter pins `es-PE` ("setiembre") while experience periods use `es`; T09b
+  unifies them. Test gotcha: `<ul class="grid">` loses its implicit `listitem` role in Chromium, so tests select
+  `:scope > li`.
+- 2026-09-29: the owner granted the stop hook's whole-branch review a sixth time (227 files, 35,372 lines); it stopped
+  with `lens_context_budget_exceeded` again.
 
 ## Next step
 
-T09 projects on `feat/astro-rebuild-09-projects` (owner decides how covers are sourced first).
+T09b on `feat/astro-rebuild-09b-projects-hygiene`, then T10 experience timeline + skills page.
