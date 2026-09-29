@@ -26,6 +26,10 @@ const en = {
   ctaLinkedinLabel: 'LinkedIn',
   ctaGithubLabel: 'GitHub',
   ctaCvLabel: 'Download CV',
+  featuredProjectsHeading: 'Featured projects',
+  projectLiveLabel: 'Live site',
+  projectRepoLabel: 'Repository',
+  experienceHeading: 'Experience',
 };
 
 export type UiDictionary = typeof en;
@@ -49,6 +53,10 @@ const es: UiDictionary = {
   ctaLinkedinLabel: 'LinkedIn',
   ctaGithubLabel: 'GitHub',
   ctaCvLabel: 'Descargar CV',
+  featuredProjectsHeading: 'Proyectos destacados',
+  projectLiveLabel: 'Sitio en vivo',
+  projectRepoLabel: 'Repositorio',
+  experienceHeading: 'Experiencia',
 };
 
 const dictionaries: Record<Locale, UiDictionary> = { en, es };

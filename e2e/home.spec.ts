@@ -119,5 +119,82 @@ for (const { path, lang } of homePages) {
         page.locator('main').getByRole('link', { name: /cv/i }),
       ).toHaveCount(0);
     });
+
+    test('renders exactly the 3 featured projects, with no drafts', async ({
+      page,
+    }) => {
+      await page.goto(path);
+
+      const heading = page.getByRole('heading', {
+        level: 2,
+        name: lang === 'en' ? 'Featured projects' : 'Proyectos destacados',
+      });
+      await expect(heading).toHaveCount(1);
+
+      const section = page.locator('section').filter({ has: heading });
+      const cardHeadings = section.getByRole('heading', { level: 3 });
+      await expect(cardHeadings).toHaveCount(3);
+
+      const titles = await cardHeadings.allTextContents();
+      expect(new Set(titles).size).toBe(3);
+
+      // game-with-keyboard (2026-09-26) is strictly older than pysa and expresión
+      // latina (both 2026-09-28), so `featuredProjects`' date-desc sort always places
+      // it last (see src/modules/projects/domain/featured-projects.ts). The relative
+      // order between the two same-date projects isn't guaranteed by that sort's
+      // tie-break, so this only asserts what the domain actually promises.
+      const olderTitle =
+        lang === 'en' ? 'Game With Keyboard' : 'Juego con Teclado';
+      expect(titles.at(-1)).toBe(olderTitle);
+    });
+
+    test('each featured project card links to its live site and repository', async ({
+      page,
+    }) => {
+      await page.goto(path);
+
+      const heading = page.getByRole('heading', {
+        level: 2,
+        name: lang === 'en' ? 'Featured projects' : 'Proyectos destacados',
+      });
+      const section = page.locator('section').filter({ has: heading });
+
+      await expect(
+        section.locator('a[href="https://game-with-keyboard.vercel.app/"]'),
+      ).toHaveCount(1);
+      await expect(
+        section.locator('a[href="https://github.com/crehds/gameWithKeyboard"]'),
+      ).toHaveCount(1);
+      await expect(
+        section.locator('a[href="https://pysa.vercel.app"]'),
+      ).toHaveCount(1);
+      await expect(
+        section.locator('a[href="https://github.com/crehds/pysa"]'),
+      ).toHaveCount(1);
+    });
+
+    test('renders the latest 3 experience entries in order', async ({
+      page,
+    }) => {
+      await page.goto(path);
+
+      const heading = page.getByRole('heading', {
+        level: 2,
+        name: lang === 'en' ? 'Experience' : 'Experiencia',
+      });
+      await expect(heading).toHaveCount(1);
+
+      const section = page.locator('section').filter({ has: heading });
+      const entryHeadings = section.getByRole('heading', { level: 3 });
+
+      // Deterministic: no ties among the top 3 by `sortExperience`'s rules
+      // (current-first, then end desc, then start desc) - see
+      // src/modules/experience/domain/sort-experience.ts and experience.yaml.
+      await expect(entryHeadings).toHaveText([
+        'FullStack Labs',
+        'TechyWe',
+        'Freelance',
+      ]);
+    });
   });
 }
