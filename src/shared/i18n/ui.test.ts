@@ -39,6 +39,7 @@ describe('getDictionary', () => {
       footerGithubLabel: 'GitHub',
       footerLinkedinLabel: 'LinkedIn',
       footerEmailLabel: 'Email',
+      heroPhotoAlt: 'Portrait of',
     });
   });
 
@@ -56,6 +57,7 @@ describe('getDictionary', () => {
       footerGithubLabel: 'GitHub',
       footerLinkedinLabel: 'LinkedIn',
       footerEmailLabel: 'Correo electrónico',
+      heroPhotoAlt: 'Retrato de',
     });
   });
 });

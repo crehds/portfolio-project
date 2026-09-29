@@ -1,4 +1,5 @@
 ---
+import HomePage from '../../components/home/HomePage.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getDictionary } from '../../shared/i18n/ui';
 
@@ -9,6 +10,5 @@ const dictionary = getDictionary('es');
   title={dictionary.siteTitle}
   description={dictionary.siteDescription}
 >
-  <h1>{dictionary.siteTitle}</h1>
-  <p>{dictionary.rebuildNotice}</p>
+  <HomePage />
 </BaseLayout>

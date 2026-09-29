@@ -1,0 +1,11 @@
+---
+// Both locale pages (`src/pages/index.astro`, `src/pages/es/index.astro`) render this
+// one shared component; each section below derives its own locale and content instead
+// of taking props, matching `LanguageSwitcher.astro`/`ThemeToggle.astro`. See T08 in
+// odd/tasks/portfolio-astro-rebuild.md.
+import Hero from './Hero.astro';
+---
+
+<div class="flex flex-col gap-12">
+  <Hero />
+</div>

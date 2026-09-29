@@ -1,0 +1,64 @@
+---
+import { getCollection, getEntry } from 'astro:content';
+import { Picture } from 'astro:assets';
+
+import { formatYearsOfExperience } from '../../modules/experience/domain/format-years-of-experience';
+import { yearsOfExperience } from '../../modules/experience/domain/years-of-experience';
+import { localeOfPathname } from '../../shared/i18n/paths';
+import { getDictionary } from '../../shared/i18n/ui';
+
+// Self-contained, like `LanguageSwitcher.astro`/`ThemeToggle.astro`: derives its own
+// locale and content instead of taking props from the page. See T08 in
+// odd/tasks/portfolio-astro-rebuild.md.
+const locale = localeOfPathname(Astro.url.pathname);
+const dictionary = getDictionary(locale);
+
+const profile = await getEntry('profile', 'profile');
+if (!profile) {
+  throw new Error(
+    'The "profile" content entry is missing; the hero needs it for the name, role and photo.',
+  );
+}
+if (!profile.data.photo) {
+  throw new Error(
+    'The profile "photo" field is missing; the hero requires it (see T08 in odd/tasks/portfolio-astro-rebuild.md).',
+  );
+}
+const { photo } = profile.data;
+
+// Years of experience are always computed from the experience dates, never typed (see
+// the "Decisions" table): the same pure `yearsOfExperience` reducer T04 already ships,
+// fed by the same content collection the experience summary section reads.
+const experienceEntries = await getCollection('experience');
+const yearsLine = formatYearsOfExperience(
+  yearsOfExperience(experienceEntries.map((entry) => entry.data)),
+  locale,
+);
+---
+
+<section class="flex flex-col gap-6 sm:flex-row sm:items-start">
+  <Picture
+    src={photo}
+    formats={['avif', 'webp']}
+    alt={`${dictionary.heroPhotoAlt} ${profile.data.name}`}
+    width={192}
+    height={192}
+    loading="eager"
+    fetchpriority="high"
+    class="h-40 w-40 shrink-0 rounded-full object-cover sm:h-48 sm:w-48"
+  />
+  <div class="flex flex-col gap-2">
+    <h1>{profile.data.name}</h1>
+    <p class="text-lg text-text-muted">{profile.data.role[locale]}</p>
+    {profile.data.headline && <p>{profile.data.headline[locale]}</p>}
+    <p
+      data-testid="years-of-experience"
+      class="font-mono text-sm text-text-muted"
+    >
+      {yearsLine}
+    </p>
+    {profile.data.location && (
+      <p class="text-sm text-text-muted">{profile.data.location[locale]}</p>
+    )}
+  </div>
+</section>

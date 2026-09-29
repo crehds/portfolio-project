@@ -45,5 +45,47 @@ for (const { path, lang } of homePages) {
 
       expect(results.violations).toEqual([]);
     });
+
+    test("the h1 is the owner's name", async ({ page }) => {
+      await page.goto(path);
+
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+        'Carlos Rodríguez Huerta',
+      );
+    });
+
+    test("the years-of-experience line matches the computed value's format", async ({
+      page,
+    }) => {
+      await page.goto(path);
+
+      // Matches the localized template `formatYearsOfExperience` produces (see
+      // `src/modules/experience/domain/format-years-of-experience.ts`) without pinning the
+      // actual number, which grows as real experience accrues.
+      const pattern =
+        lang === 'en'
+          ? /^(?:\d+\+ years? of experience|Less than a year of experience)$/
+          : /^(?:Más de \d+ años? de experiencia|Menos de un año de experiencia)$/;
+
+      await expect(page.getByTestId('years-of-experience')).toHaveText(pattern);
+    });
+
+    test('the hero photo has localized alt text and explicit dimensions', async ({
+      page,
+    }) => {
+      await page.goto(path);
+
+      const photo = page.locator('main img');
+      await expect(photo).toHaveCount(1);
+
+      const alt = await photo.getAttribute('alt');
+      expect(alt).toContain('Carlos Rodríguez Huerta');
+      expect(alt).toMatch(lang === 'en' ? /^Portrait of/ : /^Retrato de/);
+
+      const width = Number(await photo.getAttribute('width'));
+      const height = Number(await photo.getAttribute('height'));
+      expect(width).toBeGreaterThan(0);
+      expect(height).toBeGreaterThan(0);
+    });
   });
 }

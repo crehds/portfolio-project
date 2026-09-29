@@ -17,3 +17,7 @@
   location:
     en: Lima, Peru
     es: Lima, Perú
+  # Owner's public GitHub avatar, downloaded once into `src/assets/` (see T08 in
+  # odd/tasks/portfolio-astro-rebuild.md). Relative to this file's own directory
+  # (`src/content/`), per the `file()` loader's `image()` path resolution.
+  photo: ../assets/profile-photo.jpg

@@ -20,6 +20,7 @@ const en = {
   footerGithubLabel: 'GitHub',
   footerLinkedinLabel: 'LinkedIn',
   footerEmailLabel: 'Email',
+  heroPhotoAlt: 'Portrait of',
 };
 
 export type UiDictionary = typeof en;
@@ -37,6 +38,7 @@ const es: UiDictionary = {
   footerGithubLabel: 'GitHub',
   footerLinkedinLabel: 'LinkedIn',
   footerEmailLabel: 'Correo electrónico',
+  heroPhotoAlt: 'Retrato de',
 };
 
 const dictionaries: Record<Locale, UiDictionary> = { en, es };
