@@ -8,6 +8,7 @@ import {
   hreflangAlternates,
   localeOfPathname,
   pathnameInLocale,
+  pathnameIsWithinSection,
   pathnamesMatch,
 } from '../shared/i18n/paths';
 import { getDictionary } from '../shared/i18n/ui';
@@ -123,12 +124,22 @@ if (!profile) {
           <ul class="flex items-center gap-4">
             {NAV_ITEMS.map((item) => {
               const href = item.href(locale);
-              const isCurrent = pathnamesMatch(pathname, href);
+              const isCurrentPage = pathnamesMatch(pathname, href);
+              // A nested page (e.g. a project's own detail page) marks its top-level nav
+              // item current too, just not as literally "the current page" - see
+              // `pathnameIsWithinSection`.
+              const isCurrentSection =
+                !isCurrentPage && pathnameIsWithinSection(pathname, href);
+              const ariaCurrent = isCurrentPage
+                ? 'page'
+                : isCurrentSection
+                  ? 'true'
+                  : undefined;
               return (
                 <li>
                   <a
                     href={href}
-                    aria-current={isCurrent ? 'page' : undefined}
+                    aria-current={ariaCurrent}
                     class="inline-block min-h-6 py-1 text-text"
                   >
                     {dictionary[item.labelKey]}

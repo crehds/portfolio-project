@@ -164,6 +164,51 @@ for (const { path, lang } of homePages) {
       );
     });
 
+    test('every featured project card title links to its own project page', async ({
+      page,
+    }) => {
+      await page.goto(path);
+
+      const heading = page.getByRole('heading', {
+        level: 2,
+        name: lang === 'en' ? 'Featured projects' : 'Proyectos destacados',
+      });
+      const section = page.locator('section').filter({ has: heading });
+      const cardHeadings = section.getByRole('heading', { level: 3 });
+
+      // Keyed by heading text, like the link-coverage test below: every rendered card's
+      // title must link to its own project page, not just the first one.
+      const expectedHrefByHeading: Record<string, string> =
+        lang === 'en'
+          ? {
+              'Expresión Latina': '/projects/expresion-latina/',
+              Pysa: '/projects/pysa/',
+              'Game With Keyboard': '/projects/game-with-keyboard/',
+            }
+          : {
+              'Expresión Latina': '/es/projects/expresion-latina/',
+              'Pysa Gaming': '/es/projects/pysa/',
+              'Juego con Teclado': '/es/projects/game-with-keyboard/',
+            };
+
+      const count = await cardHeadings.count();
+      expect(count).toBeGreaterThan(0);
+
+      for (let i = 0; i < count; i++) {
+        const cardHeading = cardHeadings.nth(i);
+        const text = await cardHeading.innerText();
+        const expectedHref = expectedHrefByHeading[text];
+        if (!expectedHref) {
+          throw new Error(`No expected project href recorded for "${text}".`);
+        }
+
+        await expect(cardHeading.getByRole('link')).toHaveAttribute(
+          'href',
+          expectedHref,
+        );
+      }
+    });
+
     test('every featured project card links to its live site and repository', async ({
       page,
     }) => {

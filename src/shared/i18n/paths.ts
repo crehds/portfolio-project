@@ -76,6 +76,32 @@ export function pathnamesMatch(a: string, b: string): boolean {
   return pathFromSegments(segmentsOf(a)) === pathFromSegments(segmentsOf(b));
 }
 
+/**
+ * Whether `pathname` belongs to the section rooted at `sectionHref`: either that exact
+ * page (see `pathnamesMatch`) or one of its nested pages (e.g. a project's own detail
+ * page nested under the projects list). Used to mark a top-level nav item current while
+ * on one of its sub-pages, even though `pathnamesMatch` itself only matches the section's
+ * own page. Both arguments are compared locale-neutral and trailing-slash-safe, the same
+ * way `pathnamesMatch` is. The root ("/") has no nested pages under this definition -
+ * otherwise every page would be a false-positive descendant of it - so only an exact
+ * match counts as "home".
+ */
+export function pathnameIsWithinSection(
+  pathname: string,
+  sectionHref: string,
+): boolean {
+  const pathSegments = segmentsOf(withoutLocalePrefix(pathname));
+  const sectionSegments = segmentsOf(withoutLocalePrefix(sectionHref));
+
+  if (sectionSegments.length === 0) {
+    return pathSegments.length === 0;
+  }
+
+  return sectionSegments.every(
+    (segment, index) => pathSegments[index] === segment,
+  );
+}
+
 export interface HreflangAlternate {
   hreflang: Locale | 'x-default';
   href: string;
