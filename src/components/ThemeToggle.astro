@@ -83,6 +83,10 @@ const dictionary = getDictionary(locale);
     }
 
     syncButton();
+    // BaseLayout.astro's head script fires this event when it re-applies the theme after a
+    // live OS preference change (only while nothing is stored); the click handler below
+    // already calls `syncButton` directly and does not need to listen for it.
+    document.documentElement.addEventListener('themechange', syncButton);
 
     button.addEventListener('click', function () {
       const isDark =

@@ -79,6 +79,80 @@ test.describe('theme', () => {
     expect(themeAtDomContentLoaded).toBe('dark');
   });
 
+  test('follows a live OS theme change while nothing is stored', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.goto('/');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+
+    await page.emulateMedia({ colorScheme: 'dark' });
+
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    const toggle = page.getByRole('button', { name: /theme/i });
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('a stored choice keeps applying after a later live OS theme change', async ({
+    page,
+  }) => {
+    // The stored choice and the OS start equal (both "dark") and only the OS then moves
+    // away from it. Deriving the stored value from a toggle click would make it the
+    // opposite of whatever the OS already is, so the single OS flip this test needs would
+    // always land back on the stored value - unable to tell "ignored" from "incorrectly
+    // followed". Setting `localStorage` directly avoids that.
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto('/');
+    await page.evaluate(() => localStorage.setItem('theme', 'dark'));
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+
+    // `emulateMedia` can resolve before the page has actually dispatched and finished
+    // handling the resulting `change` event, so reading `data-theme` right away would race
+    // it - passing either way regardless of whether the (later-registered) production
+    // listener reacted correctly. Register our own `change` listener on the same
+    // MediaQueryList first: listeners run in registration order, so by the time this one
+    // sees the event, the head script's own listener (registered at page load) has already
+    // run.
+    await page.evaluate(() => {
+      const probeWindow = window as Window & { __mediaChanged?: Promise<void> };
+      probeWindow.__mediaChanged = new Promise((resolve) => {
+        window
+          .matchMedia('(prefers-color-scheme: dark)')
+          .addEventListener('change', () => resolve(), { once: true });
+      });
+    });
+
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.evaluate(
+      () =>
+        (window as Window & { __mediaChanged?: Promise<void> }).__mediaChanged,
+    );
+
+    // A plain, non-retrying read, now that the change has definitely been handled.
+    const themeAfterOSChange = await page.evaluate(() =>
+      document.documentElement.getAttribute('data-theme'),
+    );
+    const pressedAfterOSChange = await page.evaluate(() =>
+      document.getElementById('theme-toggle')?.getAttribute('aria-pressed'),
+    );
+
+    expect(themeAfterOSChange).toBe('dark');
+    expect(pressedAfterOSChange).toBe('true');
+  });
+
+  test('falls back to the OS theme when the stored value is unrecognized', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto('/');
+    await page.evaluate(() => localStorage.setItem('theme', 'system'));
+
+    await page.reload();
+
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  });
+
   test('without JS, the toggle is not shown and the OS theme still applies via CSS', async ({
     browser,
   }) => {
