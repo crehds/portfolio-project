@@ -45,7 +45,8 @@ const yearsLine = formatYearsOfExperience(
     height={192}
     loading="eager"
     fetchpriority="high"
-    class="h-40 w-40 shrink-0 rounded-full object-cover sm:h-48 sm:w-48"
+    pictureAttributes={{ class: 'h-40 w-40 shrink-0 sm:h-48 sm:w-48' }}
+    class="h-full w-full rounded-full object-cover"
   />
   <div class="flex flex-col gap-2">
     <h1>{profile.data.name}</h1>

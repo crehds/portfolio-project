@@ -88,6 +88,22 @@ for (const { path, lang } of homePages) {
       expect(height).toBeGreaterThan(0);
     });
 
+    for (const viewportWidth of [1280, 390]) {
+      test(`the hero photo renders as a square at ${viewportWidth}px`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width: viewportWidth, height: 900 });
+        await page.goto(path);
+
+        const box = await page.locator('main img').boundingBox();
+        if (!box) {
+          throw new Error('Expected the hero photo to have a layout box.');
+        }
+
+        expect(Math.abs(box.width - box.height)).toBeLessThanOrEqual(1);
+      });
+    }
+
     test('renders the whatsapp, email, linkedin and github calls to action', async ({
       page,
     }) => {
