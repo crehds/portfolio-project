@@ -20,7 +20,10 @@ const projects = featuredProjects(
 
 <section class="flex flex-col gap-6">
   <h2>{dictionary.featuredProjectsHeading}</h2>
-  <ul class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+  <ul
+    data-testid="featured-projects-grid"
+    class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+  >
     {projects.map(({ data }) => (
       <li class="flex flex-col gap-3 rounded border border-border p-4">
         <h3>{data.title}</h3>

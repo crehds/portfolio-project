@@ -189,6 +189,39 @@ for (const { path, lang } of homePages) {
       ).toHaveCount(1);
     });
 
+    test('the featured projects grid spans the full container width at 1280px', async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await page.goto(path);
+
+      // The header's own content wrapper (the sole direct child `div`), not the
+      // full-bleed `<header>` itself - matches the pattern layout.spec.ts already
+      // uses for the shared container's alignment. That wrapper carries its own
+      // `px-4` padding, so its *content*-box right edge (border-box right edge minus
+      // its own right padding) is the visible edge to compare against - not its
+      // outer/border-box edge, which the grid (nested one level deeper, inside
+      // `<main>`'s own padding) was never going to reach.
+      const headerContent = page.getByRole('banner').locator(':scope > div');
+      const grid = page.getByTestId('featured-projects-grid');
+
+      const [headerBox, headerPaddingRight, gridBox] = await Promise.all([
+        headerContent.boundingBox(),
+        headerContent.evaluate((el) => getComputedStyle(el).paddingRight),
+        grid.boundingBox(),
+      ]);
+      if (!headerBox || !gridBox) {
+        throw new Error(
+          'Expected the header content and the featured projects grid to each have a layout box.',
+        );
+      }
+
+      const headerContentRight =
+        headerBox.x + headerBox.width - parseFloat(headerPaddingRight);
+      const gridRight = gridBox.x + gridBox.width;
+      expect(Math.abs(gridRight - headerContentRight)).toBeLessThanOrEqual(1);
+    });
+
     test('renders the latest 3 experience entries in order', async ({
       page,
     }) => {
