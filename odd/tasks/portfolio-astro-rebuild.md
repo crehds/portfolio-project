@@ -75,12 +75,13 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~7,850 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+- Running count: ~7,940 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
   T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321 + T08 ~1,021 + T09 ~923 + T09b ~217 +
-  T10 ~778, with tests, excluding lockfiles and the legacy removal). It already passes the ~4,300 forecast, mostly
-  from tests and the review follow-up tasks.
+  T10 ~778 + T10b ~88, with tests, excluding lockfiles and the legacy removal). It already passes the ~4,300
+  forecast, mostly from tests and the review follow-up tasks.
 - Last reviewed boundary: `8c0409c` (T09b + T10 slice; the merge `b4a32a2` has the same tree). Pending in the next
-  slice: this docs commit only.
+  slice: the T10 docs commit `1edaac9`, T10b (`1d2b3b3`, `c109c3b`, `538d575`; assessed medium, 120 lines with the
+  docs commit, under budget) and this docs commit.
 
 ## Tasks
 
@@ -135,11 +136,12 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   today project dates use `es-PE`, "setiembre", while experience periods use `es`); a visible current-page marker
   in the nav. Route: delegated. ~120.
 - [x] **T10** Experience timeline + skills page. Route: delegated. ~250.
-- [ ] **T10b** Follow-ups from the T09b + T10 review and the parent's readback: make the two ICU-dependent date
+- [x] **T10b** Follow-ups from the T09b + T10 review and the parent's readback: make the two ICU-dependent date
   oracles tolerant (assert "septiembre" and not "setiembre" instead of the full literal; accept "sep" or "sept" in
   the short month) or pin the runtime's ICU; tighten the gap between the experience page `h1` and the years line.
-  Content questions for the owner first: keep the years line on the experience page; the Spanish wording
-  ("Habilidades", "Tiempo completo", "Medio tiempo"). Route: inline or delegated after the answers. ~60.
+  Owner answers: keep the years line on the experience page and the Spanish wording ("Habilidades", "Tiempo
+  completo", "Medio tiempo"). Route: delegated (writer trigger: the e2e spacing test and the page component), plus
+  the parent's inline TZ-restore fix in one test file. ~60.
 - [ ] **T11** Contact: form via Astro Action (Zod validation, works without JS), `EmailSender` port + provider adapter, Turnstile + honeypot + rate limit, WhatsApp + mailto, CV download (R2 binding + on-demand `/cv/<locale>.pdf` route, then set the profile `cv` field; owner creates the bucket and uploads the PDF first), 404 page. Route: delegated + owner action. ~450.
 
 ### Phase 3 · Launch
@@ -190,6 +192,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 | T09 | done (merged `85895d5`) | `490532d` code-point tie-break + home e2e links, `6fa4e2c` covers, `ad5eb33` list page + nav entry, `a3c518d` project pages | Strict TDD, RED observed per behavior (`localeCompare` order `[a, B]` vs expected `[B, a]`; missing nav and section helpers; missing date formatter; with the new pages stashed, 26 e2e failures: 404s, missing links and alternates), then GREEN · lint · format · `pnpm check` 0/0/0 · `pnpm test` 199/199 · build 12 pages · `pnpm test:e2e` 81/81 · dry run: no bindings · parent re-ran: test 199/199, build 12 pages; screenshots of the list, a project page and the Spanish list; draft URL returns 404 | T09 slice with `8dfb6a5`: medium (954 lines), 1 lens (reliability), approved (`review-fe50adbcbf1b75cd`), 3 non-blocking findings routed to T09b |
 | T09b | done (merged `dbe64c3`) | `16944ec` exact featured cards, `239c57a` every list link + `x-default`, `962a9f9` shared `es-419` date locale, `f67e22f` visible nav marker | Test-only items proven by temporary breaks (card limit 2 -> 6 failures; second card href -> failure at `.nth(1)`; `x-default` target -> failure), restored; locale: RED "23 de setiembre de 2026" vs expected "septiembre", then GREEN; nav: RED identical current/non-current styles, then GREEN in both themes · lint · format · `pnpm check` 0/0/0 · `pnpm test` 202/202 · build 12 pages · `pnpm test:e2e` 83/83 · dry run: no bindings · parent re-ran: test 202/202 | Reviewed with T10 (see T10) |
 | T10 | done (merged `b4a32a2`) | `b3faac3` experience timeline page, `8c0409c` skills page | The WIP from the paused session had no recorded RED, so the writer proved each behavior by removing it: unit 5 failed (missing label modules, dictionary 28 vs 47 keys, missing nav hrefs); e2e 30 failed with the pages, nav entries and home link removed; the `h3` -> `h2` heading fix failed first in both locales; then GREEN · lint · format · `pnpm check` 0/0/0 · `pnpm test` 208/208 · build 16 pages · `pnpm test:e2e` 113/113 · dry run: no bindings · parent re-ran: test 208/208; screenshots of both pages at 1280 and 390 px in both themes | T09b + T10 slice (from `a3c518d`): medium (1,031 lines), 1 lens (reliability), approved (`review-c99f4c543b0c4fc7`), 2 non-blocking suggestions routed to T10b |
+| T10b | done (merged `56594f8`) | `1d2b3b3` ICU-tolerant date oracles, `c109c3b` years line grouped with the heading, `538d575` exact TZ restore (parent) | Test-only oracles proven by temporary breaks, then restored (`es-PE`: "expected '23 de setiembre de 2026' to contain 'septiembre'" and "'ene. 2023 – set. 2023'" rejected; no `day` -> missing '23'; 2-digit year -> missing '2026'; long month -> pattern mismatch); heading gap RED 48 px in both locales (h1 margin 16 + `gap-8` 32), then GREEN 8 px with the timeline still 32 px away; TZ restore: with the UTC pin removed on a UTC-5 host, 2/4 tests failed before the fix and 4/4 after · lint · format · `pnpm check` 0/0/0 · `pnpm test` 208/208 · build 16 pages · `pnpm test:e2e` 115/115 · dry run: no bindings · parent re-ran after its fix: test 208/208, lint, format, check 0/0/0; screenshots at 1280 and 390 px in both themes | Medium, 120 lines from `8c0409c`: not due (`under_budget`); pending in the next slice |
 
 ## Change log
 
@@ -324,8 +327,20 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   commits were split without interactive staging by stripping the skills entries from the shared files for the first
   commit. The owner granted the stop hook's whole-branch review a seventh time (239 files, 36,301 lines); it stopped
   with `lens_context_budget_exceeded` like the others.
+- 2026-09-29: T10b. The owner kept the years line on the experience page (every page is shared on its own) and the
+  Spanish wording (the usual Latin American terms, matching `es-419`; Spain would say "jornada completa"). The date
+  oracles became tolerant instead of pinning ICU (Node bundles its own ICU, so pinning means pinning Node). The
+  experience gap came from the global `h1` bottom margin (1rem) adding to the flex `gap-8`; the heading and the years
+  line now form a `gap-2` group (the hero's text spacing) with `mb-0`. The writer found that the date test's
+  `afterEach` stored the string "undefined" in `process.env.TZ` (an unknown zone that behaves as UTC), which hid a
+  missing UTC pin from the later tests on a non-UTC host; the parent switched it to `vi.stubEnv`/`vi.unstubAllEnvs`,
+  which deletes an unset variable (read in the Vitest 5.0.2 source). Noticed, not changed: the same heading margin
+  adds to the gap on other pages (projects list `h1` to grid 48 px, skills `h1` to the first `h2` 48 px, a skills `h2`
+  to its list 28 px, a role's company `h2` to its role line 20 px, the hero `h1` to its role line 24 px, a project
+  page `h1` to its summary 32 px; no project sets `role` yet). Most of it reads as section rhythm. Owner call.
 
 ## Next step
 
-T10b (owner answers first: years line on the experience page, Spanish wording), then T11 (owner decision pending:
-email provider; research in Engram `discovery/portfolio-t11-contact-options`).
+T11 (owner decisions pending: the email provider, research in Engram `discovery/portfolio-t11-contact-options`;
+Turnstile, which needs JavaScript, against the "works without JS" criterion; the CV languages; then the owner's
+actions: R2 bucket and PDF upload, secrets, Turnstile keys). Optional: the heading-spacing rhythm noted in T10b.
