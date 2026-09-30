@@ -1,12 +1,13 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { formatProjectDate } from './format-project-date';
 
 describe('formatProjectDate', () => {
-  const originalTz = process.env.TZ;
-
+  // `vi.unstubAllEnvs` restores TZ exactly, deleting it when it was unset. Assigning a
+  // saved `undefined` back instead stores the string "undefined", an unknown zone that
+  // behaves as UTC and would hide a missing UTC pin from the later tests on a non-UTC host.
   afterEach(() => {
-    process.env.TZ = originalTz;
+    vi.unstubAllEnvs();
   });
 
   it('formats an english date as a long, unambiguous date', () => {
@@ -43,12 +44,12 @@ describe('formatProjectDate', () => {
   // "Lima, Peru" (UTC-5), where a naive local-time format renders this exact date as
   // "September 27, 2026" instead of the 28th.
   it('renders the exact calendar day from the frontmatter, not shifted by the host timezone', () => {
-    process.env.TZ = 'America/Lima'; // UTC-5: would roll the day back if not pinned to UTC
+    vi.stubEnv('TZ', 'America/Lima'); // UTC-5: would roll the day back if not pinned to UTC
     expect(formatProjectDate(new Date('2026-09-28'), 'en')).toBe(
       'September 28, 2026',
     );
 
-    process.env.TZ = 'Pacific/Kiritimati'; // UTC+14: would roll the day forward instead
+    vi.stubEnv('TZ', 'Pacific/Kiritimati'); // UTC+14: would roll the day forward instead
     expect(formatProjectDate(new Date('2026-09-28'), 'en')).toBe(
       'September 28, 2026',
     );
