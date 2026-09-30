@@ -1,0 +1,157 @@
+import { z } from 'astro/zod';
+
+/** The settings the contact form cannot work without. */
+export const REQUIRED_CONTACT_SETTINGS = [
+  'TURNSTILE_SITE_KEY',
+  'TURNSTILE_SECRET_KEY',
+  'EMAILJS_SERVICE_ID',
+  'EMAILJS_TEMPLATE_ID',
+  'EMAILJS_PUBLIC_KEY',
+  'EMAILJS_PRIVATE_KEY',
+] as const;
+
+/**
+ * Test seams: they replace a provider's endpoint so the end-to-end tests can point the
+ * Worker at a fake server. Left blank, each provider's own endpoint is used.
+ */
+export const OPTIONAL_CONTACT_SETTINGS = [
+  'EMAILJS_API_URL',
+  'TURNSTILE_VERIFY_URL',
+] as const;
+
+export type ContactSettingName =
+  | (typeof REQUIRED_CONTACT_SETTINGS)[number]
+  | (typeof OPTIONAL_CONTACT_SETTINGS)[number];
+
+/**
+ * The validated settings, grouped by provider so each adapter takes only its own slice
+ * (the email sender never sees the Turnstile secret, and the other way around).
+ */
+export interface ContactConfig {
+  readonly turnstile: {
+    /** Public: the widget on the contact page uses it. */
+    readonly siteKey: string;
+    readonly secretKey: string;
+    /** A test seam; `undefined` means Turnstile's own verification endpoint. */
+    readonly verifyUrl: string | undefined;
+  };
+  readonly emailjs: {
+    readonly serviceId: string;
+    readonly templateId: string;
+    readonly publicKey: string;
+    readonly privateKey: string;
+    /** A test seam; `undefined` means EmailJS's own send endpoint. */
+    readonly apiUrl: string | undefined;
+  };
+}
+
+/**
+ * The outcome of reading the settings. A failure lists setting NAMES only, never a value:
+ * the result is meant to be logged and shown to the owner, and these settings are secrets.
+ */
+export type ContactConfigResult =
+  | { readonly ok: true; readonly config: ContactConfig }
+  | {
+      readonly ok: false;
+      /** Required settings that are absent, null or blank. */
+      readonly missing: readonly ContactSettingName[];
+      /** Settings that are set to something unusable (not text, or a bad URL). */
+      readonly invalid: readonly ContactSettingName[];
+    };
+
+// Internal issue messages. They are this file's own words, not Zod's defaults, and they
+// only ever decide which list a name joins: no message is ever returned.
+const MISSING = 'missing';
+const INVALID = 'invalid';
+
+/** An absent, null or blank setting is "not set"; text is trimmed, anything else stays. */
+function normalize(value: unknown): unknown {
+  if (value === null) return undefined;
+  if (typeof value !== 'string') return value;
+
+  const trimmed = value.trim();
+  return trimmed === '' ? undefined : trimmed;
+}
+
+const requiredText = z.preprocess(
+  normalize,
+  z.string({
+    // After `normalize`, `undefined` means nothing usable was set; any other non-text
+    // value is set, but to something that cannot be a key or an id.
+    error: (issue) => (issue.input === undefined ? MISSING : INVALID),
+  }),
+);
+
+// `http:` is allowed next to `https:` because the end-to-end harness serves its fakes on
+// `http://127.0.0.1`.
+const optionalHttpUrl = z.preprocess(
+  normalize,
+  z.url({ protocol: /^https?$/, error: INVALID }).optional(),
+);
+
+const settingsSchema = z
+  .object({
+    TURNSTILE_SITE_KEY: requiredText,
+    TURNSTILE_SECRET_KEY: requiredText,
+    EMAILJS_SERVICE_ID: requiredText,
+    EMAILJS_TEMPLATE_ID: requiredText,
+    EMAILJS_PUBLIC_KEY: requiredText,
+    EMAILJS_PRIVATE_KEY: requiredText,
+    EMAILJS_API_URL: optionalHttpUrl,
+    TURNSTILE_VERIFY_URL: optionalHttpUrl,
+  })
+  .transform((settings): ContactConfig => ({
+    turnstile: {
+      siteKey: settings.TURNSTILE_SITE_KEY,
+      secretKey: settings.TURNSTILE_SECRET_KEY,
+      verifyUrl: settings.TURNSTILE_VERIFY_URL,
+    },
+    emailjs: {
+      serviceId: settings.EMAILJS_SERVICE_ID,
+      templateId: settings.EMAILJS_TEMPLATE_ID,
+      publicKey: settings.EMAILJS_PUBLIC_KEY,
+      privateKey: settings.EMAILJS_PRIVATE_KEY,
+      apiUrl: settings.EMAILJS_API_URL,
+    },
+  }));
+
+const SETTING_NAMES: readonly unknown[] = [
+  ...REQUIRED_CONTACT_SETTINGS,
+  ...OPTIONAL_CONTACT_SETTINGS,
+];
+
+function isSettingName(value: unknown): value is ContactSettingName {
+  return SETTING_NAMES.includes(value);
+}
+
+function isSettingsBag(value: unknown): value is object {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Reads the contact settings from the Worker's `env` (or any object holding them) and
+ * checks them in one pass, so a misconfigured deploy is named instead of failing on a
+ * visitor's first submission. It never throws, and a failure carries setting names only:
+ * Zod's issues are read for the name and the kind of problem, then dropped, so nothing
+ * from the input can travel with the result. The `CONTACT_RATE_LIMIT` binding is not a
+ * setting and is checked where it is wired.
+ */
+export function parseContactConfig(env: unknown): ContactConfigResult {
+  const result = settingsSchema.safeParse(isSettingsBag(env) ? env : {});
+
+  if (result.success) {
+    return { ok: true, config: result.data };
+  }
+
+  const missing: ContactSettingName[] = [];
+  const invalid: ContactSettingName[] = [];
+
+  for (const issue of result.error.issues) {
+    const name = issue.path[0];
+    if (isSettingName(name)) {
+      (issue.message === MISSING ? missing : invalid).push(name);
+    }
+  }
+
+  return { ok: false, missing, invalid };
+}

@@ -8,9 +8,10 @@ Run every `wrangler` command from the repository root as `pnpm exec wrangler ...
 `pnpm install`.
 
 - [CV download (R2)](#cv-download-r2)
+- [Contact settings](#contact-settings)
 
-The contact form's email delivery and spam-protection setup get their own sections when the
-form ships.
+The step-by-step setup of the contact form's email delivery (EmailJS) and spam protection
+(Turnstile) gets its own sections when the form ships.
 
 ## CV download (R2)
 
@@ -101,3 +102,28 @@ starts empty (state lives in `.wrangler/state`, which git ignores), so `/cv/en.p
   on its own.
 - **The old CV still downloads after an upload.** Browsers and caches keep a copy for up to five
   minutes. Wait, or reload while bypassing the cache.
+
+## Contact settings
+
+The contact form needs eight settings from the Worker's environment. `parseContactConfig`
+(`src/modules/contact/config.ts`) checks them and reports the names of the settings that are
+missing or invalid, never their values. A blank value counts as missing.
+
+| Setting                | Required | What it is for                                                                                         |
+| ---------------------- | -------- | ------------------------------------------------------------------------------------------------------ |
+| `TURNSTILE_SITE_KEY`   | yes      | The public key of the Turnstile widget on the contact page. Browsers see it by design.                 |
+| `TURNSTILE_SECRET_KEY` | yes      | Secret. The key the Worker uses to ask Turnstile whether a submission's token is genuine.              |
+| `EMAILJS_SERVICE_ID`   | yes      | The EmailJS email service that sends through the owner's Gmail.                                        |
+| `EMAILJS_TEMPLATE_ID`  | yes      | The EmailJS template that lays out the message the owner receives.                                     |
+| `EMAILJS_PUBLIC_KEY`   | yes      | The EmailJS account's public key.                                                                      |
+| `EMAILJS_PRIVATE_KEY`  | yes      | Secret. The EmailJS account's private key (its access token); only the Worker holds it.                |
+| `EMAILJS_API_URL`      | no       | Test seam: replaces the EmailJS send endpoint. Leave it blank everywhere except the e2e tests.         |
+| `TURNSTILE_VERIFY_URL` | no       | Test seam: replaces Turnstile's verification endpoint. Leave it blank everywhere except the e2e tests. |
+
+The two seams let the end-to-end tests point the Worker at a fake server on `http://127.0.0.1`.
+Left blank, each provider's own endpoint is used; when set, the value must be an `http:` or
+`https:` URL, and anything else is reported as invalid.
+
+The real values of `TURNSTILE_SECRET_KEY` and the four `EMAILJS_*` settings never go into git:
+they are Worker secrets in Cloudflare and, for local development, entries in `.dev.vars`, which
+git ignores. `TURNSTILE_SITE_KEY` is public by design and is set as a plain variable.
