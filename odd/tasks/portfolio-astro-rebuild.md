@@ -75,13 +75,14 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~7,940 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+- Running count: ~8,875 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
   T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321 + T08 ~1,021 + T09 ~923 + T09b ~217 +
-  T10 ~778 + T10b ~88, with tests, excluding lockfiles and the legacy removal). It already passes the ~4,300
-  forecast, mostly from tests and the review follow-up tasks.
-- Last reviewed boundary: `8c0409c` (T09b + T10 slice; the merge `b4a32a2` has the same tree). Pending in the next
-  slice: the T10 docs commit `1edaac9`, T10b (`1d2b3b3`, `c109c3b`, `538d575`; assessed medium, 120 lines with the
-  docs commit, under budget), the T10b docs commit `9b0bcc4` and this T11 plan commit.
+  T10 ~778 + T10b ~88 + T11a ~935, with tests, excluding lockfiles and the legacy removal). It already passes the
+  ~4,300 forecast, mostly from tests and the review follow-up tasks.
+- Last reviewed boundary: `8c0409c` (T09b + T10 slice; the merge `b4a32a2` has the same tree). The next slice (the
+  T10 docs `1edaac9`, T10b, the T10b docs `9b0bcc4`, the T11 plan `e201a3c` and T11a up to `9ac381e`; medium, 1,184
+  lines) came due and the owner skipped its review (2026-09-30). As with the legacy removal, the next slice starts
+  after the skipped range: base `9ac381e` (the merge `6c345c9` has the same tree).
 
 ## Tasks
 
@@ -146,7 +147,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   rate limit, WhatsApp + mailto, CV download (R2), 404 page. Planned on 2026-09-30 by a read-only planning pass (see the
   change log) as five sub-tasks, each on its own branch `feat/astro-rebuild-11<x>-<slug>`. ~2,500-3,000 with tests and
   the e2e harness (the first estimate was ~450).
-  - [ ] **T11a** CV download via R2, the first on-demand route: `/cv/<locale>.pdf` streams `en.pdf`/`es.pdf` from the
+  - [x] **T11a** CV download via R2, the first on-demand route: `/cv/<locale>.pdf` streams `en.pdf`/`es.pdf` from the
     `CV_BUCKET` binding (bucket `portfolio-cv`); 404 for an unknown locale, a missing binding or a missing object; 304 on
     `If-None-Match`; an `attachment` with a named file, `noindex`. The profile `cv` field is set per locale, so the home
     CV button renders. Local R2 seeded with fixture PDFs for e2e; `wrangler types` runs before `astro check`; `.dev.vars`
@@ -190,8 +191,11 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 
 ## Checks per task
 
-`pnpm lint` · `pnpm astro check` · `pnpm test` · `pnpm test:e2e` · `pnpm build`
-(available from T02; T01 runs `pnpm astro check` + `pnpm build`).
+`pnpm lint` · `pnpm format:check` · `pnpm check` · `pnpm test` · `pnpm test:e2e` · `pnpm build`
+(available from T02; T01 ran `pnpm astro check` + `pnpm build`). Since T11a, `pnpm check` runs `wrangler types` before
+`astro check`, and `pnpm astro check` alone fails without the generated Worker types; the dry run
+(`pnpm exec wrangler deploy --dry-run`) lists the bindings. Scripted e2e runs need `PLAYWRIGHT_HTML_OPEN=never`, or
+the HTML reporter blocks the shell after a failure.
 
 ## Progress
 
@@ -213,7 +217,8 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 | T09 | done (merged `85895d5`) | `490532d` code-point tie-break + home e2e links, `6fa4e2c` covers, `ad5eb33` list page + nav entry, `a3c518d` project pages | Strict TDD, RED observed per behavior (`localeCompare` order `[a, B]` vs expected `[B, a]`; missing nav and section helpers; missing date formatter; with the new pages stashed, 26 e2e failures: 404s, missing links and alternates), then GREEN · lint · format · `pnpm check` 0/0/0 · `pnpm test` 199/199 · build 12 pages · `pnpm test:e2e` 81/81 · dry run: no bindings · parent re-ran: test 199/199, build 12 pages; screenshots of the list, a project page and the Spanish list; draft URL returns 404 | T09 slice with `8dfb6a5`: medium (954 lines), 1 lens (reliability), approved (`review-fe50adbcbf1b75cd`), 3 non-blocking findings routed to T09b |
 | T09b | done (merged `dbe64c3`) | `16944ec` exact featured cards, `239c57a` every list link + `x-default`, `962a9f9` shared `es-419` date locale, `f67e22f` visible nav marker | Test-only items proven by temporary breaks (card limit 2 -> 6 failures; second card href -> failure at `.nth(1)`; `x-default` target -> failure), restored; locale: RED "23 de setiembre de 2026" vs expected "septiembre", then GREEN; nav: RED identical current/non-current styles, then GREEN in both themes · lint · format · `pnpm check` 0/0/0 · `pnpm test` 202/202 · build 12 pages · `pnpm test:e2e` 83/83 · dry run: no bindings · parent re-ran: test 202/202 | Reviewed with T10 (see T10) |
 | T10 | done (merged `b4a32a2`) | `b3faac3` experience timeline page, `8c0409c` skills page | The WIP from the paused session had no recorded RED, so the writer proved each behavior by removing it: unit 5 failed (missing label modules, dictionary 28 vs 47 keys, missing nav hrefs); e2e 30 failed with the pages, nav entries and home link removed; the `h3` -> `h2` heading fix failed first in both locales; then GREEN · lint · format · `pnpm check` 0/0/0 · `pnpm test` 208/208 · build 16 pages · `pnpm test:e2e` 113/113 · dry run: no bindings · parent re-ran: test 208/208; screenshots of both pages at 1280 and 390 px in both themes | T09b + T10 slice (from `a3c518d`): medium (1,031 lines), 1 lens (reliability), approved (`review-c99f4c543b0c4fc7`), 2 non-blocking suggestions routed to T10b |
-| T10b | done (merged `56594f8`) | `1d2b3b3` ICU-tolerant date oracles, `c109c3b` years line grouped with the heading, `538d575` exact TZ restore (parent) | Test-only oracles proven by temporary breaks, then restored (`es-PE`: "expected '23 de setiembre de 2026' to contain 'septiembre'" and "'ene. 2023 – set. 2023'" rejected; no `day` -> missing '23'; 2-digit year -> missing '2026'; long month -> pattern mismatch); heading gap RED 48 px in both locales (h1 margin 16 + `gap-8` 32), then GREEN 8 px with the timeline still 32 px away; TZ restore: with the UTC pin removed on a UTC-5 host, 2/4 tests failed before the fix and 4/4 after · lint · format · `pnpm check` 0/0/0 · `pnpm test` 208/208 · build 16 pages · `pnpm test:e2e` 115/115 · dry run: no bindings · parent re-ran after its fix: test 208/208, lint, format, check 0/0/0; screenshots at 1280 and 390 px in both themes | Medium, 120 lines from `8c0409c`: not due (`under_budget`); pending in the next slice |
+| T10b | done (merged `56594f8`) | `1d2b3b3` ICU-tolerant date oracles, `c109c3b` years line grouped with the heading, `538d575` exact TZ restore (parent) | Test-only oracles proven by temporary breaks, then restored (`es-PE`: "expected '23 de setiembre de 2026' to contain 'septiembre'" and "'ene. 2023 – set. 2023'" rejected; no `day` -> missing '23'; 2-digit year -> missing '2026'; long month -> pattern mismatch); heading gap RED 48 px in both locales (h1 margin 16 + `gap-8` 32), then GREEN 8 px with the timeline still 32 px away; TZ restore: with the UTC pin removed on a UTC-5 host, 2/4 tests failed before the fix and 4/4 after · lint · format · `pnpm check` 0/0/0 · `pnpm test` 208/208 · build 16 pages · `pnpm test:e2e` 115/115 · dry run: no bindings · parent re-ran after its fix: test 208/208, lint, format, check 0/0/0; screenshots at 1280 and 390 px in both themes | Medium, 120 lines from `8c0409c`: not due (`under_budget`); its slice was skipped by the owner (see T11a) |
+| T11a | done (merged `6c345c9`) | `8a5cf33` CV path + serving rules, `be440d3` R2 route, binding and local seed, `9ac381e` profile CV link per locale | Strict TDD, RED observed per behavior (missing `cv-path`/`serve-cv` modules; 24/25 `serveCv` tests failing against a naive stub; the schema accepting other paths, 6 failures; integrity: `cv` undefined; e2e: 11/12 CV tests failing with 404 and no `no-store`; home CV link count 0 in both locales), then GREEN; 4 characterization tests after probing the server (HEAD, a past `If-Modified-Since`, `If-Unmodified-Since` -> 412, `If-Match` + `If-None-Match` -> 304), the 304/412 rule pinned by mutation (2 and 4 failures) · lint · format · `pnpm check` 0/0/0 (99 files) · `pnpm test` 250/250 · build 16 pages + Worker · `pnpm test:e2e` 131/131 · dry run: `CV_BUCKET (portfolio-cv)` + `ASSETS` · CI replay in a clean clone passed · parent re-ran: test 250/250, check 0/0/0 | Slice from `8c0409c` (T10b + T11a): medium, 1,184 lines, due (`slice_budget_reached`); skipped by the owner. Tier of the writer's commits with the review skipped: medium (999 lines) -> the writer's verification plus the parent's spot check |
 
 ## Change log
 
@@ -378,9 +383,26 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   `carlos15erh.workers.dev` hostname, and whether R2 needs a payment method on file. The Spanish 404 relies on Astro
   resolving `/es/404` first (read in the source, not documented); T11e proves it. For T12/T13: the CSP must allow
   `challenges.cloudflare.com`, the 404 pages skip canonical and hreflang, and robots gets `Disallow: /cv/`.
+- 2026-09-30: T11a. `/cv/<locale>.pdf` is the site's first on-demand route, so the build now emits a Worker in
+  `dist/server` next to the static assets. The pure `serveCv` (a structural bucket type, driven by a fake bucket in
+  Vitest) answers 200 as a named attachment with an ETag, `Cache-Control: public, max-age=300, must-revalidate` and
+  `X-Robots-Tag: noindex`. A body-less R2 object means a failed precondition: 304 when the request carries
+  `If-None-Match` or `If-Modified-Since`, otherwise 412 (the parent's refinement of the plan, per RFC 9110; R2 does not
+  say which precondition failed, so a request with both kinds gets 304). An unknown locale, a missing binding or a
+  missing object give an uncached, logged 404 with a short text body: Astro 7.3.5 swaps a body-less 404 or 500 for the
+  site's error page. The profile `cv` field must equal `cvPath(locale)`, so the home CV button renders in both
+  locales. The writer verified the plan's open assumptions: the `previews` block is valid in wrangler 4.141.0,
+  `e2e:seed` and the preview share `.wrangler/state`, `wrangler types` needs no login, and i18n routing skips non-page
+  routes. Gotcha: `wrangler r2 object put --local` fails with "Network connection lost" when the state path passes
+  about 260 characters (Windows). Wrangler only creates a bucket when `bucket_name` is omitted, so the owner creates
+  `portfolio-cv` and uploads both PDFs before the branch is pushed (`docs/contact-setup.md`).
+- 2026-09-30: the review of the slice from `8c0409c` (T10b + T11a, medium, 1,184 lines) came due, and the stop hook
+  offered its whole-branch review a ninth time (248 files, 37,389 lines, high). The owner skipped both for these
+  candidates; nothing was created.
 
 ## Next step
 
-T11a (CV download via R2). Owner, in parallel: create the R2 bucket `portfolio-cv` and upload `en.pdf` and `es.pdf`
-before T11a is pushed; create the Turnstile widget early to confirm it accepts the `carlos15erh.workers.dev` hostname;
-set up EmailJS before T11d. Optional: the heading-spacing rhythm noted in T10b.
+T11b (contact core, pure). Owner, in parallel: create the R2 bucket `portfolio-cv` and upload `en.pdf` and `es.pdf`
+before `feat/astro-rebuild` is pushed (T11a is merged, and Workers Builds deploys every pushed branch); create the
+Turnstile widget early to confirm it accepts the `carlos15erh.workers.dev` hostname; set up EmailJS before T11d.
+Optional: the heading-spacing rhythm noted in T10b.
