@@ -186,6 +186,94 @@ describe('parseContactConfig: the optional test seams', () => {
     expect(config.turnstile.verifyUrl).toBe(url);
   });
 
+  // `http:` is for the end-to-end harness, which serves its fakes on the machine's own
+  // loopback address; any other host must use `https:`, so a secret never travels in clear
+  // text (the EmailJS private key and the Turnstile secret ride in these requests).
+  it.each(
+    SEAMS.flatMap((name) =>
+      [
+        'http://127.0.0.1/send',
+        'http://127.0.0.1:4332/emailjs/send',
+        'http://localhost/send',
+        'http://localhost:8787/turnstile/siteverify',
+        'http://LocalHost:8787/send',
+        'http://[::1]/send',
+        'http://[::1]:4332/send',
+      ].map((value) => [name, value]),
+    ),
+  )('accepts the loopback http URL for %s: %s', (name, url) => {
+    const config = succeeded({ ...completeEnv(), [name]: url });
+
+    expect(
+      name === 'EMAILJS_API_URL'
+        ? config.emailjs.apiUrl
+        : config.turnstile.verifyUrl,
+    ).toBe(url);
+  });
+
+  it.each(
+    SEAMS.flatMap((name) =>
+      [
+        'https://127.0.0.1/send',
+        'https://localhost:8787/send',
+        'https://[::1]/send',
+        'https://api.emailjs.com/api/v1.0/email/send',
+        'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+        'https://fake-provider.example.com:8443/send',
+      ].map((value) => [name, value]),
+    ),
+  )('accepts the https URL for %s on any host: %s', (name, url) => {
+    const config = succeeded({ ...completeEnv(), [name]: url });
+
+    expect(
+      name === 'EMAILJS_API_URL'
+        ? config.emailjs.apiUrl
+        : config.turnstile.verifyUrl,
+    ).toBe(url);
+  });
+
+  it.each(
+    SEAMS.flatMap((name) =>
+      [
+        'http://example.com/send',
+        'http://api.emailjs.com/api/v1.0/email/send',
+        'http://challenges.cloudflare.com/turnstile/v0/siteverify',
+        'http://192.168.1.10/send',
+        'http://10.0.0.5:8787/send',
+        'http://0.0.0.0/send',
+        'http://127.0.0.2/send',
+        'http://[::2]/send',
+        // Hosts that only look like a loopback one. The URL's real host is what counts.
+        'http://localhost.example.com/send',
+        'http://127.0.0.1.example.com/send',
+        'http://localhost@example.com/send',
+        'http://127.0.0.1:80@example.com/send',
+        'http://example.com/send?host=localhost',
+        'http://example.com#@127.0.0.1',
+        'http://example.com/127.0.0.1',
+      ].map((value) => [name, value]),
+    ),
+  )(
+    'reports %s as invalid when it is the non-loopback http URL %s',
+    (name, url) => {
+      expect(failed({ ...completeEnv(), [name]: url })).toEqual({
+        ok: false,
+        missing: [],
+        invalid: [name],
+      });
+    },
+  );
+
+  it('reports each seam on its own when only one is an http URL on a public host', () => {
+    expect(
+      failed({
+        ...completeEnv(),
+        EMAILJS_API_URL: 'http://127.0.0.1:4332/emailjs/send',
+        TURNSTILE_VERIFY_URL: 'http://turnstile.example.com/verify',
+      }),
+    ).toEqual({ ok: false, missing: [], invalid: ['TURNSTILE_VERIFY_URL'] });
+  });
+
   it.each(
     SEAMS.flatMap((name) =>
       [
@@ -235,6 +323,17 @@ describe('parseContactConfig: it reports names and never values', () => {
     });
 
     expect(result.ok).toBe(false);
+    expect(JSON.stringify(result)).not.toContain(SENTINEL);
+  });
+
+  it('keeps the value of a rejected http URL out of the failure too', () => {
+    const result = failed({
+      ...completeEnv(),
+      EMAILJS_API_URL: `http://${SENTINEL}.example.com/send`,
+      TURNSTILE_VERIFY_URL: `http://user:${SENTINEL}@example.com/verify`,
+    });
+
+    expect(result.invalid).toEqual(['EMAILJS_API_URL', 'TURNSTILE_VERIFY_URL']);
     expect(JSON.stringify(result)).not.toContain(SENTINEL);
   });
 

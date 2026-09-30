@@ -121,8 +121,10 @@ missing or invalid, never their values. A blank value counts as missing.
 | `TURNSTILE_VERIFY_URL` | no       | Test seam: replaces Turnstile's verification endpoint. Leave it blank everywhere except the e2e tests. |
 
 The two seams let the end-to-end tests point the Worker at a fake server on `http://127.0.0.1`.
-Left blank, each provider's own endpoint is used; when set, the value must be an `http:` or
-`https:` URL, and anything else is reported as invalid.
+Left blank, each provider's own endpoint is used. When set, the value must be an `https:` URL
+(any host) or an `http:` URL whose host is `127.0.0.1`, `localhost` or `[::1]`. The requests to
+these endpoints carry the EmailJS private key and the Turnstile secret key, so a plain-text hop
+to any other machine is refused, and anything else is reported as invalid.
 
 The real values of `TURNSTILE_SECRET_KEY` and the four `EMAILJS_*` settings never go into git:
 they are Worker secrets in Cloudflare and, for local development, entries in `.dev.vars`, which
