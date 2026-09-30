@@ -25,13 +25,21 @@ const orderedRoles = sortExperience(roles);
 ---
 
 <div class="flex flex-col gap-8">
-  <h1>{dictionary.experiencePageHeading}</h1>
-  <p
-    data-testid="years-of-experience"
-    class="font-mono text-sm text-text-muted"
-  >
-    {yearsLine}
-  </p>
+  <!--
+    The years line is the h1's subtitle, so the two form one group with a tight gap
+    (`gap-2`, the home hero's text-group spacing). `mb-0` drops the h1's base bottom
+    margin (see global.css) so it is not added on top of that gap; the timeline below
+    keeps the container's larger `gap-8`.
+  -->
+  <div class="flex flex-col gap-2">
+    <h1 class="mb-0">{dictionary.experiencePageHeading}</h1>
+    <p
+      data-testid="years-of-experience"
+      class="font-mono text-sm text-text-muted"
+    >
+      {yearsLine}
+    </p>
+  </div>
   <!--
     A real <ol>: role order is meaningful (newest first), not just a visual list.
     The vertical line and each entry's dot are pure CSS `::before` generated content -

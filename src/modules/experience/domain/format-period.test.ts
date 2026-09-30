@@ -76,10 +76,13 @@ describe('formatPeriod literal oracle', () => {
   // trailing dot to every short-month abbreviation ("set. 2023" for September) - unlike
   // `es-419`/bare `es`, which this module already used, so this passes before and after
   // the shared-map refactor; it exists to catch a future accidental switch to a
-  // region-specific tag.
+  // region-specific tag. September's own abbreviation also varies ("sept" for es-419 on
+  // Node v24.21.0 / ICU 78.3, "sep" for es-MX on the same ICU, and other ICU/CLDR
+  // versions may add a trailing dot), so the pattern accepts "sep" or "sept", with or
+  // without that dot, and still rejects the es-PE "set.".
   it('formats a Spanish period through September with the neutral abbreviation, not the es-PE regionalism ("set.")', () => {
     expect(formatPeriod('2023-01', '2023-09', 'es')).toMatch(
-      new RegExp(`^ene\\.? 2023 ${DASH} sept\\.? 2023$`, 'i'),
+      new RegExp(`^ene\\.? 2023 ${DASH} sept?\\.? 2023$`, 'i'),
     );
   });
 });
