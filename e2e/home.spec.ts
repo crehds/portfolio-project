@@ -140,14 +140,16 @@ for (const { path, lang } of homePages) {
       ).toHaveCount(1);
     });
 
-    test('does not render a CV link while the profile cv field is unset', async ({
-      page,
-    }) => {
+    // The profile `cv` field holds one download route per locale (see
+    // src/modules/cv/cv-path.ts); `e2e/cv.spec.ts` covers what that route serves.
+    test('renders the CV download link for the locale', async ({ page }) => {
       await page.goto(path);
 
-      await expect(
-        page.locator('main').getByRole('link', { name: /cv/i }),
-      ).toHaveCount(0);
+      const cv = page.locator('main').getByRole('link', {
+        name: lang === 'en' ? 'Download CV' : 'Descargar CV',
+      });
+      await expect(cv).toHaveCount(1);
+      await expect(cv).toHaveAttribute('href', `/cv/${lang}.pdf`);
     });
 
     test('renders exactly the 3 featured projects, with no drafts', async ({

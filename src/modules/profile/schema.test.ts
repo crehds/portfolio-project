@@ -61,3 +61,43 @@ describe('profileSchema', () => {
     ).toThrow();
   });
 });
+
+describe('profileSchema cv', () => {
+  it('accepts a cv that points each locale at its own download route', () => {
+    const profile = schema.parse({
+      ...validProfile,
+      cv: { en: '/cv/en.pdf', es: '/cv/es.pdf' },
+    });
+
+    expect(profile.cv).toEqual({ en: '/cv/en.pdf', es: '/cv/es.pdf' });
+  });
+
+  it('keeps the cv optional', () => {
+    expect(schema.parse(validProfile).cv).toBeUndefined();
+  });
+
+  it.each([
+    ['the other locale download route', { en: '/cv/es.pdf', es: '/cv/es.pdf' }],
+    ['an external url', { en: 'https://example.com/cv.pdf', es: '/cv/es.pdf' }],
+    ['a path outside the download route', { en: '/cv/en.pdf', es: '/cv.pdf' }],
+    ['a missing leading slash', { en: 'cv/en.pdf', es: '/cv/es.pdf' }],
+    ['an empty path', { en: '/cv/en.pdf', es: '' }],
+    ['a missing locale', { en: '/cv/en.pdf' }],
+  ])('rejects %s', (_label, cv) => {
+    expect(() => schema.parse({ ...validProfile, cv })).toThrow();
+  });
+
+  it('names the offending locale and the path it must have', () => {
+    const result = schema.safeParse({
+      ...validProfile,
+      cv: { en: '/cv/es.pdf', es: '/cv/es.pdf' },
+    });
+
+    if (result.success) {
+      throw new Error('Expected the schema to reject the cv.');
+    }
+    expect(result.error.issues).toHaveLength(1);
+    expect(result.error.issues[0].path).toEqual(['cv', 'en']);
+    expect(result.error.issues[0].message).toContain('/cv/en.pdf');
+  });
+});
