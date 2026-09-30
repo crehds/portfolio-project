@@ -36,13 +36,13 @@ framework fixes them in one move, and the codebase itself proves the skills the 
 | Area | Decision |
 |---|---|
 | Framework | Astro 7 (7.3.5 verified), Node >= 22.12 (local 24.21), pnpm |
-| Rendering | Static by default; on-demand only for the contact form action (and Phase 4 hooks) |
+| Rendering | Static by default; on-demand only for the contact pages (the form posts to the page through an Astro Action) and the `/cv/<locale>.pdf` route (and Phase 4 hooks) |
 | Hosting | Cloudflare Workers: static assets + `@astrojs/cloudflare` for server routes; `*.workers.dev` until a domain exists. Vercel is the fallback |
 | Content | Content Layer collections with Zod schemas: schema = port, loader = adapter |
 | Seams | Only where the source will change: `projects` (local, then GitHub) and contact email delivery (provider adapter) |
 | i18n | `en` default at `/`, `es` at `/es/`, hreflang in the sitemap |
-| Contact | Form (Astro Action -> `EmailSender` port -> provider adapter) + WhatsApp link + mailto |
-| CV download | PDF in a Cloudflare R2 bucket, served by the Worker at the site's own URL (`/cv/<locale>.pdf`); the owner uploads it, so it stays out of git and updates without a redeploy |
+| Contact | Form (Astro Action -> `EmailSender` port -> EmailJS adapter, called from the Worker; Resend replaces the adapter once a domain exists) + Turnstile, required, with a honeypot and a rate limit as extra layers + WhatsApp link + mailto. Without JavaScript the page points to email and WhatsApp (owner, 2026-09-30) |
+| CV download | PDFs in a Cloudflare R2 bucket, served by the Worker at the site's own URL: one per locale (`/cv/en.pdf`, `/cv/es.pdf`); the owner uploads both, so they stay out of git and update without a redeploy |
 | Styling | Tailwind v4 via `@tailwindcss/vite`, Astro Fonts API, `<Picture>` with AVIF/WebP |
 | Visual direction | Legacy identity, content first (owner): Ubuntu + Ubuntu Mono, self-hosted; dark `#161a17` with a cyan accent, light navy text with a blue accent; every text/background token pair meets WCAG AA (unit-tested) |
 | JavaScript | Zero by default; islands only for real interactivity |
@@ -81,7 +81,7 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   forecast, mostly from tests and the review follow-up tasks.
 - Last reviewed boundary: `8c0409c` (T09b + T10 slice; the merge `b4a32a2` has the same tree). Pending in the next
   slice: the T10 docs commit `1edaac9`, T10b (`1d2b3b3`, `c109c3b`, `538d575`; assessed medium, 120 lines with the
-  docs commit, under budget) and this docs commit.
+  docs commit, under budget), the T10b docs commit `9b0bcc4` and this T11 plan commit.
 
 ## Tasks
 
@@ -142,7 +142,27 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   Owner answers: keep the years line on the experience page and the Spanish wording ("Habilidades", "Tiempo
   completo", "Medio tiempo"). Route: delegated (writer trigger: the e2e spacing test and the page component), plus
   the parent's inline TZ-restore fix in one test file. ~60.
-- [ ] **T11** Contact: form via Astro Action (Zod validation, works without JS), `EmailSender` port + provider adapter, Turnstile + honeypot + rate limit, WhatsApp + mailto, CV download (R2 binding + on-demand `/cv/<locale>.pdf` route, then set the profile `cv` field; owner creates the bucket and uploads the PDF first), 404 page. Route: delegated + owner action. ~450.
+- [ ] **T11** Contact: form via Astro Action (Zod validation), `EmailSender` port + EmailJS adapter, Turnstile + honeypot +
+  rate limit, WhatsApp + mailto, CV download (R2), 404 page. Planned on 2026-09-30 by a read-only planning pass (see the
+  change log) as five sub-tasks, each on its own branch `feat/astro-rebuild-11<x>-<slug>`. ~2,500-3,000 with tests and
+  the e2e harness (the first estimate was ~450).
+  - [ ] **T11a** CV download via R2, the first on-demand route: `/cv/<locale>.pdf` streams `en.pdf`/`es.pdf` from the
+    `CV_BUCKET` binding (bucket `portfolio-cv`); 404 for an unknown locale, a missing binding or a missing object; 304 on
+    `If-None-Match`; an `attachment` with a named file, `noindex`. The profile `cv` field is set per locale, so the home
+    CV button renders. Local R2 seeded with fixture PDFs for e2e; `wrangler types` runs before `astro check`; `.dev.vars`
+    ignored. Route: delegated. Owner, before the first push: create the bucket and upload both PDFs.
+  - [ ] **T11b** Contact core, pure: the form schema (name, email, message, honeypot, Turnstile token, locale; stable
+    error codes), the `EmailSender` port, a config parser that reports names and never values, and `submitContact`
+    (schema, then honeypot with a silent success, rate limit, Turnstile, send); the rate-limit key comes from
+    `cf-connecting-ip` only. Route: delegated.
+  - [ ] **T11c** Adapters tested with a mocked `fetch`: EmailJS sender, Turnstile verifier, Workers rate limiter (fails
+    open on binding errors), dependency wiring; 8 s timeouts; no secret in any error text. Route: delegated.
+  - [ ] **T11d** Contact page, Action and form (EN/ES), in four commits: the hermetic e2e harness (fake EmailJS and
+    Turnstile server, `.dev.vars.e2e`, `CLOUDFLARE_ENV=e2e`) with the page shell, nav item and home form CTA; the action
+    and form (303 to `?sent=1` on success, localized field errors with the values kept); the Turnstile widget and the
+    honeypot; the no-JS and "form unavailable" notices, axe. Route: delegated. Owner, before live checks: EmailJS
+    (service, template, non-browser API, keys), the Turnstile widget and keys, Worker secrets.
+  - [ ] **T11e** 404 pages in EN and ES (`src/pages/404.astro`, `src/pages/es/404.astro`). Route: delegated.
 
 ### Phase 3 · Launch
 
@@ -163,7 +183,8 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 - Lighthouse on key pages: Performance >= 95, Accessibility 100, Best Practices 100, SEO 100.
 - Zero axe violations on every page; full keyboard navigation.
 - Link previews (LinkedIn, Slack) show title, description and image.
-- The contact form reaches the owner's inbox, validates on the server, works without JS and rejects bots.
+- The contact form reaches the owner's inbox, validates on the server and rejects bots; without JavaScript, the page
+  points to email and WhatsApp (owner, 2026-09-30: Turnstile has no no-JS path).
 - CI green on every PR: lint, typecheck, unit, e2e, build.
 - Repo identity belongs to the owner: README, LICENSE, package metadata.
 
@@ -338,9 +359,28 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   adds to the gap on other pages (projects list `h1` to grid 48 px, skills `h1` to the first `h2` 48 px, a skills `h2`
   to its list 28 px, a role's company `h2` to its role line 20 px, the hero `h1` to its role line 24 px, a project
   page `h1` to its summary 32 px; no project sets `role` yet). Most of it reads as section rhythm. Owner call.
+- 2026-09-29: the owner granted the stop hook's whole-branch review an eighth time (239 files, 36,374 lines); it stopped
+  with `lens_context_budget_exceeded` like the others.
+- 2026-09-30: T11 owner decisions (research in Engram `discovery/portfolio-t11-contact-options`). EmailJS now, called
+  from the Worker, because Cloudflare's own email and Resend's production sending both need a domain; EmailJS sends
+  through the owner's Gmail (free: 200 requests a month, 1 per second). Turnstile is required: it has no no-JS path, a
+  no-JS fallback would be the path bots take, and bots could spend the EmailJS quota; the acceptance criterion changed
+  accordingly. The owner uploads both CV languages.
+- 2026-09-30: T11 planning pass (read-only; Astro, Cloudflare and EmailJS docs plus the installed sources). The contact
+  pages and `/cv/<locale>.pdf` become the first on-demand routes (the build is assets-only today). No session is needed:
+  the action result reaches the page in memory, and a success redirects with 303 to `?sent=1`. Bindings and secrets
+  come from `cloudflare:workers` `env` in thin composition roots only, through a config parser that reports names and
+  never values; an invalid config shows the same "write me instead" notice as no-JS, so a missing secret never fails a
+  deploy. Worker Previews do not inherit vars, bindings or secrets, so a `previews` block mirrors the bucket, the rate
+  limiter and the site key; previews show the notice unless the owner adds preview secrets. Tests stay hermetic: a fake
+  EmailJS/Turnstile server, the Turnstile test keys and a seeded local R2. Unverified until the first deploys: the rate
+  limiting binding on the Free plan (fallback: Turnstile and the honeypot), Turnstile accepting the
+  `carlos15erh.workers.dev` hostname, and whether R2 needs a payment method on file. The Spanish 404 relies on Astro
+  resolving `/es/404` first (read in the source, not documented); T11e proves it. For T12/T13: the CSP must allow
+  `challenges.cloudflare.com`, the 404 pages skip canonical and hreflang, and robots gets `Disallow: /cv/`.
 
 ## Next step
 
-T11 (owner decisions pending: the email provider, research in Engram `discovery/portfolio-t11-contact-options`;
-Turnstile, which needs JavaScript, against the "works without JS" criterion; the CV languages; then the owner's
-actions: R2 bucket and PDF upload, secrets, Turnstile keys). Optional: the heading-spacing rhythm noted in T10b.
+T11a (CV download via R2). Owner, in parallel: create the R2 bucket `portfolio-cv` and upload `en.pdf` and `es.pdf`
+before T11a is pushed; create the Turnstile widget early to confirm it accepts the `carlos15erh.workers.dev` hostname;
+set up EmailJS before T11d. Optional: the heading-spacing rhythm noted in T10b.
