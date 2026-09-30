@@ -134,6 +134,35 @@ for (const {
       await expect(page.getByTestId('years-of-experience')).toHaveText(pattern);
     });
 
+    test('groups the years line with the heading and keeps the timeline at a distance', async ({
+      page,
+    }) => {
+      await page.goto(path);
+
+      // Vertical gaps in CSS px from `getBoundingClientRect`, all read in one page turn.
+      const gaps = await page.evaluate(() => {
+        const rect = (selector: string) => {
+          const element = document.querySelector(selector);
+          if (!element) throw new Error(`Missing element: ${selector}`);
+          return element.getBoundingClientRect();
+        };
+        const heading = rect('main h1');
+        const yearsLine = rect('[data-testid="years-of-experience"]');
+        const timeline = rect('main ol');
+
+        return {
+          headingToYears: yearsLine.top - heading.bottom,
+          yearsToTimeline: timeline.top - yearsLine.bottom,
+        };
+      });
+
+      // The years line is the heading's subtitle, so it sits close to the h1...
+      expect(gaps.headingToYears).toBeGreaterThanOrEqual(4);
+      expect(gaps.headingToYears).toBeLessThanOrEqual(16);
+      // ...while the timeline keeps its own distance from that pair.
+      expect(gaps.yearsToTimeline).toBeGreaterThanOrEqual(24);
+    });
+
     test('lists exactly the 5 roles, as an ordered list, in domain order, with their periods and highlight counts', async ({
       page,
     }) => {
