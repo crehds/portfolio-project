@@ -20,4 +20,25 @@
   "observability": {
     "enabled": true,
   },
+  // The CV PDFs (`en.pdf` and `es.pdf`) live in this R2 bucket, not in git or in the
+  // build, so the owner can replace one without a redeploy. `src/pages/cv/[locale].pdf.ts`
+  // reads it through this binding. Wrangler does not create a missing bucket on deploy:
+  // create it and upload both files first (docs/contact-setup.md).
+  "r2_buckets": [
+    {
+      "binding": "CV_BUCKET",
+      "bucket_name": "portfolio-cv",
+    },
+  ],
+  // Worker Previews (`wrangler preview`) do not inherit bindings from the top level, so a
+  // preview would have no CV bucket without this mirror. It points at the same bucket: the
+  // CV is public, read-only content and there is no staging copy to keep apart.
+  "previews": {
+    "r2_buckets": [
+      {
+        "binding": "CV_BUCKET",
+        "bucket_name": "portfolio-cv",
+      },
+    ],
+  },
 }

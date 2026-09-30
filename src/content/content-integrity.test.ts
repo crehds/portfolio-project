@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
+import { cvPath } from '../modules/cv/cv-path';
+
 // Filesystem-only checks (no `astro:*` imports, see AGENTS.md/T06): the projects schema
 // validates one Markdown file's frontmatter in isolation, so it can never see whether a
 // sibling locale file is missing (the Spanish site would silently fall back to English,
@@ -270,5 +272,17 @@ describe('profile content integrity', () => {
 
     expect(headline.en.startsWith(role.en)).toBe(false);
     expect(headline.es.startsWith(role.es)).toBe(false);
+  });
+
+  // The schema checks a `cv` value only when one is set (the field is optional), and the
+  // home page shows its "Download CV" button only when it is. This pins the committed
+  // content itself: both locales are set, each to the one route that serves its CV.
+  it('points each locale cv at its own download route', () => {
+    const profile = readFileSync(PROFILE_FILE, 'utf-8');
+
+    expect(parseLocalizedField(profile, 'cv')).toEqual({
+      en: cvPath('en'),
+      es: cvPath('es'),
+    });
   });
 });

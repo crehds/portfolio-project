@@ -17,6 +17,12 @@
   location:
     en: Lima, Peru
     es: Lima, Perú
+  # Each locale's CV download route, served from R2 by `src/pages/cv/[locale].pdf.ts`. The
+  # schema and `src/content/content-integrity.test.ts` require exactly `cvPath(locale)`
+  # (`src/modules/cv/cv-path.ts`); the PDFs themselves are uploaded per docs/contact-setup.md.
+  cv:
+    en: /cv/en.pdf
+    es: /cv/es.pdf
   # Owner's public GitHub avatar, downloaded once into `src/assets/` (see T08 in
   # odd/tasks/portfolio-astro-rebuild.md). Relative to this file's own directory
   # (`src/content/`), per the `file()` loader's `image()` path resolution.

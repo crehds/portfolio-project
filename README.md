@@ -24,13 +24,14 @@ The dev server runs at http://localhost:4321.
 | `pnpm dev`            | Start the dev server                                         |
 | `pnpm build`          | Build the production site into `dist/`                       |
 | `pnpm preview`        | Serve the production build locally                           |
-| `pnpm check`          | Type-check `.astro` and TypeScript files                     |
+| `pnpm check`          | Generate the Worker types, then type-check the code          |
 | `pnpm lint`           | Lint the codebase with ESLint                                |
 | `pnpm lint:fix`       | Lint and auto-fix what ESLint can                            |
 | `pnpm format`         | Format the codebase with Prettier                            |
 | `pnpm format:check`   | Check formatting without writing changes                     |
 | `pnpm test`           | Run unit tests with Vitest                                   |
 | `pnpm test:e2e`       | Run end-to-end and accessibility tests with Playwright       |
+| `pnpm e2e:seed`       | Fill the local R2 bucket with the test CVs (e2e runs it)     |
 | `pnpm generate-types` | Regenerate `worker-configuration.d.ts` from `wrangler.jsonc` |
 
 ## Stack
@@ -57,6 +58,9 @@ required.
   version there, so the dashboard's build environment variables must set `PNPM_VERSION` to the
   version pinned in `packageManager` in `package.json` (currently `12.3.4`), not a literal copy
   that can drift from it.
+- The CV PDFs are served from the R2 bucket `portfolio-cv`, bound as `CV_BUCKET`. The bucket
+  must exist before a branch that declares the binding deploys; the owner's setup is in
+  [`docs/contact-setup.md`](docs/contact-setup.md).
 
 ## Roadmap
 
