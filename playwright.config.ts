@@ -30,8 +30,15 @@ export default defineConfig({
   ],
   webServer: {
     // In CI the workflow's own Build step already produced dist/; only start the preview
-    // server there instead of building a second time. Locally, build then preview.
-    command: process.env.CI ? 'pnpm preview' : 'pnpm build && pnpm preview',
+    // server there instead of building a second time. Locally, build then preview. Both
+    // seed the local R2 bucket with the fixture CVs first (`pnpm e2e:seed`): the preview
+    // server runs the Worker in workerd and reads the same `.wrangler/state` the seed
+    // writes, so /cv/<locale>.pdf has something to serve. A local server that is already
+    // running is reused as is (`reuseExistingServer`), so it keeps the state it was
+    // seeded with.
+    command: process.env.CI
+      ? 'pnpm e2e:seed && pnpm preview'
+      : 'pnpm build && pnpm e2e:seed && pnpm preview',
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

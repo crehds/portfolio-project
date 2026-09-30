@@ -27,6 +27,13 @@ pnpm-debug.log*
 .env.*
 !.env.example
 
+# Worker secrets for local development (wrangler and the Cloudflare plugin read them): never
+# commit real values. The example file and the hermetic e2e values are the tracked exceptions.
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+!.dev.vars.e2e
+
 # macOS-specific files
 .DS_Store
 
