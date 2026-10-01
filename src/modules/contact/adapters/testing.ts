@@ -14,6 +14,21 @@ export function spyOnConsole() {
 }
 
 /**
+ * Replaces the global `fetch` with one that fails the test. Every adapter test injects its
+ * own fake `fetch`, so this only matters when something goes wrong, a bug or a refactor
+ * that stops using the injected one: the test then fails instead of reaching a real
+ * provider. A test that exercises the default `fetch` stubs the global itself, after
+ * this. Undo it with `vi.unstubAllGlobals()`.
+ */
+export function forbidRealFetch() {
+  vi.stubGlobal('fetch', () => {
+    throw new Error(
+      'This test reached the real fetch. Inject a fake one: tests never call a provider.',
+    );
+  });
+}
+
+/**
  * The `Error` a promise rejects with. It fails the test when the promise resolves or
  * rejects with anything that is not an `Error`.
  */

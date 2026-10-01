@@ -3,7 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ContactMessage } from '../ports';
 import { createEmailJsSender } from './emailjs-email-sender';
 import type { Fetch } from './outbound';
-import { everythingAbout, rejectionOf, spyOnConsole } from './testing';
+import {
+  everythingAbout,
+  forbidRealFetch,
+  rejectionOf,
+  spyOnConsole,
+} from './testing';
 
 // Every test injects a fake `fetch`. Nothing here reaches EmailJS or any network.
 
@@ -31,6 +36,7 @@ const LEAKY_TEXT =
 let consoleSpies: ReturnType<typeof spyOnConsole>;
 
 beforeEach(() => {
+  forbidRealFetch();
   consoleSpies = spyOnConsole();
 });
 

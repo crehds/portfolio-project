@@ -2,7 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Fetch } from './outbound';
 import { createTurnstileVerifier } from './turnstile-verifier';
-import { everythingAbout, rejectionOf, spyOnConsole } from './testing';
+import {
+  everythingAbout,
+  forbidRealFetch,
+  rejectionOf,
+  spyOnConsole,
+} from './testing';
 
 // Every test injects a fake `fetch`. Nothing here reaches Turnstile or any network.
 
@@ -19,6 +24,7 @@ const LEAKY_TEXT =
 let consoleSpies: ReturnType<typeof spyOnConsole>;
 
 beforeEach(() => {
+  forbidRealFetch();
   consoleSpies = spyOnConsole();
 });
 
