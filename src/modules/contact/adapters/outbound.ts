@@ -24,10 +24,25 @@ export const globalFetch: Fetch = (url, init) => globalThis.fetch(url, init);
  * request with a `TimeoutError`; some runtimes surface it as an `AbortError`. This signal
  * is the only thing that aborts these requests, so either name means the time ran out.
  */
-function isTimeout(error: unknown): boolean {
+export function isTimeout(error: unknown): boolean {
   const name = (error as { name?: unknown } | null | undefined)?.name;
 
   return name === 'TimeoutError' || name === 'AbortError';
+}
+
+/**
+ * The error for a request that did not complete: fixed text naming the provider and
+ * whether the time ran out, built without a word of `error`. Its message and `cause`
+ * are dropped on purpose: Astro sends the message of a thrown error to the visitor's
+ * browser, and a failing request often quotes its own URL, headers or body, which carry
+ * a key or the visitor's text.
+ */
+export function requestFailure(provider: string, error: unknown): Error {
+  return new Error(
+    isTimeout(error)
+      ? `The ${provider} request timed out after ${OUTBOUND_TIMEOUT_MS} ms`
+      : `The ${provider} request failed`,
+  );
 }
 
 /** The part of a request that differs from one provider to the next. */
@@ -43,10 +58,8 @@ export interface ProviderRequest {
  * `OUTBOUND_TIMEOUT_MS`, and does not follow redirects, because a followed redirect can
  * turn the POST into a GET that answers 200 without the provider having done anything.
  *
- * A failed attempt rejects with fixed text naming the provider and whether it timed out.
- * The original error is dropped on purpose, `cause` included: Astro sends the message of
- * a thrown error to the visitor's browser, and a failing request often quotes its own
- * URL, headers or body, which carry a key or the visitor's text.
+ * A failed attempt rejects with `requestFailure`: fixed text, and nothing of the original
+ * error.
  */
 export async function postToProvider(
   provider: string,
@@ -63,11 +76,6 @@ export async function postToProvider(
       signal: AbortSignal.timeout(OUTBOUND_TIMEOUT_MS),
     });
   } catch (error) {
-    // eslint-disable-next-line preserve-caught-error -- dropping the cause is the point: it can quote a key or the visitor's text
-    throw new Error(
-      isTimeout(error)
-        ? `The ${provider} request timed out after ${OUTBOUND_TIMEOUT_MS} ms`
-        : `The ${provider} request failed`,
-    );
+    throw requestFailure(provider, error);
   }
 }

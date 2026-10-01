@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ContactMessage } from '../ports';
 import { createEmailJsSender } from './emailjs-email-sender';
 import type { Fetch } from './outbound';
+import { everythingAbout, rejectionOf, spyOnConsole } from './testing';
 
 // Every test injects a fake `fetch`. Nothing here reaches EmailJS or any network.
 
@@ -27,15 +28,7 @@ const ENDPOINT = 'https://api.emailjs.com/api/v1.0/email/send';
 const LEAKY_TEXT =
   'key=private-key-sentinel-4 name=Ada Lovelace email=ada@example.com body=PROVIDER-BODY-SENTINEL';
 
-const consoleMethods = ['log', 'info', 'warn', 'error', 'debug'] as const;
-
 let consoleSpies: ReturnType<typeof spyOnConsole>;
-
-function spyOnConsole() {
-  return consoleMethods.map((method) =>
-    vi.spyOn(console, method).mockImplementation(() => {}),
-  );
-}
 
 beforeEach(() => {
   consoleSpies = spyOnConsole();
@@ -66,36 +59,6 @@ function sentRequest(fetchFake: ReturnType<typeof fetchAnswering>) {
     headers: Object.fromEntries(new Headers(init.headers)),
     body: JSON.parse(String(init.body)) as Record<string, unknown>,
   };
-}
-
-/** Everything an error exposes that could end up in a log, a response or a report. */
-function everythingAbout(error: unknown): string {
-  if (!(error instanceof Error)) return String(error);
-
-  return [
-    error.name,
-    error.message,
-    error.stack,
-    String(error),
-    JSON.stringify(error),
-    JSON.stringify(Object.getOwnPropertyDescriptors(error)),
-    String(error.cause),
-  ].join('\n');
-}
-
-async function rejectionOf(promise: Promise<unknown>): Promise<Error> {
-  const rejection = await promise.then(
-    () => undefined,
-    (reason: unknown) => ({ reason }),
-  );
-
-  if (!rejection) {
-    throw new Error('Expected the promise to reject.');
-  }
-  if (!(rejection.reason instanceof Error)) {
-    throw new Error(`Expected an Error, got ${String(rejection.reason)}`);
-  }
-  return rejection.reason;
 }
 
 describe('createEmailJsSender: the request', () => {
