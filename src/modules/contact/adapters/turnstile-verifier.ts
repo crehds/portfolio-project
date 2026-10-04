@@ -3,7 +3,11 @@
 // root (`create-contact-deps.ts`) wires the Worker's own in.
 import type { ContactConfig } from '../config';
 import type { TurnstileVerifier } from '../ports';
-import { ProviderFailure } from '../provider-failure';
+import {
+  ProviderFailure,
+  TURNSTILE_FAULT_CODES,
+  type TurnstileFaultCode,
+} from '../provider-failure';
 import {
   globalFetch,
   isTimeout,
@@ -46,27 +50,49 @@ async function readAnswer(response: Response): Promise<unknown> {
 }
 
 /**
+ * The first of `TURNSTILE_FAULT_CODES` that `errorCodes` lists, or `undefined` when it
+ * lists none or is not an array. The first of that list, not of the answer, so the code is
+ * the same whatever order Turnstile lists them in. `includes` compares each entry as it
+ * is, so an entry that is not the string itself (a number, a nested array, a code with a
+ * space before it) matches nothing.
+ */
+function firstFaultCode(errorCodes: unknown): TurnstileFaultCode | undefined {
+  if (!Array.isArray(errorCodes)) {
+    return undefined;
+  }
+
+  return TURNSTILE_FAULT_CODES.find((code) => errorCodes.includes(code));
+}
+
+/**
  * The `TurnstileVerifier` that asks Turnstile's Siteverify endpoint, called from the
  * Worker with the secret key. It resolves:
  *
- * - `true` only for a 200 whose JSON says `success: true`, and nothing else is
- *   mistaken for it;
- * - `false` for a 200 whose `success` is anything else (Turnstile rejecting the token,
- *   an expired or spent one included), and for a token past Turnstile's 2,048-character
- *   maximum, which it does not even send;
- * - a rejection, with fixed text, for any other status, a body that is not JSON, a network
- *   error or the timeout: Turnstile could not be asked. A status other than 200 rejects
- *   with a `ProviderFailure` that carries it as its one detail; the rest are plain
- *   `Error`s with no detail.
+ * - `true` only for a 200 whose JSON says `success: true`, whatever `error-codes` says
+ *   next to it, and nothing else is mistaken for it;
+ * - `false` for any other 200 answer that blames the visitor's token (rejected, expired
+ *   or spent, whether `error-codes` says so or not), and for a token past Turnstile's
+ *   2,048-character maximum, which it does not even send.
+ *
+ * It rejects, with fixed text, when Turnstile could not be asked or could not judge the
+ * token:
+ *
+ * - a 200 whose `error-codes` lists a code of `TURNSTILE_FAULT_CODES`: our secret or our
+ *   request was at fault, or Turnstile itself, so the token was never judged, even when
+ *   the answer lists a code that blames the token too. It is a `ProviderFailure` that
+ *   carries one code, the first of that list that the answer lists;
+ * - any other status, as a `ProviderFailure` that carries it as its one detail;
+ * - a body that is not JSON, a network error or the timeout, as plain `Error`s with no
+ *   detail.
  *
  * It never retries (a token is single use, so Turnstile would only call a second try a
  * duplicate), and it makes one attempt in `AbortSignal.timeout(8000)`. It checks nothing
  * of the answer's `hostname`: previews run on other hostnames than the production one.
  *
  * It logs nothing. A rejection reaches `submitContact`, which logs one fixed line, with
- * the status appended when there is one, and fails the submission closed; a line here too
- * would report one failure twice. A `false` is an ordinary answer, not a failure, and is
- * not logged.
+ * the status or the code appended when there is one, and fails the submission closed; a
+ * line here too would report one failure twice. A `false` is an ordinary answer, not a
+ * failure, and is not logged.
  *
  * `config` is the Turnstile slice, minus the public site key: the verifier never sees the
  * EmailJS keys, and does not need the key the widget uses.
@@ -105,10 +131,28 @@ export function createTurnstileVerifier(
 
     const answer = await readAnswer(response);
 
-    return (
-      typeof answer === 'object' &&
-      answer !== null &&
-      (answer as { success?: unknown }).success === true
-    );
+    if (typeof answer !== 'object' || answer === null) {
+      return false;
+    }
+
+    const { success, 'error-codes': errorCodes } = answer as {
+      success?: unknown;
+      'error-codes'?: unknown;
+    };
+
+    // Only a boolean `true` verifies, whatever `error-codes` says next to it.
+    if (success === true) {
+      return true;
+    }
+
+    const code = firstFaultCode(errorCodes);
+    if (code !== undefined) {
+      throw new ProviderFailure(
+        `Turnstile answered with the error code ${code}`,
+        { code },
+      );
+    }
+
+    return false;
   };
 }

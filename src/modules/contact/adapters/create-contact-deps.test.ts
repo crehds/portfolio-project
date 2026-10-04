@@ -433,13 +433,15 @@ describe('createContactDeps: an environment that cannot run the form', () => {
 });
 
 // The domain decides what a failing dependency means (a limiter that cannot answer lets
-// the request through, a verifier that cannot answer fails it) and logs one fixed line for
-// it. The adapters only reject, so each failure must be reported exactly once.
+// the request through, a verifier that cannot answer fails it) and logs one line for it:
+// fixed text, plus at most a closed suffix. The adapters only reject, so each failure must
+// be reported exactly once.
 describe('createContactDeps: the wired dependencies inside submitContact', () => {
   const CLIENT_IP = '203.0.113.7';
 
   // The lines `submitContact` logs for a failed verifier and sender. A failure that carries
-  // a detail ends its line with it: the provider's HTTP status, in brackets.
+  // a detail ends its line with it, in brackets: the provider's HTTP status, or the fault
+  // code of a Turnstile answer that blames the secret or the request.
   const VERIFIER_LINE =
     'contact: the Turnstile verifier failed, so the submission was rejected';
   const SENDER_LINE = 'contact: the email sender failed';
@@ -541,23 +543,68 @@ describe('createContactDeps: the wired dependencies inside submitContact', () =>
     },
   );
 
-  it('fails the submission without sending when Turnstile rejects the token, and logs nothing', async () => {
+  /** Turnstile answering 200 with `success: false` and these error codes. */
+  const refusing =
+    (...codes: string[]) =>
+    async () =>
+      new Response(JSON.stringify({ success: false, 'error-codes': codes }), {
+        status: 200,
+      });
+
+  // The codes that blame the visitor's token are an ordinary "no": nothing to log.
+  it.each([
+    'missing-input-response',
+    'invalid-input-response',
+    'timeout-or-duplicate',
+  ])(
+    'fails the submission without sending when Turnstile rejects the token (%s), and logs nothing',
+    async (code) => {
+      const fetchFake = providers({ turnstile: refusing(code) });
+
+      const outcome = await run(completeEnv(), fetchFake);
+
+      expect(outcome).toEqual({ kind: 'verification_failed' });
+      expect(requestedUrls(fetchFake)).toEqual([TURNSTILE_URL]);
+      expect(logged()).toEqual([]);
+    },
+  );
+
+  // The codes that blame the secret, the request or Turnstile are a failure the owner can
+  // act on, so they are logged: a wrong TURNSTILE_SECRET_KEY no longer fails in silence.
+  it.each([
+    'missing-input-secret',
+    'invalid-input-secret',
+    'bad-request',
+    'internal-error',
+  ])(
+    'fails the submission without sending, and logs one error ending in (%s), when Turnstile lists it',
+    async (code) => {
+      const fetchFake = providers({ turnstile: refusing(code) });
+
+      const outcome = await run(completeEnv(), fetchFake);
+
+      expect(outcome).toEqual({ kind: 'verification_failed' });
+      expect(requestedUrls(fetchFake)).toEqual([TURNSTILE_URL]);
+      expect(vi.mocked(console.error)).toHaveBeenCalledTimes(1);
+      expect(consoleSpies.flatMap((spy) => spy.mock.calls)).toHaveLength(1);
+      expect(logged()).toEqual([`${VERIFIER_LINE} (${code})`]);
+    },
+  );
+
+  it('logs the same single code whatever order Turnstile lists several in, token codes among them', async () => {
     const fetchFake = providers({
-      turnstile: async () =>
-        new Response(
-          JSON.stringify({
-            success: false,
-            'error-codes': ['invalid-input-response'],
-          }),
-          { status: 200 },
-        ),
+      turnstile: refusing(
+        'internal-error',
+        'invalid-input-response',
+        'bad-request',
+        'invalid-input-secret',
+      ),
     });
 
     const outcome = await run(completeEnv(), fetchFake);
 
     expect(outcome).toEqual({ kind: 'verification_failed' });
-    expect(requestedUrls(fetchFake)).toEqual([TURNSTILE_URL]);
-    expect(logged()).toEqual([]);
+    expect(logged()).toEqual([`${VERIFIER_LINE} (invalid-input-secret)`]);
   });
 
   it.each([
@@ -674,6 +721,21 @@ describe('createContactDeps: the wired dependencies inside submitContact', () =>
     await run(completeEnv(), providers({ emailjs: leaky }));
     await run(completeEnv(), providers({ turnstile: quoting(503) }));
     await run(completeEnv(), providers({ emailjs: quoting(403) }));
+    // A fault code whose answer quotes every setting: the code is logged, the answer is not.
+    await run(
+      completeEnv(),
+      providers({
+        turnstile: async () =>
+          new Response(
+            JSON.stringify({
+              success: false,
+              'error-codes': ['invalid-input-secret'],
+              echo: SETTINGS,
+            }),
+            { status: 200 },
+          ),
+      }),
+    );
     await run(
       completeEnv({
         CONTACT_RATE_LIMIT: {

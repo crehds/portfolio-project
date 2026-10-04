@@ -27,7 +27,10 @@ export interface EmailSender {
 /**
  * Asks Turnstile whether `token` (the widget's answer for this submission) is genuine.
  * `remoteIp` is the visitor's IP when known, which Turnstile uses as an extra signal.
- * Resolves `false` when Turnstile rejects the token and rejects when it could not be asked.
+ * Resolves `false` when Turnstile rejects the token. Rejects when it could not be asked, or
+ * could not judge the token: an answer that blames our secret, our request or Turnstile
+ * itself (see `TURNSTILE_FAULT_CODES`) is the second kind, so a wrong secret key is a
+ * failure the caller can log, not a visitor's rejected token.
  */
 export type TurnstileVerifier = (
   token: string,

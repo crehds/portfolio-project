@@ -508,6 +508,32 @@ describe('submitContact: the line a failed dependency leaves in the log', () => 
     },
   );
 
+  const faultCodeCases = closedSteps.flatMap(([step, line, , failWith]) =>
+    (
+      [
+        'missing-input-secret',
+        'invalid-input-secret',
+        'bad-request',
+        'internal-error',
+      ] as const
+    ).map((code) => [`${code}, from ${step}`, line, failWith, code] as const),
+  );
+
+  it.each(faultCodeCases)(
+    'adds the Turnstile fault code a ProviderFailure carries: %s',
+    async (_label, line, failWith, code) => {
+      const f = fakes();
+      failWith(f, new ProviderFailure('The provider answered', { code }));
+
+      await submitContact(submission(), f.deps, fromCloudflare());
+
+      expect(vi.mocked(console.error).mock.calls).toEqual([
+        [`${line} (${code})`],
+      ]);
+      expect(loggedCalls()).toHaveLength(1);
+    },
+  );
+
   it.each(closedSteps)(
     'gives the visitor the same outcome as before when %s fails with a ProviderFailure',
     async (_step, _line, outcome, failWith) => {
@@ -542,12 +568,17 @@ describe('submitContact: the line a failed dependency leaves in the log', () => 
   );
 
   // Only the class vouches for what it carries: a thrown value that merely has a `status`
-  // gets no suffix, and nothing that is not an error ever gets one.
+  // or a `code` gets no suffix, and nothing that is not an error ever gets one.
   const lookAlikes: [string, unknown][] = [
     ['a plain object with a status', { status: 403 }],
+    ['a plain object with a code', { code: 'invalid-input-secret' }],
     [
       'an Error given a status',
       Object.assign(new Error('boom'), { status: 403 }),
+    ],
+    [
+      'an Error given a code',
+      Object.assign(new Error('boom'), { code: 'invalid-input-secret' }),
     ],
     [
       'an Error subclass with a status',
@@ -556,10 +587,23 @@ describe('submitContact: the line a failed dependency leaves in the log', () => 
       })('boom'),
     ],
     [
-      'an Error that calls itself ProviderFailure',
+      'an Error subclass with a code',
+      new (class extends Error {
+        code = 'bad-request';
+      })('boom'),
+    ],
+    [
+      'an Error that calls itself ProviderFailure, with a status',
       Object.assign(new Error('boom'), {
         name: 'ProviderFailure',
         status: 403,
+      }),
+    ],
+    [
+      'an Error that calls itself ProviderFailure, with a code',
+      Object.assign(new Error('boom'), {
+        name: 'ProviderFailure',
+        code: 'internal-error',
       }),
     ],
     ['a string', 'HTTP 403'],
@@ -604,6 +648,28 @@ describe('submitContact: the line a failed dependency leaves in the log', () => 
 
       expect(vi.mocked(console.error).mock.calls).toEqual([
         [`${line} (HTTP 403)`],
+      ]);
+      expect(everythingLogged()).not.toContain('SECRET');
+      expect(everythingLogged()).not.toContain('sentinel-key-q7');
+    },
+  );
+
+  it.each(closedSteps)(
+    'logs nothing a ProviderFailure says besides its code when %s fails',
+    async (_step, line, _outcome, failWith) => {
+      const f = fakes();
+      const failure = Object.assign(
+        new ProviderFailure('SECRET-message key=sentinel-key-q7', {
+          code: 'invalid-input-secret',
+        }),
+        { cause: new Error('SECRET-cause'), detail: 'SECRET-detail' },
+      );
+      failWith(f, failure);
+
+      await submitContact(submission(), f.deps, fromCloudflare());
+
+      expect(vi.mocked(console.error).mock.calls).toEqual([
+        [`${line} (invalid-input-secret)`],
       ]);
       expect(everythingLogged()).not.toContain('SECRET');
       expect(everythingLogged()).not.toContain('sentinel-key-q7');

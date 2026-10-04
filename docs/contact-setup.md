@@ -228,8 +228,14 @@ How the Worker uses the answer, so a failure is easy to read:
   Turnstile's siteverify endpoint, once, and gives up after 8 seconds. A token is single use and
   valid for 5 minutes, so there is no retry.
 - Only an answer of `success: true` lets a submission through. A token longer than 2,048
-  characters, Turnstile's documented maximum, is refused without asking. Any other HTTP status,
-  an answer that is not JSON, a network error or a timeout fails the submission as well.
+  characters, Turnstile's documented maximum, is refused without asking.
+- An answer of `success: false` whose error codes blame the visitor's token
+  (`missing-input-response`, `invalid-input-response`, `timeout-or-duplicate`) is an ordinary
+  "no": the submission fails and nothing is logged. When the codes include one that blames the
+  secret, the request or Turnstile itself (`missing-input-secret`, `invalid-input-secret`,
+  `bad-request`, `internal-error`), the token was never judged, so the submission fails and the
+  code is logged (see [Contact troubleshooting](#contact-troubleshooting)). Any other HTTP
+  status, an answer that is not JSON, a network error or a timeout fails the submission as well.
 - It does not check the `hostname` Turnstile reports back, because previews run on other
   hostnames than production.
 
@@ -274,8 +280,9 @@ With real EmailJS values, submitting the local form sends a real email and spend
 
 The Worker never logs what a provider said: a provider's error can quote a key or the visitor's
 message. A line names the step that failed and, for the email sender and the Turnstile verifier,
-may end with one closed detail in brackets, the HTTP status the provider answered with, as in
-`(HTTP 403)`. Nothing else of a failure is logged.
+may end with one closed detail in brackets: the HTTP status the provider answered with, as in
+`(HTTP 403)`, or, for Turnstile, one of its error codes, as in `(invalid-input-secret)`. Nothing
+else of a failure is logged.
 
 | Worker log line                                                                          | What it means                                                                                                                                             |
 | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -283,6 +290,7 @@ may end with one closed detail in brackets, the HTTP status the provider answere
 | `contact: the email sender failed (HTTP <status>)`                                       | EmailJS answered with that status instead of 200. See the first item below.                                                                               |
 | `contact: the Turnstile verifier failed, so the submission was rejected`                 | Turnstile could not be asked: an answer that is not JSON, a network error, or no answer in 8 s.                                                           |
 | `contact: the Turnstile verifier failed, so the submission was rejected (HTTP <status>)` | Turnstile answered with that status instead of 200. Its documentation gives no HTTP status for an error answer, so what a status means is not documented. |
+| `contact: the Turnstile verifier failed, so the submission was rejected (<code>)`        | Turnstile answered 200 but blamed the secret, the request or itself instead of the token. See the second item below.                                      |
 | `contact: the rate limiter failed, so the request was let through`                       | The `CONTACT_RATE_LIMIT` binding did not answer. The request went on, and the form still works.                                                           |
 
 - **Messages are not delivered (`contact: the email sender failed`).** The status in brackets is
@@ -295,11 +303,18 @@ may end with one closed detail in brackets, the HTTP status the provider answere
   the private key is current; the four `EMAILJS_*` secrets match the dashboard (EmailJS refuses a
   request with a wrong id or key); and the plan limits, 200 requests a month and 1 a second, are
   not used up.
-- **Every submission fails verification.** A wrong or mismatched `TURNSTILE_SECRET_KEY` is the
-  usual cause. Turnstile names a secret problem in its answer (the `invalid-input-secret` and
-  `missing-input-secret` error codes), but the Worker does not log the answer, and it treats a
-  `success: false` answer like a rejected token without logging anything. So a log with no
-  line, or with the verifier line above, both lead here: check that the secret key belongs to
-  the same widget as the site key, and that a test key is not paired with a real one.
+- **Every submission fails verification, and the line ends in a code.** A wrong or mismatched
+  `TURNSTILE_SECRET_KEY` is the usual cause, and the log says so: the verifier line ends in the
+  error code Turnstile reported, one of four. When Turnstile lists several, the line names the
+  first one in the order below, so the same fault always reads the same.
+  - `(missing-input-secret)` or `(invalid-input-secret)`: check `TURNSTILE_SECRET_KEY`. It must
+    be the secret key of the same widget as the site key, and a test key must not be paired with
+    a real one.
+  - `(bad-request)`: Turnstile says the request was malformed. The Worker builds that request,
+    so this is a bug to report.
+  - `(internal-error)`: the problem is on Turnstile's side, and a later attempt may work.
+- **A submission fails verification and there is no log line.** Turnstile refused the token
+  (missing, too long, invalid, expired or already used), which is its ordinary "no", so the keys
+  are not the problem. See the next item.
 - **A token fails after it worked in a test.** Turnstile tokens are single use and valid for
   5 minutes: a token that was already checked is rejected, as is an expired one.

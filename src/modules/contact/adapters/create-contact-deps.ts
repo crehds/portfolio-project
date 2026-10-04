@@ -120,10 +120,11 @@ function readRateLimitBinding(
  *   settings: the EmailJS sender never sees the Turnstile secret, nor the other way round.
  *
  * Where a failing dependency is logged: nowhere in the adapters. Each one rejects with
- * fixed text, and an answer that is not a success adds one closed detail, the HTTP status,
- * as a `ProviderFailure`. `submitContact` logs one line per failure, the fixed text for
- * the step plus that detail, so a failure is reported once and no error text reaches a
- * log or the browser.
+ * fixed text, and an answer that is not a success adds one closed detail as a
+ * `ProviderFailure`: the HTTP status, or the fault code of a Turnstile answer that blames
+ * the request. `submitContact` logs one line per failure, the fixed text for the step plus
+ * that detail, so a failure is reported once and no error text reaches a log or the
+ * browser.
  */
 export function createContactDeps(
   env: unknown,

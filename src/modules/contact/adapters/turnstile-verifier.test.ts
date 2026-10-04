@@ -281,16 +281,12 @@ describe('createTurnstileVerifier: what Turnstile answers', () => {
     ).resolves.toBe(true);
   });
 
-  // The visitor-side codes Turnstile documents, then the ones that name a problem with the
-  // request or with Turnstile itself: a 200 whose success is false is false either way.
+  // The codes that blame the visitor's token: a 200 whose success is false is false. The
+  // codes that blame the secret, the request or Turnstile have a describe of their own.
   it.each([
     'missing-input-response',
     'invalid-input-response',
     'timeout-or-duplicate',
-    'missing-input-secret',
-    'invalid-input-secret',
-    'bad-request',
-    'internal-error',
   ])('resolves false for a 200 that says success: false (%s)', async (code) => {
     const fetchFake = fetchAnswering(
       jsonAnswer({ success: false, 'error-codes': [code] }),
@@ -491,6 +487,13 @@ describe('createTurnstileVerifier: what Turnstile answers', () => {
   it.each([
     ['a 500', () => Promise.resolve(new Response('oops', { status: 500 }))],
     ['a 429', () => Promise.resolve(jsonAnswer({ success: true }, 429))],
+    [
+      'a fault code',
+      () =>
+        Promise.resolve(
+          jsonAnswer({ success: false, 'error-codes': ['internal-error'] }),
+        ),
+    ],
     ['invalid JSON', () => Promise.resolve(new Response('nope'))],
     ['a network error', () => Promise.reject(new TypeError('fetch failed'))],
     [
@@ -508,10 +511,206 @@ describe('createTurnstileVerifier: what Turnstile answers', () => {
   });
 });
 
+// Turnstile answers 200 with `success: false` and a list of error codes. Three of them blame
+// the visitor's token, and the answer is `false`. Four blame our secret, our request or
+// Turnstile itself, so the token was never judged: Turnstile could not be asked. The
+// rejection then carries the code and `submitContact` logs it, which is how a wrong
+// `TURNSTILE_SECRET_KEY` shows up in the log.
+describe('createTurnstileVerifier: an answer that blames the request or Turnstile', () => {
+  const verifyAnswer = (response: Response) =>
+    createTurnstileVerifier(CONFIG, fetchAnswering(response))(TOKEN, CLIENT_IP);
+
+  const failed = (errorCodes: unknown, rest: Record<string, unknown> = {}) =>
+    jsonAnswer({ success: false, 'error-codes': errorCodes, ...rest });
+
+  /** The rejection, which must be a ProviderFailure for the test to go on. */
+  async function providerFailureFrom(response: Response) {
+    const error = await rejectionOf(verifyAnswer(response));
+    expect(error).toBeInstanceOf(ProviderFailure);
+    return error as ProviderFailure;
+  }
+
+  it.each([
+    'missing-input-secret',
+    'invalid-input-secret',
+    'bad-request',
+    'internal-error',
+  ])(
+    'rejects with a ProviderFailure that carries %s when it is the only code',
+    async (code) => {
+      const error = await providerFailureFrom(failed([code]));
+
+      expect(error.code).toBe(code);
+      expect(error.status).toBeUndefined();
+      expect(failureSuffix(error)).toBe(` (${code})`);
+      expect(error.message).toBe(
+        `Turnstile answered with the error code ${code}`,
+      );
+    },
+  );
+
+  // Whatever order Turnstile lists several codes in, the rejection names the first one of
+  // this list, so the log says the same thing about the same fault: the secret outranks the
+  // request, which outranks Turnstile's own trouble.
+  const PRIORITY = [
+    'missing-input-secret',
+    'invalid-input-secret',
+    'bad-request',
+    'internal-error',
+  ];
+
+  const PAIRS = PRIORITY.flatMap((higher, index) =>
+    PRIORITY.slice(index + 1).flatMap(
+      (lower) =>
+        [
+          [[higher, lower], higher],
+          [[lower, higher], higher],
+        ] as const,
+    ),
+  );
+
+  it.each(PAIRS)(
+    'carries the higher-priority code when the answer lists %j: %s',
+    async (codes, expected) => {
+      const error = await providerFailureFrom(failed([...codes]));
+
+      expect(error.code).toBe(expected);
+    },
+  );
+
+  it.each([
+    [
+      [
+        'internal-error',
+        'bad-request',
+        'invalid-input-secret',
+        'missing-input-secret',
+      ],
+      'missing-input-secret',
+    ],
+    [['bad-request', 'internal-error', 'bad-request'], 'bad-request'],
+    [['internal-error', 'internal-error'], 'internal-error'],
+    [['some-new-code', 'internal-error', null, 'bad-request'], 'bad-request'],
+  ])(
+    'carries the first code of the priority list when the answer lists %j: %s',
+    async (codes, expected) => {
+      const error = await providerFailureFrom(failed(codes));
+
+      expect(error.code).toBe(expected);
+    },
+  );
+
+  // The request was at fault, so what Turnstile says about the token means nothing.
+  it.each([
+    [
+      ['invalid-input-response', 'invalid-input-secret'],
+      'invalid-input-secret',
+    ],
+    [
+      ['invalid-input-secret', 'invalid-input-response'],
+      'invalid-input-secret',
+    ],
+    [['timeout-or-duplicate', 'bad-request'], 'bad-request'],
+    [['internal-error', 'missing-input-response'], 'internal-error'],
+    [['missing-input-response', 'some-new-code', 'bad-request'], 'bad-request'],
+  ])(
+    'still rejects when the answer lists %j beside a fault code: %s',
+    async (codes, expected) => {
+      const error = await providerFailureFrom(failed(codes));
+
+      expect(error.code).toBe(expected);
+    },
+  );
+
+  it.each([
+    'missing-input-secret',
+    'invalid-input-secret',
+    'bad-request',
+    'internal-error',
+  ])(
+    'resolves true when success is true, whatever it also lists (%s)',
+    async (code) => {
+      await expect(
+        verifyAnswer(jsonAnswer({ success: true, 'error-codes': [code] })),
+      ).resolves.toBe(true);
+    },
+  );
+
+  // Only the boolean `true` verifies; with anything else under `success`, the codes decide.
+  it.each([
+    ['missing', {}],
+    ['the string "true"', { success: 'true' }],
+    ['the number 1', { success: 1 }],
+    ['null', { success: null }],
+  ])('rejects with the code when success is %s', async (_label, success) => {
+    const error = await providerFailureFrom(
+      jsonAnswer({ ...success, 'error-codes': ['invalid-input-secret'] }),
+    );
+
+    expect(error.code).toBe('invalid-input-secret');
+  });
+
+  it.each([
+    ['one code that blames the token', ['invalid-input-response']],
+    [
+      'every code that blames the token',
+      [
+        'missing-input-response',
+        'invalid-input-response',
+        'timeout-or-duplicate',
+      ],
+    ],
+    ['a code nobody listed', ['some-future-error']],
+    ['a fault code in another case', ['Invalid-Input-Secret']],
+    ['a fault code with a space before it', [' invalid-input-secret']],
+    ['two fault codes in one string', ['bad-request,internal-error']],
+    [
+      'fault codes that are not strings',
+      [null, 0, true, ['bad-request'], { code: 'bad-request' }],
+    ],
+    ['no codes', []],
+  ])('resolves false when the answer lists %s', async (_label, codes) => {
+    await expect(verifyAnswer(failed(codes))).resolves.toBe(false);
+  });
+
+  // `JSON.stringify` leaves out a key whose value is undefined, so `undefined` is "missing".
+  it.each([
+    ['missing', undefined],
+    ['null', null],
+    ['a string that holds a fault code', 'invalid-input-secret'],
+    ['an object keyed by a fault code', { 'invalid-input-secret': true }],
+    ['an array-like object', { 0: 'invalid-input-secret', length: 1 }],
+    ['a number', 1],
+    ['true', true],
+  ])('resolves false when error-codes is %s', async (_label, errorCodes) => {
+    await expect(verifyAnswer(failed(errorCodes))).resolves.toBe(false);
+  });
+
+  it('puts nothing of the rest of the answer in the rejection', async () => {
+    const error = await providerFailureFrom(
+      failed(['invalid-input-secret'], {
+        'error-message': LEAKY_TEXT,
+        hostname: 'PROVIDER-BODY-SENTINEL',
+        metadata: { echo: LEAKY_TEXT },
+      }),
+    );
+
+    const exposed = everythingAbout(error);
+    for (const value of [
+      CONFIG.secretKey,
+      TOKEN,
+      CLIENT_IP,
+      'PROVIDER-BODY-SENTINEL',
+    ]) {
+      expect(exposed).not.toContain(value);
+    }
+  });
+});
+
 // Astro sends the message of any error a handler throws to the visitor's browser, and a
 // failing request, or `JSON.parse` on a body, often quotes its own input. So an error says
-// what failed and, for a status, which one: never the secret, the token, the visitor's IP
-// or anything Turnstile said.
+// what failed and, for a status or a code, which one: never the secret, the token, the
+// visitor's IP or anything Turnstile said.
 describe('createTurnstileVerifier: nothing private in an error or a log', () => {
   const PRIVATE_VALUES = [
     CONFIG.secretKey,
@@ -543,6 +742,16 @@ describe('createTurnstileVerifier: nothing private in an error or a log', () => 
     [
       'a 200 whose body is not JSON and quotes the request (JSON.parse quotes its input)',
       () => async () => new Response(LEAKY_TEXT, { status: 200 }),
+    ],
+    [
+      'a 200 with a fault code and other fields that quote the request',
+      () => async () =>
+        jsonAnswer({
+          success: false,
+          'error-codes': ['invalid-input-secret'],
+          'error-message': LEAKY_TEXT,
+          hostname: 'PROVIDER-BODY-SENTINEL',
+        }),
     ],
     [
       'a network error that quotes the request in its message and cause',
@@ -602,7 +811,7 @@ describe('createTurnstileVerifier: nothing private in an error or a log', () => 
 
       expect([Error, ProviderFailure]).toContain(error.constructor);
       expect(error.message).toMatch(
-        /^(Turnstile answered HTTP \d{3}|Turnstile answered with invalid JSON|The Turnstile request (failed|timed out after 8000 ms))$/,
+        /^(Turnstile answered HTTP \d{3}|Turnstile answered with the error code (missing-input-secret|invalid-input-secret|bad-request|internal-error)|Turnstile answered with invalid JSON|The Turnstile request (failed|timed out after 8000 ms))$/,
       );
     },
   );
@@ -644,7 +853,12 @@ describe('createTurnstileVerifier: nothing private in an error or a log', () => 
       );
 
     await run(passed());
-    await run(jsonAnswer({ success: false, 'error-codes': ['bad-request'] }));
+    await run(
+      jsonAnswer({ success: false, 'error-codes': ['invalid-input-response'] }),
+    );
+    await rejectionOf(
+      run(jsonAnswer({ success: false, 'error-codes': ['bad-request'] })),
+    );
     await rejectionOf(run(new Response(LEAKY_TEXT, { status: 500 })));
     await rejectionOf(run(new Response(LEAKY_TEXT, { status: 200 })));
     await rejectionOf(

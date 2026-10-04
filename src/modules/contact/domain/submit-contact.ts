@@ -40,7 +40,8 @@ export type ContactOutcome =
 // Fixed text, on purpose: a failing provider's error can quote the visitor's message, a
 // token or a key, so what it says is never logged. A line names the step that failed. The
 // verifier and sender lines may also end with the one closed suffix `failureSuffix` allows
-// (the provider's HTTP status, for instance), and nothing else is read from an error.
+// (the provider's HTTP status or a Turnstile fault code), and nothing else is read from an
+// error.
 const RATE_LIMITER_FAILED =
   'contact: the rate limiter failed, so the request was let through';
 const VERIFIER_FAILED =
