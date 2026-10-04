@@ -2,6 +2,7 @@
 // import from the sibling schema (erased at compile time), used to describe the data
 // shape; every provider arrives through a port in `deps`.
 import type { EmailSender, RateLimiter, TurnstileVerifier } from '../ports';
+import { failureSuffix } from '../provider-failure';
 import type { ContactInput } from '../schema';
 import { clientIp, rateLimitKey } from './rate-limit-key';
 
@@ -37,7 +38,10 @@ export type ContactOutcome =
   | { readonly kind: 'delivery_failed' };
 
 // Fixed text, on purpose: a failing provider's error can quote the visitor's message, a
-// token or a key, so nothing it throws is ever logged. The line says which step failed.
+// token or a key, so what it says is never logged. A line names the step that failed. The
+// verifier and sender lines may also end with the one closed suffix `failureSuffix` allows
+// (the provider's HTTP status or a Turnstile fault code), and nothing else is read from an
+// error.
 const RATE_LIMITER_FAILED =
   'contact: the rate limiter failed, so the request was let through';
 const VERIFIER_FAILED =
@@ -72,8 +76,8 @@ async function isVerified(
 ): Promise<boolean> {
   try {
     return (await verify(token, remoteIp)) === true;
-  } catch {
-    console.error(VERIFIER_FAILED);
+  } catch (error) {
+    console.error(VERIFIER_FAILED + failureSuffix(error));
     return false;
   }
 }
@@ -121,8 +125,8 @@ export async function submitContact(
       message: input.message,
       locale: input.locale,
     });
-  } catch {
-    console.error(SENDER_FAILED);
+  } catch (error) {
+    console.error(SENDER_FAILED + failureSuffix(error));
     return { kind: 'delivery_failed' };
   }
 

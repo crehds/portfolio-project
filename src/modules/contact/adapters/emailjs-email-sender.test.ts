@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ContactMessage } from '../ports';
+import { ProviderFailure, failureSuffix } from '../provider-failure';
 import { createEmailJsSender } from './emailjs-email-sender';
 import type { Fetch } from './outbound';
 import {
@@ -244,19 +245,26 @@ describe('createEmailJsSender: what the provider answers', () => {
   });
 
   // Only 200 is an acceptance: any other status, success-looking or not, is not proof
-  // that the message was handed to the owner's mailbox.
+  // that the message was handed to the owner's mailbox. The rejection carries the status,
+  // so the caller's log line can say which one EmailJS answered.
   it.each([
     201, 202, 204, 206, 301, 302, 304, 307, 308, 400, 401, 403, 404, 405, 408,
     409, 412, 413, 415, 422, 429, 500, 502, 503, 504,
-  ])('rejects when EmailJS answers %i', async (status) => {
-    const fetchFake = fetchAnswering(new Response(null, { status }));
+  ])(
+    'rejects with a ProviderFailure that carries the status when EmailJS answers %i',
+    async (status) => {
+      const fetchFake = fetchAnswering(new Response(null, { status }));
 
-    const error = await rejectionOf(
-      createEmailJsSender(CONFIG, fetchFake).send(MESSAGE),
-    );
+      const error = await rejectionOf(
+        createEmailJsSender(CONFIG, fetchFake).send(MESSAGE),
+      );
 
-    expect(error.message).toBe(`EmailJS answered HTTP ${status}`);
-  });
+      expect(error.message).toBe(`EmailJS answered HTTP ${status}`);
+      expect(error).toBeInstanceOf(ProviderFailure);
+      expect((error as ProviderFailure).status).toBe(status);
+      expect(failureSuffix(error)).toBe(` (HTTP ${status})`);
+    },
+  );
 
   it('rejects with a fixed message when the request fails on the network', async () => {
     const fetchFake = vi.fn<Fetch>(async () => {
@@ -327,6 +335,35 @@ describe('createEmailJsSender: what the provider answers', () => {
     );
 
     expect(error.message).toBe('The EmailJS request failed');
+  });
+
+  // No answer, no status: these stay plain errors with nothing for a log line to add.
+  it.each([
+    [
+      'a network error',
+      () => {
+        throw new TypeError('fetch failed');
+      },
+    ],
+    [
+      'a timeout',
+      () => {
+        throw new DOMException('timed out', 'TimeoutError');
+      },
+    ],
+    [
+      'a throw before a promise is returned',
+      () => {
+        throw new TypeError('Invalid URL');
+      },
+    ],
+  ])('carries no detail when the request ends in %s', async (_label, fail) => {
+    const error = await rejectionOf(
+      createEmailJsSender(CONFIG, vi.fn<Fetch>(fail)).send(MESSAGE),
+    );
+
+    expect(error).not.toBeInstanceOf(ProviderFailure);
+    expect(failureSuffix(error)).toBe('');
   });
 
   // EmailJS allows one request a second and 200 a month, and a Turnstile token is single
@@ -429,13 +466,13 @@ describe('createEmailJsSender: nothing private in an error or a log', () => {
   });
 
   it.each(failures)(
-    'is a plain Error with a short fixed message for %s',
+    'is a plain Error or a ProviderFailure, with a short fixed message, for %s',
     async (_label, makeFetch) => {
       const error = await rejectionOf(
         createEmailJsSender(CONFIG, vi.fn<Fetch>(makeFetch())).send(MESSAGE),
       );
 
-      expect(error.constructor).toBe(Error);
+      expect([Error, ProviderFailure]).toContain(error.constructor);
       expect(error.message).toMatch(
         /^(EmailJS answered HTTP \d{3}|The EmailJS request (failed|timed out after 8000 ms))$/,
       );

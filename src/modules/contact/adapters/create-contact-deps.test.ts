@@ -433,10 +433,19 @@ describe('createContactDeps: an environment that cannot run the form', () => {
 });
 
 // The domain decides what a failing dependency means (a limiter that cannot answer lets
-// the request through, a verifier that cannot answer fails it) and logs one fixed line for
-// it. The adapters only reject, so each failure must be reported exactly once.
+// the request through, a verifier that cannot answer fails it) and logs one line for it:
+// fixed text, plus at most a closed suffix. The adapters only reject, so each failure must
+// be reported exactly once.
 describe('createContactDeps: the wired dependencies inside submitContact', () => {
   const CLIENT_IP = '203.0.113.7';
+
+  // The lines `submitContact` logs for a failed verifier and sender. A failure that carries
+  // a detail ends its line with it, in brackets: the provider's HTTP status, or the fault
+  // code of a Turnstile answer that blames the secret or the request. An answer with a code
+  // the Worker does not know carries no detail.
+  const VERIFIER_LINE =
+    'contact: the Turnstile verifier failed, so the submission was rejected';
+  const SENDER_LINE = 'contact: the email sender failed';
 
   function submission() {
     return contactSchema.parse({
@@ -535,46 +544,134 @@ describe('createContactDeps: the wired dependencies inside submitContact', () =>
     },
   );
 
-  it('fails the submission without sending when Turnstile rejects the token, and logs nothing', async () => {
+  /** Turnstile answering 200 with `success: false` and these error codes. */
+  const refusing =
+    (...codes: string[]) =>
+    async () =>
+      new Response(JSON.stringify({ success: false, 'error-codes': codes }), {
+        status: 200,
+      });
+
+  // The codes that blame the visitor's token are an ordinary "no": nothing to log.
+  it.each([
+    'missing-input-response',
+    'invalid-input-response',
+    'timeout-or-duplicate',
+  ])(
+    'fails the submission without sending when Turnstile rejects the token (%s), and logs nothing',
+    async (code) => {
+      const fetchFake = providers({ turnstile: refusing(code) });
+
+      const outcome = await run(completeEnv(), fetchFake);
+
+      expect(outcome).toEqual({ kind: 'verification_failed' });
+      expect(requestedUrls(fetchFake)).toEqual([TURNSTILE_URL]);
+      expect(logged()).toEqual([]);
+    },
+  );
+
+  // The codes that blame the secret, the request or Turnstile are a failure the owner can
+  // act on, so they are logged: a wrong TURNSTILE_SECRET_KEY no longer fails in silence.
+  it.each([
+    'missing-input-secret',
+    'invalid-input-secret',
+    'bad-request',
+    'internal-error',
+  ])(
+    'fails the submission without sending, and logs one error ending in (%s), when Turnstile lists it',
+    async (code) => {
+      const fetchFake = providers({ turnstile: refusing(code) });
+
+      const outcome = await run(completeEnv(), fetchFake);
+
+      expect(outcome).toEqual({ kind: 'verification_failed' });
+      expect(requestedUrls(fetchFake)).toEqual([TURNSTILE_URL]);
+      expect(vi.mocked(console.error)).toHaveBeenCalledTimes(1);
+      expect(consoleSpies.flatMap((spy) => spy.mock.calls)).toHaveLength(1);
+      expect(logged()).toEqual([`${VERIFIER_LINE} (${code})`]);
+    },
+  );
+
+  it('logs the same single code whatever order Turnstile lists several in, token codes among them', async () => {
     const fetchFake = providers({
-      turnstile: async () =>
-        new Response(
-          JSON.stringify({
-            success: false,
-            'error-codes': ['invalid-input-response'],
-          }),
-          { status: 200 },
-        ),
+      turnstile: refusing(
+        'internal-error',
+        'invalid-input-response',
+        'bad-request',
+        'invalid-input-secret',
+      ),
     });
 
     const outcome = await run(completeEnv(), fetchFake);
 
     expect(outcome).toEqual({ kind: 'verification_failed' });
-    expect(requestedUrls(fetchFake)).toEqual([TURNSTILE_URL]);
-    expect(logged()).toEqual([]);
+    expect(logged()).toEqual([`${VERIFIER_LINE} (invalid-input-secret)`]);
+  });
+
+  // A code the Worker does not know proves nothing about the token, so the answer is neither
+  // mistaken for a rejected token nor silent: the verifier line is logged, with no suffix,
+  // and the code itself, which is Turnstile's text, is nowhere in it.
+  it.each([
+    ['only that code', [SENTINEL]],
+    ['that code beside a token code', ['invalid-input-response', SENTINEL]],
+  ])(
+    'fails the submission without sending, and logs the verifier line with no suffix, when Turnstile lists a code the Worker does not know (%s)',
+    async (_label, codes) => {
+      const fetchFake = providers({ turnstile: refusing(...codes) });
+
+      const outcome = await run(completeEnv(), fetchFake);
+
+      expect(outcome).toEqual({ kind: 'verification_failed' });
+      expect(requestedUrls(fetchFake)).toEqual([TURNSTILE_URL]);
+      expect(vi.mocked(console.error)).toHaveBeenCalledTimes(1);
+      expect(consoleSpies.flatMap((spy) => spy.mock.calls)).toHaveLength(1);
+      expect(logged()).toEqual([VERIFIER_LINE]);
+      expect(logged().join('\n')).not.toContain(SENTINEL);
+    },
+  );
+
+  it('logs the fault code, and not the unknown one, when Turnstile lists both', async () => {
+    const fetchFake = providers({
+      turnstile: refusing(SENTINEL, 'invalid-input-secret'),
+    });
+
+    const outcome = await run(completeEnv(), fetchFake);
+
+    expect(outcome).toEqual({ kind: 'verification_failed' });
+    expect(logged()).toEqual([`${VERIFIER_LINE} (invalid-input-secret)`]);
+    expect(logged().join('\n')).not.toContain(SENTINEL);
   });
 
   it.each([
     [
       'answers 500',
       () => Promise.resolve(new Response(SENTINEL, { status: 500 })),
+      ' (HTTP 500)',
+    ],
+    [
+      'answers 503',
+      () => Promise.resolve(new Response(SENTINEL, { status: 503 })),
+      ' (HTTP 503)',
     ],
     [
       'answers something that is not JSON',
       () => Promise.resolve(new Response(SENTINEL, { status: 200 })),
+      '',
     ],
     [
       'cannot be reached',
       () => Promise.reject(new TypeError(`connect failed ${SENTINEL}`)),
+      '',
     ],
     [
       'times out',
       () =>
         Promise.reject(new DOMException(`slow ${SENTINEL}`, 'TimeoutError')),
+      '',
     ],
   ])(
     'fails the submission closed, and logs one error in total, when Turnstile %s',
-    async (_label, answer) => {
+    async (_label, answer, suffix) => {
       const fetchFake = providers({ turnstile: answer });
 
       const outcome = await run(completeEnv(), fetchFake);
@@ -583,6 +680,7 @@ describe('createContactDeps: the wired dependencies inside submitContact', () =>
       expect(requestedUrls(fetchFake)).toEqual([TURNSTILE_URL]);
       expect(vi.mocked(console.error)).toHaveBeenCalledTimes(1);
       expect(consoleSpies.flatMap((spy) => spy.mock.calls)).toHaveLength(1);
+      expect(logged()).toEqual([`${VERIFIER_LINE}${suffix}`]);
       expect(logged().join('\n')).not.toContain(SENTINEL);
     },
   );
@@ -591,27 +689,32 @@ describe('createContactDeps: the wired dependencies inside submitContact', () =>
     [
       'answers 403',
       () => Promise.resolve(new Response(SENTINEL, { status: 403 })),
+      ' (HTTP 403)',
     ],
     [
       'answers 429',
       () => Promise.resolve(new Response(SENTINEL, { status: 429 })),
+      ' (HTTP 429)',
     ],
     [
       'answers 500',
       () => Promise.resolve(new Response(SENTINEL, { status: 500 })),
+      ' (HTTP 500)',
     ],
     [
       'cannot be reached',
       () => Promise.reject(new TypeError(`connect failed ${SENTINEL}`)),
+      '',
     ],
     [
       'times out',
       () =>
         Promise.reject(new DOMException(`slow ${SENTINEL}`, 'TimeoutError')),
+      '',
     ],
   ])(
     'reports delivery_failed, and logs one error in total, when EmailJS %s',
-    async (_label, answer) => {
+    async (_label, answer, suffix) => {
       const fetchFake = providers({ emailjs: answer });
 
       const outcome = await run(completeEnv(), fetchFake);
@@ -620,6 +723,7 @@ describe('createContactDeps: the wired dependencies inside submitContact', () =>
       expect(requestedUrls(fetchFake)).toEqual([TURNSTILE_URL, EMAILJS_URL]);
       expect(vi.mocked(console.error)).toHaveBeenCalledTimes(1);
       expect(consoleSpies.flatMap((spy) => spy.mock.calls)).toHaveLength(1);
+      expect(logged()).toEqual([`${SENDER_LINE}${suffix}`]);
       expect(logged().join('\n')).not.toContain(SENTINEL);
     },
   );
@@ -640,8 +744,38 @@ describe('createContactDeps: the wired dependencies inside submitContact', () =>
     const leaky = () => Promise.reject(new Error(JSON.stringify(SETTINGS)));
     const visitor = ['Ada Lovelace', 'ada@example.com', 'Hello there.'];
 
+    // A status answer whose body quotes every setting: the status is logged, the body is not.
+    const quoting = (status: number) => () =>
+      Promise.resolve(
+        new Response(JSON.stringify(SETTINGS), {
+          status,
+        }),
+      );
+
     await run(completeEnv(), providers({ turnstile: leaky }));
     await run(completeEnv(), providers({ emailjs: leaky }));
+    await run(completeEnv(), providers({ turnstile: quoting(503) }));
+    await run(completeEnv(), providers({ emailjs: quoting(403) }));
+    // A fault code whose answer quotes every setting: the code is logged, the answer is not.
+    await run(
+      completeEnv(),
+      providers({
+        turnstile: async () =>
+          new Response(
+            JSON.stringify({
+              success: false,
+              'error-codes': ['invalid-input-secret'],
+              echo: SETTINGS,
+            }),
+            { status: 200 },
+          ),
+      }),
+    );
+    // An unknown code that quotes every setting: the line is logged, the code is not.
+    await run(
+      completeEnv(),
+      providers({ turnstile: refusing(JSON.stringify(SETTINGS)) }),
+    );
     await run(
       completeEnv({
         CONTACT_RATE_LIMIT: {
