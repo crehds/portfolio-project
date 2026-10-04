@@ -164,9 +164,12 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
     codes are operator or provider faults (`missing-input-secret`, `invalid-input-secret`, `bad-request`,
     `internal-error`) reject as "could not be asked", so `submitContact` logs its fixed line (today a wrong
     `TURNSTILE_SECRET_KEY` fails every submission without a log line); token errors still resolve `false`; (2) a typed
-    provider error that carries only the numeric HTTP status, which `submitContact` adds to its fixed log line (EmailJS
-    400/403/429 become diagnosable, still with no secret and no visitor text). The hostname check goes to T13 (allow
-    `carlos15erh.workers.dev` and its subdomains). Route: delegated. ~150.
+    provider error (`ProviderFailure`) with fixed text and at most one detail, the numeric HTTP status or, for (1), the
+    Turnstile fault code from that fixed list, which `submitContact` appends to its fixed log line (`(HTTP 403)`,
+    `(invalid-input-secret)`; still no secret and no visitor text). Turnstile's docs give no HTTP status for an error
+    answer, and a fault code that arrives in a 200 would log a useless "HTTP 200", so the code rides in the error
+    instead (parent, 2026-10-04). The hostname check goes to T13 (allow `carlos15erh.workers.dev` and its subdomains). Route: delegated
+    (writer trigger: the failure type, two adapters, `submitContact`, their tests and the setup docs). ~200.
   - [ ] **T11d** Contact page, Action and form (EN/ES), in four commits: the hermetic e2e harness (fake EmailJS and
     Turnstile server, `.dev.vars.e2e`, `CLOUDFLARE_ENV=e2e`) with the page shell, nav item and home form CTA; the action
     and form (303 to `?sent=1` on success, localized field errors with the values kept); the Turnstile widget and the
@@ -451,6 +454,9 @@ the HTML reporter blocks the shell after a failure.
   EmailJS status never reaches a log) and a hostname check in T13 (previews run on other hostnames). Tooling gotchas:
   ESLint 10's `preserve-caught-error`, `no-control-regex` (the schema uses a char-code loop), and `astro check`
   catching type errors that Vitest misses.
+- 2026-10-04: after the T11c record, the stop hook offered its whole-branch review a thirteenth time (267 files, 42,106
+  lines, high: process spawning and shell in `.github/workflows/ci.yml`). The owner granted it; it stopped with
+  `lens_context_budget_exceeded` like the others, and nothing was created.
 
 ## Next step
 
