@@ -176,9 +176,10 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
     Turnstile server, `.dev.vars.e2e`, `CLOUDFLARE_ENV=e2e`) with the page shell, nav item and home form CTA; the action
     and form (303 to `?sent=1` on success, localized field errors with the values kept); the Turnstile widget and the
     honeypot; the no-JS and "form unavailable" notices, axe. Route: delegated. Owner, before live checks: EmailJS
-    (service, template, non-browser API, keys), the Turnstile widget and keys, Worker secrets. Owner question before
-    it starts: what the visitor sees when the verifier cannot answer (an outage or a wrong secret); today it is
-    `verification_failed`, the same as a rejected token (see the T11c-b change log).
+    (service, template, non-browser API, keys), the Turnstile widget and keys, Worker secrets. Owner decision
+    (2026-10-04): when the verifier cannot answer (an outage or a wrong secret), the visitor gets the "form
+    unavailable" notice with the email and WhatsApp links, not the rejected-token message, so `submitContact` gains an
+    outcome for it (e.g. `unavailable`, with its tests).
   - [ ] **T11e** 404 pages in EN and ES (`src/pages/404.astro`, `src/pages/es/404.astro`). Route: delegated.
 
 ### Phase 3 · Launch
@@ -479,11 +480,13 @@ the HTML reporter blocks the shell after a failure.
   source): exactly 7 codes; `invalid-widget-id` and `invalid-parsed-secret`, which the writer recalled, are not in
   it. `docs/contact-setup.md` lists every log line and what it means; EmailJS's 403 and 429 stay marked as
   undocumented. Open for T11d (owner question): what the visitor sees when the verifier cannot answer.
+- 2026-10-04: owner decision for T11d: a verifier that cannot answer shows the "form unavailable" notice (email and
+  WhatsApp), because the fault is on the server's side and retrying cannot help the visitor.
 
 ## Next step
 
-T11d (contact page, action, form, e2e harness), once the owner answers what the visitor sees when the verifier cannot
-answer; then T11e (404 pages). Owner, in parallel: create the R2 bucket `portfolio-cv` and upload
+T11d (contact page, action, form, e2e harness, and the `unavailable` outcome for a verifier that cannot answer); then
+T11e (404 pages). Owner, in parallel: create the R2 bucket `portfolio-cv` and upload
 `en.pdf` and `es.pdf` before `feat/astro-rebuild` is pushed (Workers Builds deploys every pushed branch); create the
 Turnstile widget early to confirm it accepts the `carlos15erh.workers.dev` hostname; set up EmailJS (service, template,
 non-browser API, keys; see `docs/contact-setup.md`) before T11d. Optional: the heading-spacing rhythm noted in T10b.
