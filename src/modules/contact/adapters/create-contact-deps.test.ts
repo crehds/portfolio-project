@@ -438,6 +438,12 @@ describe('createContactDeps: an environment that cannot run the form', () => {
 describe('createContactDeps: the wired dependencies inside submitContact', () => {
   const CLIENT_IP = '203.0.113.7';
 
+  // The lines `submitContact` logs for a failed verifier and sender. A failure that carries
+  // a detail ends its line with it: the provider's HTTP status, in brackets.
+  const VERIFIER_LINE =
+    'contact: the Turnstile verifier failed, so the submission was rejected';
+  const SENDER_LINE = 'contact: the email sender failed';
+
   function submission() {
     return contactSchema.parse({
       name: 'Ada Lovelace',
@@ -558,23 +564,32 @@ describe('createContactDeps: the wired dependencies inside submitContact', () =>
     [
       'answers 500',
       () => Promise.resolve(new Response(SENTINEL, { status: 500 })),
+      ' (HTTP 500)',
+    ],
+    [
+      'answers 503',
+      () => Promise.resolve(new Response(SENTINEL, { status: 503 })),
+      ' (HTTP 503)',
     ],
     [
       'answers something that is not JSON',
       () => Promise.resolve(new Response(SENTINEL, { status: 200 })),
+      '',
     ],
     [
       'cannot be reached',
       () => Promise.reject(new TypeError(`connect failed ${SENTINEL}`)),
+      '',
     ],
     [
       'times out',
       () =>
         Promise.reject(new DOMException(`slow ${SENTINEL}`, 'TimeoutError')),
+      '',
     ],
   ])(
     'fails the submission closed, and logs one error in total, when Turnstile %s',
-    async (_label, answer) => {
+    async (_label, answer, suffix) => {
       const fetchFake = providers({ turnstile: answer });
 
       const outcome = await run(completeEnv(), fetchFake);
@@ -583,6 +598,7 @@ describe('createContactDeps: the wired dependencies inside submitContact', () =>
       expect(requestedUrls(fetchFake)).toEqual([TURNSTILE_URL]);
       expect(vi.mocked(console.error)).toHaveBeenCalledTimes(1);
       expect(consoleSpies.flatMap((spy) => spy.mock.calls)).toHaveLength(1);
+      expect(logged()).toEqual([`${VERIFIER_LINE}${suffix}`]);
       expect(logged().join('\n')).not.toContain(SENTINEL);
     },
   );
@@ -591,27 +607,32 @@ describe('createContactDeps: the wired dependencies inside submitContact', () =>
     [
       'answers 403',
       () => Promise.resolve(new Response(SENTINEL, { status: 403 })),
+      ' (HTTP 403)',
     ],
     [
       'answers 429',
       () => Promise.resolve(new Response(SENTINEL, { status: 429 })),
+      ' (HTTP 429)',
     ],
     [
       'answers 500',
       () => Promise.resolve(new Response(SENTINEL, { status: 500 })),
+      ' (HTTP 500)',
     ],
     [
       'cannot be reached',
       () => Promise.reject(new TypeError(`connect failed ${SENTINEL}`)),
+      '',
     ],
     [
       'times out',
       () =>
         Promise.reject(new DOMException(`slow ${SENTINEL}`, 'TimeoutError')),
+      '',
     ],
   ])(
     'reports delivery_failed, and logs one error in total, when EmailJS %s',
-    async (_label, answer) => {
+    async (_label, answer, suffix) => {
       const fetchFake = providers({ emailjs: answer });
 
       const outcome = await run(completeEnv(), fetchFake);
@@ -620,6 +641,7 @@ describe('createContactDeps: the wired dependencies inside submitContact', () =>
       expect(requestedUrls(fetchFake)).toEqual([TURNSTILE_URL, EMAILJS_URL]);
       expect(vi.mocked(console.error)).toHaveBeenCalledTimes(1);
       expect(consoleSpies.flatMap((spy) => spy.mock.calls)).toHaveLength(1);
+      expect(logged()).toEqual([`${SENDER_LINE}${suffix}`]);
       expect(logged().join('\n')).not.toContain(SENTINEL);
     },
   );
@@ -640,8 +662,18 @@ describe('createContactDeps: the wired dependencies inside submitContact', () =>
     const leaky = () => Promise.reject(new Error(JSON.stringify(SETTINGS)));
     const visitor = ['Ada Lovelace', 'ada@example.com', 'Hello there.'];
 
+    // A status answer whose body quotes every setting: the status is logged, the body is not.
+    const quoting = (status: number) => () =>
+      Promise.resolve(
+        new Response(JSON.stringify(SETTINGS), {
+          status,
+        }),
+      );
+
     await run(completeEnv(), providers({ turnstile: leaky }));
     await run(completeEnv(), providers({ emailjs: leaky }));
+    await run(completeEnv(), providers({ turnstile: quoting(503) }));
+    await run(completeEnv(), providers({ emailjs: quoting(403) }));
     await run(
       completeEnv({
         CONTACT_RATE_LIMIT: {

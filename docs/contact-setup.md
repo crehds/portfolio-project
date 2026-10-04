@@ -272,20 +272,29 @@ With real EmailJS values, submitting the local form sends a real email and spend
 
 ## Contact troubleshooting
 
-The Worker never logs what a provider said, only a fixed line that names the step that failed:
-a provider's error can quote a key or the visitor's message.
+The Worker never logs what a provider said: a provider's error can quote a key or the visitor's
+message. A line names the step that failed and, for the email sender and the Turnstile verifier,
+may end with one closed detail in brackets, the HTTP status the provider answered with, as in
+`(HTTP 403)`. Nothing else of a failure is logged.
 
-| Worker log line                                                          | What it means                                                                                                 |
-| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| `contact: the email sender failed`                                       | EmailJS did not accept the message. See the first item below.                                                 |
-| `contact: the Turnstile verifier failed, so the submission was rejected` | Turnstile could not be asked: an HTTP status other than 200, an answer that is not JSON, or no answer in 8 s. |
-| `contact: the rate limiter failed, so the request was let through`       | The `CONTACT_RATE_LIMIT` binding did not answer. The request went on, and the form still works.               |
+| Worker log line                                                                          | What it means                                                                                                                                             |
+| ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contact: the email sender failed`                                                       | EmailJS could not be asked: the request failed on the network or took more than 8 s.                                                                      |
+| `contact: the email sender failed (HTTP <status>)`                                       | EmailJS answered with that status instead of 200. See the first item below.                                                                               |
+| `contact: the Turnstile verifier failed, so the submission was rejected`                 | Turnstile could not be asked: an answer that is not JSON, a network error, or no answer in 8 s.                                                           |
+| `contact: the Turnstile verifier failed, so the submission was rejected (HTTP <status>)` | Turnstile answered with that status instead of 200. Its documentation gives no HTTP status for an error answer, so what a status means is not documented. |
+| `contact: the rate limiter failed, so the request was let through`                       | The `CONTACT_RATE_LIMIT` binding did not answer. The request went on, and the form still works.                                                           |
 
-- **Messages are not delivered (`contact: the email sender failed`).** Check, in order:
-  Account > Security has "Allow EmailJS API for non-browser applications" on and the private key
-  is current; the four `EMAILJS_*` secrets match the dashboard (EmailJS refuses a request with a
-  wrong id or key); and the plan limits, 200 requests a month and 1 a second, are not used up.
-  The log does not say which of these it was, because the HTTP status is not logged.
+- **Messages are not delivered (`contact: the email sender failed`).** The status in brackets is
+  what EmailJS answered, and a line with no status means the request never got an answer.
+  EmailJS documents one error for its send endpoint, 400 with the text "The user_id parameter is
+  required", and the Worker does not log that text. What it answers for anything else, 403 and
+  429 included, is not documented, so read those two as "EmailJS refused the request", not as a
+  known cause. A 5xx is a server-side error by HTTP's own definition, so a later retry may work.
+  Check, in order: Account > Security has "Allow EmailJS API for non-browser applications" on and
+  the private key is current; the four `EMAILJS_*` secrets match the dashboard (EmailJS refuses a
+  request with a wrong id or key); and the plan limits, 200 requests a month and 1 a second, are
+  not used up.
 - **Every submission fails verification.** A wrong or mismatched `TURNSTILE_SECRET_KEY` is the
   usual cause. Turnstile names a secret problem in its answer (the `invalid-input-secret` and
   `missing-input-secret` error codes), but the Worker does not log the answer, and it treats a

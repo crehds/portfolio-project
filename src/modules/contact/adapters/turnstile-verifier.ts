@@ -3,6 +3,7 @@
 // root (`create-contact-deps.ts`) wires the Worker's own in.
 import type { ContactConfig } from '../config';
 import type { TurnstileVerifier } from '../ports';
+import { ProviderFailure } from '../provider-failure';
 import {
   globalFetch,
   isTimeout,
@@ -53,16 +54,19 @@ async function readAnswer(response: Response): Promise<unknown> {
  * - `false` for a 200 whose `success` is anything else (Turnstile rejecting the token,
  *   an expired or spent one included), and for a token past Turnstile's 2,048-character
  *   maximum, which it does not even send;
- * - a rejection, with fixed text and at most the HTTP status, for any other status,
- *   a body that is not JSON, a network error or the timeout: Turnstile could not be asked.
+ * - a rejection, with fixed text, for any other status, a body that is not JSON, a network
+ *   error or the timeout: Turnstile could not be asked. A status other than 200 rejects
+ *   with a `ProviderFailure` that carries it as its one detail; the rest are plain
+ *   `Error`s with no detail.
  *
  * It never retries (a token is single use, so Turnstile would only call a second try a
  * duplicate), and it makes one attempt in `AbortSignal.timeout(8000)`. It checks nothing
  * of the answer's `hostname`: previews run on other hostnames than the production one.
  *
- * It logs nothing. A rejection reaches `submitContact`, which logs one fixed line and
- * fails the submission closed; a line here too would report one failure twice. A `false`
- * is an ordinary answer, not a failure, and is not logged.
+ * It logs nothing. A rejection reaches `submitContact`, which logs one fixed line, with
+ * the status appended when there is one, and fails the submission closed; a line here too
+ * would report one failure twice. A `false` is an ordinary answer, not a failure, and is
+ * not logged.
  *
  * `config` is the Turnstile slice, minus the public site key: the verifier never sees the
  * EmailJS keys, and does not need the key the widget uses.
@@ -94,7 +98,9 @@ export function createTurnstileVerifier(
     });
 
     if (response.status !== 200) {
-      throw new Error(`Turnstile answered HTTP ${response.status}`);
+      throw new ProviderFailure(`Turnstile answered HTTP ${response.status}`, {
+        status: response.status,
+      });
     }
 
     const answer = await readAnswer(response);

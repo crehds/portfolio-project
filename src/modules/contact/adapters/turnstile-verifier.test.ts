@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ProviderFailure, failureSuffix } from '../provider-failure';
 import type { Fetch } from './outbound';
 import { createTurnstileVerifier } from './turnstile-verifier';
 import {
@@ -325,18 +326,52 @@ describe('createTurnstileVerifier: what Turnstile answers', () => {
   });
 
   // Turnstile answers a pass and a fail alike with 200; any other status means it did
-  // not give an answer, even when the body claims a success.
+  // not give an answer, even when the body claims a success. The rejection carries the
+  // status, so the caller's log line can say which one Turnstile answered.
   it.each([
     201, 202, 204, 301, 302, 307, 400, 401, 403, 404, 405, 408, 413, 429, 500,
     502, 503, 504,
-  ])('rejects when Turnstile answers %i', async (status) => {
-    const fetchFake = fetchAnswering(jsonAnswer({ success: true }, status));
+  ])(
+    'rejects with a ProviderFailure that carries the status when Turnstile answers %i',
+    async (status) => {
+      const fetchFake = fetchAnswering(jsonAnswer({ success: true }, status));
 
+      const error = await rejectionOf(
+        createTurnstileVerifier(CONFIG, fetchFake)(TOKEN, CLIENT_IP),
+      );
+
+      expect(error.message).toBe(`Turnstile answered HTTP ${status}`);
+      expect(error).toBeInstanceOf(ProviderFailure);
+      expect((error as ProviderFailure).status).toBe(status);
+      expect(failureSuffix(error)).toBe(` (HTTP ${status})`);
+    },
+  );
+
+  // No answer, or one that cannot be read, so no status: these stay plain errors with
+  // nothing for a log line to add.
+  it.each([
+    ['a network error', () => Promise.reject(new TypeError('fetch failed'))],
+    [
+      'a timeout',
+      () => Promise.reject(new DOMException('timed out', 'TimeoutError')),
+    ],
+    [
+      'a throw before a promise is returned',
+      () => {
+        throw new TypeError('Invalid URL');
+      },
+    ],
+    [
+      'a 200 that is not JSON',
+      () => Promise.resolve(new Response('not json', { status: 200 })),
+    ],
+  ])('carries no detail when the request ends in %s', async (_label, fail) => {
     const error = await rejectionOf(
-      createTurnstileVerifier(CONFIG, fetchFake)(TOKEN, CLIENT_IP),
+      createTurnstileVerifier(CONFIG, vi.fn<Fetch>(fail))(TOKEN, CLIENT_IP),
     );
 
-    expect(error.message).toBe(`Turnstile answered HTTP ${status}`);
+    expect(error).not.toBeInstanceOf(ProviderFailure);
+    expect(failureSuffix(error)).toBe('');
   });
 
   it.each([
@@ -556,7 +591,7 @@ describe('createTurnstileVerifier: nothing private in an error or a log', () => 
   });
 
   it.each(failures)(
-    'is a plain Error with a short fixed message for %s',
+    'is a plain Error or a ProviderFailure, with a short fixed message, for %s',
     async (_label, makeFetch) => {
       const error = await rejectionOf(
         createTurnstileVerifier(CONFIG, vi.fn<Fetch>(makeFetch()))(
@@ -565,7 +600,7 @@ describe('createTurnstileVerifier: nothing private in an error or a log', () => 
         ),
       );
 
-      expect(error.constructor).toBe(Error);
+      expect([Error, ProviderFailure]).toContain(error.constructor);
       expect(error.message).toMatch(
         /^(Turnstile answered HTTP \d{3}|Turnstile answered with invalid JSON|The Turnstile request (failed|timed out after 8000 ms))$/,
       );

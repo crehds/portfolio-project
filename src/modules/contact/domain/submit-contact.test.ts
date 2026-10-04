@@ -1,11 +1,24 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { EmailSender, RateLimiter, TurnstileVerifier } from '../ports';
+import { ProviderFailure } from '../provider-failure';
 import { contactSchema } from '../schema';
-import { submitContact, type ContactDeps } from './submit-contact';
+import {
+  submitContact,
+  type ContactDeps,
+  type ContactOutcome,
+} from './submit-contact';
 
 const CLIENT_IP = '203.0.113.7';
 const TOKEN = 'turnstile-token-abc';
+
+// The lines a failed dependency leaves in the log. Spelled out here, not imported, so that
+// a change to the wording of a line is a change to this file too.
+const VERIFIER_LINE =
+  'contact: the Turnstile verifier failed, so the submission was rejected';
+const SENDER_LINE = 'contact: the email sender failed';
+const LIMITER_LINE =
+  'contact: the rate limiter failed, so the request was let through';
 
 /**
  * A submission after Astro and the schema are done with it, which is exactly what the
@@ -75,6 +88,11 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks();
 });
+
+/** Every console call, whichever method, as the list of its arguments. */
+function loggedCalls(): unknown[][] {
+  return consoleSpies.flatMap((spy) => spy.mock.calls);
+}
 
 /** Every argument of every console call, as one string. */
 function everythingLogged(): string {
@@ -442,6 +460,170 @@ describe('submitContact: delivery', () => {
   });
 });
 
+type Fakes = ReturnType<typeof fakes>;
+
+/**
+ * The two steps that fail closed, each with the line it logs, what the visitor gets, and
+ * how to make it fail with a given error.
+ */
+const closedSteps: [
+  step: string,
+  line: string,
+  outcome: ContactOutcome,
+  failWith: (f: Fakes, error: unknown) => void,
+][] = [
+  [
+    'the verifier',
+    VERIFIER_LINE,
+    { kind: 'verification_failed' },
+    (f, error) => f.verifyTurnstile.mockRejectedValue(error),
+  ],
+  [
+    'the sender',
+    SENDER_LINE,
+    { kind: 'delivery_failed' },
+    (f, error) => f.send.mockRejectedValue(error),
+  ],
+];
+
+// A failing dependency leaves one line in the log: fixed text that names the step, plus at
+// most a closed suffix. The suffix comes from a ProviderFailure alone, and it is the one
+// thing read from an error: its message, its cause and every other property stay out.
+describe('submitContact: the line a failed dependency leaves in the log', () => {
+  it.each(closedSteps)(
+    'adds the HTTP status a ProviderFailure carries when %s fails',
+    async (_step, line, _outcome, failWith) => {
+      const f = fakes();
+      failWith(
+        f,
+        new ProviderFailure('The provider answered', { status: 503 }),
+      );
+
+      await submitContact(submission(), f.deps, fromCloudflare());
+
+      expect(vi.mocked(console.error).mock.calls).toEqual([
+        [`${line} (HTTP 503)`],
+      ]);
+      expect(loggedCalls()).toHaveLength(1);
+    },
+  );
+
+  it.each(closedSteps)(
+    'gives the visitor the same outcome as before when %s fails with a ProviderFailure',
+    async (_step, _line, outcome, failWith) => {
+      const f = fakes();
+      failWith(
+        f,
+        new ProviderFailure('The provider answered', { status: 503 }),
+      );
+
+      const result = await submitContact(
+        submission(),
+        f.deps,
+        fromCloudflare(),
+      );
+
+      expect(result).toEqual(outcome);
+    },
+  );
+
+  it.each(closedSteps)(
+    'keeps the line exactly as it was when %s fails with a plain Error',
+    async (_step, line, _outcome, failWith) => {
+      const f = fakes();
+      // The message names a status, but no text is ever read from an error.
+      failWith(f, new Error('EmailJS answered HTTP 403'));
+
+      await submitContact(submission(), f.deps, fromCloudflare());
+
+      expect(vi.mocked(console.error).mock.calls).toEqual([[line]]);
+      expect(loggedCalls()).toHaveLength(1);
+    },
+  );
+
+  // Only the class vouches for what it carries: a thrown value that merely has a `status`
+  // gets no suffix, and nothing that is not an error ever gets one.
+  const lookAlikes: [string, unknown][] = [
+    ['a plain object with a status', { status: 403 }],
+    [
+      'an Error given a status',
+      Object.assign(new Error('boom'), { status: 403 }),
+    ],
+    [
+      'an Error subclass with a status',
+      new (class extends Error {
+        status = 403;
+      })('boom'),
+    ],
+    [
+      'an Error that calls itself ProviderFailure',
+      Object.assign(new Error('boom'), {
+        name: 'ProviderFailure',
+        status: 403,
+      }),
+    ],
+    ['a string', 'HTTP 403'],
+    ['a number', 403],
+    ['null', null],
+    ['undefined', undefined],
+  ];
+
+  const lookAlikeCases = closedSteps.flatMap(([step, line, , failWith]) =>
+    lookAlikes.map(
+      ([label, thrown]) =>
+        [`${label}, thrown by ${step}`, line, failWith, thrown] as const,
+    ),
+  );
+
+  it.each(lookAlikeCases)(
+    'adds nothing for %s',
+    async (_label, line, failWith, thrown) => {
+      const f = fakes();
+      failWith(f, thrown);
+
+      await submitContact(submission(), f.deps, fromCloudflare());
+
+      expect(vi.mocked(console.error).mock.calls).toEqual([[line]]);
+      expect(loggedCalls()).toHaveLength(1);
+    },
+  );
+
+  it.each(closedSteps)(
+    'logs nothing a ProviderFailure says besides its status when %s fails',
+    async (_step, line, _outcome, failWith) => {
+      const f = fakes();
+      const failure = Object.assign(
+        new ProviderFailure('SECRET-message key=sentinel-key-q7', {
+          status: 403,
+        }),
+        { cause: new Error('SECRET-cause'), detail: 'SECRET-detail' },
+      );
+      failWith(f, failure);
+
+      await submitContact(submission(), f.deps, fromCloudflare());
+
+      expect(vi.mocked(console.error).mock.calls).toEqual([
+        [`${line} (HTTP 403)`],
+      ]);
+      expect(everythingLogged()).not.toContain('SECRET');
+      expect(everythingLogged()).not.toContain('sentinel-key-q7');
+    },
+  );
+
+  it('leaves the rate limiter line as it was, whatever the limiter rejects with', async () => {
+    const f = fakes();
+    f.rateLimiter.mockRejectedValue(
+      new ProviderFailure('The limiter answered', { status: 503 }),
+    );
+
+    const outcome = await submitContact(submission(), f.deps, fromCloudflare());
+
+    expect(outcome).toEqual({ kind: 'sent' });
+    expect(vi.mocked(console.warn).mock.calls).toEqual([[LIMITER_LINE]]);
+    expect(loggedCalls()).toHaveLength(1);
+  });
+});
+
 // Whatever a dependency throws may quote the visitor's text, a token or a key (a failed
 // request often echoes its own body), so neither the outcome nor the logs may carry it.
 describe('submitContact: nothing private leaves through an outcome or a log', () => {
@@ -466,10 +648,24 @@ describe('submitContact: nothing private leaves through an outcome or a log', ()
       cause: new Error(PRIVATE.error),
     });
 
+  // The class itself, with the private text where an error could carry it.
+  const providerFailure = () =>
+    Object.assign(new ProviderFailure(PRIVATE.error, { status: 403 }), {
+      cause: new Error(PRIVATE.error),
+    });
+
   const failing: [string, (f: ReturnType<typeof fakes>) => void][] = [
     ['the rate limiter', (f) => f.rateLimiter.mockRejectedValue(failure())],
     ['the verifier', (f) => f.verifyTurnstile.mockRejectedValue(failure())],
     ['the sender', (f) => f.send.mockRejectedValue(failure())],
+    [
+      'the verifier, with a ProviderFailure',
+      (f) => f.verifyTurnstile.mockRejectedValue(providerFailure()),
+    ],
+    [
+      'the sender, with a ProviderFailure',
+      (f) => f.send.mockRejectedValue(providerFailure()),
+    ],
   ];
 
   it.each(failing)('holds when %s throws', async (_label, breakIt) => {

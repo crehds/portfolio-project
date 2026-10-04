@@ -3,6 +3,7 @@
 // root (`create-contact-deps.ts`) wires the Worker's own in.
 import type { ContactConfig } from '../config';
 import type { EmailSender } from '../ports';
+import { ProviderFailure } from '../provider-failure';
 import { globalFetch, postToProvider, type Fetch } from './outbound';
 
 /**
@@ -21,12 +22,15 @@ const EMAILJS_SEND_URL = 'https://api.emailjs.com/api/v1.0/email/send';
  * for a sent one. It never retries (EmailJS allows 1 request a second and 200 a month on
  * the free plan), and it never reads the response body.
  *
- * Every error is a plain `Error` with fixed text, plus the HTTP status when there is one:
- * Astro sends a thrown error's message to the browser, so no key, no part of the visitor's
- * message and nothing the provider said can be in it.
+ * Every error has fixed text, plus the HTTP status when there is one: Astro sends a thrown
+ * error's message to the browser, so no key, no part of the visitor's message and nothing
+ * the provider said can be in it. An answer other than 200 rejects with a
+ * `ProviderFailure` that carries the status as its one detail; a network error or the
+ * timeout is a plain `Error` with no detail.
  *
  * It logs nothing. The rejection reaches `submitContact`, which logs one fixed line for a
- * failed sender; a line here too would report one failure twice.
+ * failed sender, with the status appended when there is one; a line here too would report
+ * one failure twice.
  *
  * `config` is the EmailJS slice only, so the sender never sees the Turnstile secret.
  */
@@ -58,7 +62,9 @@ export function createEmailJsSender(
       });
 
       if (response.status !== 200) {
-        throw new Error(`EmailJS answered HTTP ${response.status}`);
+        throw new ProviderFailure(`EmailJS answered HTTP ${response.status}`, {
+          status: response.status,
+        });
       }
     },
   };
