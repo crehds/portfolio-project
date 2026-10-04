@@ -75,12 +75,12 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~10,573 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+- Running count: ~13,551 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
   T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321 + T08 ~1,021 + T09 ~923 + T09b ~217 +
-  T10 ~778 + T10b ~88 + T11a ~935 + T11b ~1,698, with tests, excluding lockfiles and the legacy removal). It already
-  passes the ~4,300 forecast, mostly from tests and the review follow-up tasks.
-- Last reviewed boundary: `1984ce8` (the T11a docs `5a08d74` + T11b slice from `9ac381e`; the merge `a00b1bd` has the
-  same tree). Before it, the slice from `8c0409c` (the T10 docs `1edaac9`, T10b, the T10b docs `9b0bcc4`, the T11 plan
+  T10 ~778 + T10b ~88 + T11a ~935 + T11b ~1,698 + T11c ~2,978, with tests, excluding lockfiles and the legacy
+  removal). It already passes the ~4,300 forecast, mostly from tests and the review follow-up tasks.
+- Last reviewed boundary: `8fef017` (the T11b docs `18aca20` + T11c slice from `1984ce8`; the merge `dfdd1e2` has the
+  same tree). Earlier, the slice from `8c0409c` (the T10 docs `1edaac9`, T10b, the T10b docs `9b0bcc4`, the T11 plan
   `e201a3c` and T11a up to `9ac381e`; medium, 1,184 lines) was skipped by the owner (2026-09-30); as with the legacy
   removal, the next slice started after it.
 
@@ -156,10 +156,17 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
     error codes), the `EmailSender` port, a config parser that reports names and never values, and `submitContact`
     (schema, then honeypot with a silent success, rate limit, Turnstile, send); the rate-limit key comes from
     `cf-connecting-ip` only. Route: delegated.
-  - [ ] **T11c** Adapters tested with a mocked `fetch`: EmailJS sender, Turnstile verifier, Workers rate limiter (fails
+  - [x] **T11c** Adapters tested with a mocked `fetch`: EmailJS sender, Turnstile verifier, Workers rate limiter (fails
     open on binding errors), dependency wiring; 8 s timeouts; no secret in any error text. Route: delegated. Also, from
     the T11b readback: reject control characters in `name` (`invalid`), cap the Turnstile token at 2,048 characters in
     the verifier (no call past it), and accept `http:` seam URLs only for loopback hosts.
+  - [ ] **T11c-b** Follow-ups from the T11c writer's open questions (parent decision): (1) Turnstile answers whose error
+    codes are operator or provider faults (`missing-input-secret`, `invalid-input-secret`, `bad-request`,
+    `internal-error`) reject as "could not be asked", so `submitContact` logs its fixed line (today a wrong
+    `TURNSTILE_SECRET_KEY` fails every submission without a log line); token errors still resolve `false`; (2) a typed
+    provider error that carries only the numeric HTTP status, which `submitContact` adds to its fixed log line (EmailJS
+    400/403/429 become diagnosable, still with no secret and no visitor text). The hostname check goes to T13 (allow
+    `carlos15erh.workers.dev` and its subdomains). Route: delegated. ~150.
   - [ ] **T11d** Contact page, Action and form (EN/ES), in four commits: the hermetic e2e harness (fake EmailJS and
     Turnstile server, `.dev.vars.e2e`, `CLOUDFLARE_ENV=e2e`) with the page shell, nav item and home form CTA; the action
     and form (303 to `?sent=1` on success, localized field errors with the values kept); the Turnstile widget and the
@@ -170,7 +177,9 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 ### Phase 3 · Launch
 
 - [ ] **T12** SEO: meta, Open Graph/Twitter, OG images, JSON-LD Person, sitemap + robots, canonical, favicons/manifest. Route: delegated. ~300.
-- [ ] **T13** Hardening: axe on every page, Lighthouse CI budgets, link check, security headers. Route: delegated. ~200.
+- [ ] **T13** Hardening: axe on every page, Lighthouse CI budgets, link check, security headers. Also, from T11c: check
+  the hostname in Turnstile's answer (allow `carlos15erh.workers.dev` and its subdomains, so previews keep working).
+  Route: delegated. ~200.
 - [ ] **T14** Launch: production deploy, analytics, final README, prune stale branches (owner approval). Route: inline + owner. ~80.
 
 ### Phase 4 · Project sync (future)
@@ -222,6 +231,7 @@ the HTML reporter blocks the shell after a failure.
 | T10b | done (merged `56594f8`) | `1d2b3b3` ICU-tolerant date oracles, `c109c3b` years line grouped with the heading, `538d575` exact TZ restore (parent) | Test-only oracles proven by temporary breaks, then restored (`es-PE`: "expected '23 de setiembre de 2026' to contain 'septiembre'" and "'ene. 2023 – set. 2023'" rejected; no `day` -> missing '23'; 2-digit year -> missing '2026'; long month -> pattern mismatch); heading gap RED 48 px in both locales (h1 margin 16 + `gap-8` 32), then GREEN 8 px with the timeline still 32 px away; TZ restore: with the UTC pin removed on a UTC-5 host, 2/4 tests failed before the fix and 4/4 after · lint · format · `pnpm check` 0/0/0 · `pnpm test` 208/208 · build 16 pages · `pnpm test:e2e` 115/115 · dry run: no bindings · parent re-ran after its fix: test 208/208, lint, format, check 0/0/0; screenshots at 1280 and 390 px in both themes | Medium, 120 lines from `8c0409c`: not due (`under_budget`); its slice was skipped by the owner (see T11a) |
 | T11a | done (merged `6c345c9`) | `8a5cf33` CV path + serving rules, `be440d3` R2 route, binding and local seed, `9ac381e` profile CV link per locale | Strict TDD, RED observed per behavior (missing `cv-path`/`serve-cv` modules; 24/25 `serveCv` tests failing against a naive stub; the schema accepting other paths, 6 failures; integrity: `cv` undefined; e2e: 11/12 CV tests failing with 404 and no `no-store`; home CV link count 0 in both locales), then GREEN; 4 characterization tests after probing the server (HEAD, a past `If-Modified-Since`, `If-Unmodified-Since` -> 412, `If-Match` + `If-None-Match` -> 304), the 304/412 rule pinned by mutation (2 and 4 failures) · lint · format · `pnpm check` 0/0/0 (99 files) · `pnpm test` 250/250 · build 16 pages + Worker · `pnpm test:e2e` 131/131 · dry run: `CV_BUCKET (portfolio-cv)` + `ASSETS` · CI replay in a clean clone passed · parent re-ran: test 250/250, check 0/0/0 | Slice from `8c0409c` (T10b + T11a): medium, 1,184 lines, due (`slice_budget_reached`); skipped by the owner. Tier of the writer's commits with the review skipped: medium (999 lines) -> the writer's verification plus the parent's spot check |
 | T11b | done (merged `a00b1bd`) | `28bcb2f` form schema with stable error codes, `781efa5` settings parser (names only) + docs, `427370f` rate-limit key from `cf-connecting-ip`, `1984ce8` `submitContact` + ports | Strict TDD: RED `Cannot find module` per module, then assertion-level RED against naive stubs (schema 49/66, config 51/67, rate-limit key 9/27, `submitContact` 30/41 failing), then GREEN; mutations caught (trim after the checks: 6 failures; email format before the trim: 11; logging the thrown error: 2; a truthy non-`true` verifier answer: 1; a fail-closed limiter: 2); scratch checks against Astro's real `defineAction({ accept: 'form' })` (field codes, trimmed values, the honeypot passed through) and `astro check` (`ActionAPIContext` fits `ContactContext`) · lint · format · `pnpm check` 0/0/0 (108 files) · `pnpm test` 455/455 · build 16 pages + Worker · `pnpm test:e2e` 131/131 · dry run unchanged · parent re-ran at the tip: check 0 errors, test 455/455 | T11a docs + T11b slice (from `9ac381e`): medium, 1,746 lines, 1 lens (reliability), approved with 0 findings (`review-0a3c27cc61ffca1d`) |
+| T11c | done (merged `dfdd1e2`) | `42e6953` control characters in `name`, `3211882` loopback-only `http:` seams, `0ece5b3` EmailJS sender + shared HTTP policy, `6db80f8` Turnstile verifier + Workers limiter, `8fef017` `createContactDeps` + owner setup docs | Strict TDD: RED `Cannot find module` per adapter, then assertion-level RED against naive stubs (name 17 failing, seams 32, EmailJS 60/68, Turnstile 85/98, limiter 16/29, wiring 19/54), then GREEN; mutations caught (a plain `.refine` instead of the pipe: the code-order test; a raw-text host match: 16; `!response.ok` instead of `status !== 200`: 201/202/204/206; the message spread into `template_params`: 2; no `redirect`, timeout or no-`cause` rule: 9; four Turnstile mutations: 15; a lenient limiter answer or a detached `limit` call: 10; no `fetchImpl` or no binding check: 27); a short non-JSON body caught the parser's error text quoting the body · lint · format · `pnpm check` 0/0/0 (118 files) · `pnpm test` 793/793 in 38 files · build 16 pages + Worker · `pnpm test:e2e` 131/131 · dry run unchanged · parent readback of every adapter file and the schema/config diffs; parent re-ran: check 0 errors, test 793/793; the merge tree equals the reviewed tree (`7d9a216`) | T11b docs + T11c slice (from `1984ce8`): medium, 3,023 lines, 1 lens (reliability), approved with 0 findings (`review-c6c375c4f8a6bf8c`) |
 
 ## Change log
 
@@ -417,11 +427,35 @@ the HTML reporter blocks the shell after a failure.
   `cf-connecting-ip` only (fallback `unknown`). Readback items routed to T11c: control characters in `name`, a token
   length cap, `http:` seams only on loopback. Kept: Zod's ASCII email pattern (whether EmailJS takes Unicode addresses
   is unverified). For T11d: the handler may throw `ActionError` only, and e2e tests send their own `cf-connecting-ip`.
+- 2026-09-30: the stop hook offered its whole-branch review a twelfth time (257 files, 39,124 lines) before the T11c
+  writer started. The owner granted it; it stopped with `lens_context_budget_exceeded` like the others, and nothing was
+  created.
+- 2026-10-04: T11c. `adapters/outbound.ts` holds the shared HTTP policy: one attempt and no retry (EmailJS meters
+  requests, Turnstile tokens are single use), `AbortSignal.timeout(8000)`, `redirect: 'manual'` (a followed redirect
+  could turn the POST into a GET that answers 200), and an injected `fetch` that defaults to a late-bound
+  `globalThis.fetch` (Workers methods lose `this` when stored). No adapter logs: each rejects with a plain `Error` of
+  fixed text and at most the HTTP status, with no `cause` and no body read on a non-200, and `submitContact` logs once
+  (the composed tests prove one log call per failure). EmailJS counts only HTTP 200 as accepted. Turnstile resolves
+  `true` only for a 200 whose JSON says `success: true`; a token past the documented 2,048-character maximum resolves
+  `false` without a request; any other status, invalid JSON (V8's parse error quotes the body, so fixed text replaces
+  it), a network error or the timeout rejects. The limiter also rejects on a malformed binding answer, so it is logged
+  and the request goes through. `createContactDeps(env, fetch?)` reads each `env` entry once into a snapshot (a
+  throwing getter counts as not set), reports a missing `CONTACT_RATE_LIMIT` binding as missing and one without
+  `limit` as invalid, by name only, and never throws. Every adapter test installs `forbidRealFetch()`, so no test can
+  reach a provider. `name` rejects C0 controls and DEL after the trim (a CR or LF in the From Name could start a mail
+  header); C1 controls and U+2028/2029 are still accepted. `http:` seams are accepted only for 127.0.0.1, localhost and
+  [::1], read from the parsed host. Provider facts come from the docs only (Engram
+  `discovery/portfolio-t11c-provider-facts`); still unverified: EmailJS's REST 403/429 answers, Turnstile accepting the
+  `workers.dev` hostname, the EmailJS dashboard menu names, and the rate-limiting binding on the Free plan. The
+  writer's open questions became T11c-b (a wrong Turnstile secret fails every submission without a log line, and the
+  EmailJS status never reaches a log) and a hostname check in T13 (previews run on other hostnames). Tooling gotchas:
+  ESLint 10's `preserve-caught-error`, `no-control-regex` (the schema uses a char-code loop), and `astro check`
+  catching type errors that Vitest misses.
 
 ## Next step
 
-T11c (adapters: EmailJS sender, Turnstile verifier, Workers rate limiter, wiring; plus the T11b readback items).
-Owner, in parallel: create the R2 bucket `portfolio-cv` and upload `en.pdf` and `es.pdf` before `feat/astro-rebuild`
-is pushed (T11a is merged, and Workers Builds deploys every pushed branch); create the Turnstile widget early to confirm
-it accepts the `carlos15erh.workers.dev` hostname; set up EmailJS before T11d. Optional: the heading-spacing rhythm
-noted in T10b.
+T11c-b (Turnstile operator-fault codes reject; the HTTP status in `submitContact`'s log line), then T11d (contact page,
+action, form, e2e harness) and T11e (404 pages). Owner, in parallel: create the R2 bucket `portfolio-cv` and upload
+`en.pdf` and `es.pdf` before `feat/astro-rebuild` is pushed (Workers Builds deploys every pushed branch); create the
+Turnstile widget early to confirm it accepts the `carlos15erh.workers.dev` hostname; set up EmailJS (service, template,
+non-browser API, keys; see `docs/contact-setup.md`) before T11d. Optional: the heading-spacing rhythm noted in T10b.
