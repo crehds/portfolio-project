@@ -75,12 +75,12 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~13,551 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+- Running count: ~15,124 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
   T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321 + T08 ~1,021 + T09 ~923 + T09b ~217 +
-  T10 ~778 + T10b ~88 + T11a ~935 + T11b ~1,698 + T11c ~2,978, with tests, excluding lockfiles and the legacy
-  removal). It already passes the ~4,300 forecast, mostly from tests and the review follow-up tasks.
-- Last reviewed boundary: `8fef017` (the T11b docs `18aca20` + T11c slice from `1984ce8`; the merge `dfdd1e2` has the
-  same tree). Earlier, the slice from `8c0409c` (the T10 docs `1edaac9`, T10b, the T10b docs `9b0bcc4`, the T11 plan
+  T10 ~778 + T10b ~88 + T11a ~935 + T11b ~1,698 + T11c ~2,978 + T11c-b ~1,573, with tests, excluding lockfiles and
+  the legacy removal). It already passes the ~4,300 forecast, mostly from tests and the review follow-up tasks.
+- Last reviewed boundary: `62f10ae` (the T11c docs `4bf66b4`, the T11c-b refinement `fc03da1` + T11c-b slice from
+  `8fef017`; the merge `3f44f9f` has the same tree). Earlier, the slice from `8c0409c` (the T10 docs `1edaac9`, T10b, the T10b docs `9b0bcc4`, the T11 plan
   `e201a3c` and T11a up to `9ac381e`; medium, 1,184 lines) was skipped by the owner (2026-09-30); as with the legacy
   removal, the next slice started after it.
 
@@ -160,7 +160,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
     open on binding errors), dependency wiring; 8 s timeouts; no secret in any error text. Route: delegated. Also, from
     the T11b readback: reject control characters in `name` (`invalid`), cap the Turnstile token at 2,048 characters in
     the verifier (no call past it), and accept `http:` seam URLs only for loopback hosts.
-  - [ ] **T11c-b** Follow-ups from the T11c writer's open questions (parent decision): (1) Turnstile answers whose error
+  - [x] **T11c-b** Follow-ups from the T11c writer's open questions (parent decision): (1) Turnstile answers whose error
     codes are operator or provider faults (`missing-input-secret`, `invalid-input-secret`, `bad-request`,
     `internal-error`) reject as "could not be asked", so `submitContact` logs its fixed line (today a wrong
     `TURNSTILE_SECRET_KEY` fails every submission without a log line); token errors still resolve `false`; (2) a typed
@@ -168,13 +168,17 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
     Turnstile fault code from that fixed list, which `submitContact` appends to its fixed log line (`(HTTP 403)`,
     `(invalid-input-secret)`; still no secret and no visitor text). Turnstile's docs give no HTTP status for an error
     answer, and a fault code that arrives in a 200 would log a useless "HTTP 200", so the code rides in the error
-    instead (parent, 2026-10-04). The hostname check goes to T13 (allow `carlos15erh.workers.dev` and its subdomains). Route: delegated
-    (writer trigger: the failure type, two adapters, `submitContact`, their tests and the setup docs). ~200.
+    instead (parent, 2026-10-04). After the readback, (3) a string code outside Cloudflare's table rejects without
+    detail, so it is logged without printing Turnstile's text (parent, 2026-10-04). The hostname check goes to T13
+    (allow `carlos15erh.workers.dev` and its subdomains). Route: delegated (writer trigger: the failure type, two
+    adapters, `submitContact`, their tests and the setup docs). ~200 forecast, ~1,573 actual (tests ~1,217).
   - [ ] **T11d** Contact page, Action and form (EN/ES), in four commits: the hermetic e2e harness (fake EmailJS and
     Turnstile server, `.dev.vars.e2e`, `CLOUDFLARE_ENV=e2e`) with the page shell, nav item and home form CTA; the action
     and form (303 to `?sent=1` on success, localized field errors with the values kept); the Turnstile widget and the
     honeypot; the no-JS and "form unavailable" notices, axe. Route: delegated. Owner, before live checks: EmailJS
-    (service, template, non-browser API, keys), the Turnstile widget and keys, Worker secrets.
+    (service, template, non-browser API, keys), the Turnstile widget and keys, Worker secrets. Owner question before
+    it starts: what the visitor sees when the verifier cannot answer (an outage or a wrong secret); today it is
+    `verification_failed`, the same as a rejected token (see the T11c-b change log).
   - [ ] **T11e** 404 pages in EN and ES (`src/pages/404.astro`, `src/pages/es/404.astro`). Route: delegated.
 
 ### Phase 3 · Launch
@@ -235,6 +239,7 @@ the HTML reporter blocks the shell after a failure.
 | T11a | done (merged `6c345c9`) | `8a5cf33` CV path + serving rules, `be440d3` R2 route, binding and local seed, `9ac381e` profile CV link per locale | Strict TDD, RED observed per behavior (missing `cv-path`/`serve-cv` modules; 24/25 `serveCv` tests failing against a naive stub; the schema accepting other paths, 6 failures; integrity: `cv` undefined; e2e: 11/12 CV tests failing with 404 and no `no-store`; home CV link count 0 in both locales), then GREEN; 4 characterization tests after probing the server (HEAD, a past `If-Modified-Since`, `If-Unmodified-Since` -> 412, `If-Match` + `If-None-Match` -> 304), the 304/412 rule pinned by mutation (2 and 4 failures) · lint · format · `pnpm check` 0/0/0 (99 files) · `pnpm test` 250/250 · build 16 pages + Worker · `pnpm test:e2e` 131/131 · dry run: `CV_BUCKET (portfolio-cv)` + `ASSETS` · CI replay in a clean clone passed · parent re-ran: test 250/250, check 0/0/0 | Slice from `8c0409c` (T10b + T11a): medium, 1,184 lines, due (`slice_budget_reached`); skipped by the owner. Tier of the writer's commits with the review skipped: medium (999 lines) -> the writer's verification plus the parent's spot check |
 | T11b | done (merged `a00b1bd`) | `28bcb2f` form schema with stable error codes, `781efa5` settings parser (names only) + docs, `427370f` rate-limit key from `cf-connecting-ip`, `1984ce8` `submitContact` + ports | Strict TDD: RED `Cannot find module` per module, then assertion-level RED against naive stubs (schema 49/66, config 51/67, rate-limit key 9/27, `submitContact` 30/41 failing), then GREEN; mutations caught (trim after the checks: 6 failures; email format before the trim: 11; logging the thrown error: 2; a truthy non-`true` verifier answer: 1; a fail-closed limiter: 2); scratch checks against Astro's real `defineAction({ accept: 'form' })` (field codes, trimmed values, the honeypot passed through) and `astro check` (`ActionAPIContext` fits `ContactContext`) · lint · format · `pnpm check` 0/0/0 (108 files) · `pnpm test` 455/455 · build 16 pages + Worker · `pnpm test:e2e` 131/131 · dry run unchanged · parent re-ran at the tip: check 0 errors, test 455/455 | T11a docs + T11b slice (from `9ac381e`): medium, 1,746 lines, 1 lens (reliability), approved with 0 findings (`review-0a3c27cc61ffca1d`) |
 | T11c | done (merged `dfdd1e2`) | `42e6953` control characters in `name`, `3211882` loopback-only `http:` seams, `0ece5b3` EmailJS sender + shared HTTP policy, `6db80f8` Turnstile verifier + Workers limiter, `8fef017` `createContactDeps` + owner setup docs | Strict TDD: RED `Cannot find module` per adapter, then assertion-level RED against naive stubs (name 17 failing, seams 32, EmailJS 60/68, Turnstile 85/98, limiter 16/29, wiring 19/54), then GREEN; mutations caught (a plain `.refine` instead of the pipe: the code-order test; a raw-text host match: 16; `!response.ok` instead of `status !== 200`: 201/202/204/206; the message spread into `template_params`: 2; no `redirect`, timeout or no-`cause` rule: 9; four Turnstile mutations: 15; a lenient limiter answer or a detached `limit` call: 10; no `fetchImpl` or no binding check: 27); a short non-JSON body caught the parser's error text quoting the body · lint · format · `pnpm check` 0/0/0 (118 files) · `pnpm test` 793/793 in 38 files · build 16 pages + Worker · `pnpm test:e2e` 131/131 · dry run unchanged · parent readback of every adapter file and the schema/config diffs; parent re-ran: check 0 errors, test 793/793; the merge tree equals the reviewed tree (`7d9a216`) | T11b docs + T11c slice (from `1984ce8`): medium, 3,023 lines, 1 lens (reliability), approved with 0 findings (`review-c6c375c4f8a6bf8c`) |
+| T11c-b | done (merged `3f44f9f`) | `4f1752c` the HTTP status in the log line (`ProviderFailure` + `failureSuffix`), `a27c50c` Turnstile fault codes reject, `62f10ae` unknown codes reject without detail (parent follow-up) | Strict TDD: RED `Cannot find module './provider-failure'`, then a naive stub (25/44 failing); EmailJS status 25/71, Turnstile status 18/103, `submitContact` suffix 4, composed 5 (production files stashed); the fault codes test-first, 64 failing; the unknown codes 23 failing; then GREEN; mutations caught (logging `error.message`: 60; a suffix on the limiter line: 1; duck typing instead of `instanceof`: 25; no re-check in `failureSuffix`: 10; a constructor keeping any value or both details: 24; ignoring the priority order: 9; a token code beside a fault code read as a "no": 3; the fault check before `success: true`: 4; `String(errorCodes).includes`: 4; a `cause`: 9; the unknown code in the message: 18, as a property: 7, and also logged through `error.message`: 55; the unknown check before the fault check: 6; non-strings as unknown: 2; lenient matching: 4) · lint · format · `pnpm check` 0/0/0 (120 files) · `pnpm test` 1013/1013 in 39 files · build 16 pages + Worker · `pnpm test:e2e` 131/131 · dry run unchanged · parent readback of the production diffs and the docs; Cloudflare's Siteverify table re-checked (rendered page and raw source: exactly 7 codes); parent re-ran: check 0/0/0 (120 files), test 1013/1013; the merge tree equals the reviewed tree (`8c65a64`) | T11c docs + T11c-b slice (from `8fef017`): medium, 1,637 lines, 1 lens (reliability), approved with 0 findings (`review-40b8486602bfae27`) |
 
 ## Change log
 
@@ -457,11 +462,28 @@ the HTML reporter blocks the shell after a failure.
 - 2026-10-04: after the T11c record, the stop hook offered its whole-branch review a thirteenth time (267 files, 42,106
   lines, high: process spawning and shell in `.github/workflows/ci.yml`). The owner granted it; it stopped with
   `lens_context_budget_exceeded` like the others, and nothing was created.
+- 2026-10-04: the stop hook offered its whole-branch review a fourteenth time after `fc03da1` (267 files, 42,112
+  lines), before the T11c-b writer started; granted; it stopped with `lens_context_budget_exceeded`. A fifteenth time
+  (269 files, 43,268 lines) came while the writer's follow-up was running; granted, but START refused it with
+  `stale_target_identity`, because the writer's last commit landed while the question was open. Nothing was created
+  either time.
+- 2026-10-04: T11c-b. `src/modules/contact/provider-failure.ts` holds `ProviderFailure` (fixed text plus at most one
+  detail: an integer HTTP status from 100 to 599, or one of `TURNSTILE_FAULT_CODES`; the first valid one wins, and
+  never a `cause`) and `failureSuffix`, which reads only a real instance and checks again what it prints.
+  `submitContact` appends that suffix to its verifier and sender lines (`(HTTP 403)`, `(invalid-input-secret)`);
+  without a detail the lines are unchanged, and the visitor's outcomes did not change. For a 200 that is not a
+  success, the verifier rejects with the highest-priority fault code (secret, then request, then Turnstile); a string
+  code outside Cloudflare's table rejects without detail (the parent's follow-up after the readback: a code the
+  Worker does not know proves nothing about the token, and Turnstile's text is never printed); only the 3 token codes,
+  or no codes, resolve `false`. The parent re-checked Cloudflare's Siteverify table (the rendered page and the raw
+  source): exactly 7 codes; `invalid-widget-id` and `invalid-parsed-secret`, which the writer recalled, are not in
+  it. `docs/contact-setup.md` lists every log line and what it means; EmailJS's 403 and 429 stay marked as
+  undocumented. Open for T11d (owner question): what the visitor sees when the verifier cannot answer.
 
 ## Next step
 
-T11c-b (Turnstile operator-fault codes reject; the HTTP status in `submitContact`'s log line), then T11d (contact page,
-action, form, e2e harness) and T11e (404 pages). Owner, in parallel: create the R2 bucket `portfolio-cv` and upload
+T11d (contact page, action, form, e2e harness), once the owner answers what the visitor sees when the verifier cannot
+answer; then T11e (404 pages). Owner, in parallel: create the R2 bucket `portfolio-cv` and upload
 `en.pdf` and `es.pdf` before `feat/astro-rebuild` is pushed (Workers Builds deploys every pushed branch); create the
 Turnstile widget early to confirm it accepts the `carlos15erh.workers.dev` hostname; set up EmailJS (service, template,
 non-browser API, keys; see `docs/contact-setup.md`) before T11d. Optional: the heading-spacing rhythm noted in T10b.
