@@ -441,7 +441,8 @@ describe('createContactDeps: the wired dependencies inside submitContact', () =>
 
   // The lines `submitContact` logs for a failed verifier and sender. A failure that carries
   // a detail ends its line with it, in brackets: the provider's HTTP status, or the fault
-  // code of a Turnstile answer that blames the secret or the request.
+  // code of a Turnstile answer that blames the secret or the request. An answer with a code
+  // the Worker does not know carries no detail.
   const VERIFIER_LINE =
     'contact: the Turnstile verifier failed, so the submission was rejected';
   const SENDER_LINE = 'contact: the email sender failed';
@@ -607,6 +608,40 @@ describe('createContactDeps: the wired dependencies inside submitContact', () =>
     expect(logged()).toEqual([`${VERIFIER_LINE} (invalid-input-secret)`]);
   });
 
+  // A code the Worker does not know proves nothing about the token, so the answer is neither
+  // mistaken for a rejected token nor silent: the verifier line is logged, with no suffix,
+  // and the code itself, which is Turnstile's text, is nowhere in it.
+  it.each([
+    ['only that code', [SENTINEL]],
+    ['that code beside a token code', ['invalid-input-response', SENTINEL]],
+  ])(
+    'fails the submission without sending, and logs the verifier line with no suffix, when Turnstile lists a code the Worker does not know (%s)',
+    async (_label, codes) => {
+      const fetchFake = providers({ turnstile: refusing(...codes) });
+
+      const outcome = await run(completeEnv(), fetchFake);
+
+      expect(outcome).toEqual({ kind: 'verification_failed' });
+      expect(requestedUrls(fetchFake)).toEqual([TURNSTILE_URL]);
+      expect(vi.mocked(console.error)).toHaveBeenCalledTimes(1);
+      expect(consoleSpies.flatMap((spy) => spy.mock.calls)).toHaveLength(1);
+      expect(logged()).toEqual([VERIFIER_LINE]);
+      expect(logged().join('\n')).not.toContain(SENTINEL);
+    },
+  );
+
+  it('logs the fault code, and not the unknown one, when Turnstile lists both', async () => {
+    const fetchFake = providers({
+      turnstile: refusing(SENTINEL, 'invalid-input-secret'),
+    });
+
+    const outcome = await run(completeEnv(), fetchFake);
+
+    expect(outcome).toEqual({ kind: 'verification_failed' });
+    expect(logged()).toEqual([`${VERIFIER_LINE} (invalid-input-secret)`]);
+    expect(logged().join('\n')).not.toContain(SENTINEL);
+  });
+
   it.each([
     [
       'answers 500',
@@ -735,6 +770,11 @@ describe('createContactDeps: the wired dependencies inside submitContact', () =>
             { status: 200 },
           ),
       }),
+    );
+    // An unknown code that quotes every setting: the line is logged, the code is not.
+    await run(
+      completeEnv(),
+      providers({ turnstile: refusing(JSON.stringify(SETTINGS)) }),
     );
     await run(
       completeEnv({
