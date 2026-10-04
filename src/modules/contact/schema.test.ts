@@ -187,6 +187,113 @@ describe('contactSchema: trimming runs before the other checks', () => {
   });
 });
 
+// The name travels to the email provider as a template value that can end up in a header
+// (the From Name), where a line break would start a new header line. So the name, unlike
+// the message, takes no C0 control character (U+0000 to U+001F, CR, LF and TAB among
+// them) and no DEL (U+007F). `trim()` runs first, so a line break or a tab at either end
+// is only padding; one inside the name is what is rejected.
+describe('contactSchema: control characters in the name', () => {
+  const CONTROL_CHARACTERS: [string, string][] = [
+    ['NUL', '\u0000'],
+    ['BEL', '\u0007'],
+    ['backspace', '\b'],
+    ['TAB', '\t'],
+    ['LF', '\n'],
+    ['VT', '\v'],
+    ['FF', '\f'],
+    ['CR', '\r'],
+    ['ESC', '\u001B'],
+    ['the last C0 character, U+001F', '\u001F'],
+    ['DEL', '\u007F'],
+  ];
+
+  it.each(CONTROL_CHARACTERS)(
+    'rejects a name with %s inside it as invalid',
+    (_label, character) => {
+      expect(
+        fieldErrors({ ...valid, name: `Ada${character}Lovelace` }),
+      ).toEqual({ name: ['invalid'] });
+    },
+  );
+
+  it('rejects a CRLF followed by a header, the injection this rule exists for', () => {
+    expect(
+      fieldErrors({ ...valid, name: 'Ada\r\nBcc: victim@example.com' }),
+    ).toEqual({ name: ['invalid'] });
+  });
+
+  // `trim()` does not strip these, so they are still there when the rule runs.
+  it.each([
+    ['NUL', '\u0000'],
+    ['ESC', '\u001B'],
+    ['U+001F', '\u001F'],
+    ['DEL', '\u007F'],
+  ])(
+    'rejects %s at either end of the name, where trimming leaves it',
+    (_label, character) => {
+      expect(fieldErrors({ ...valid, name: `${character}Ada` })).toEqual({
+        name: ['invalid'],
+      });
+      expect(fieldErrors({ ...valid, name: `Ada${character}` })).toEqual({
+        name: ['invalid'],
+      });
+    },
+  );
+
+  it('rejects a name that is nothing but a control character trimming leaves in place', () => {
+    expect(fieldErrors({ ...valid, name: '\u0007' })).toEqual({
+      name: ['invalid'],
+    });
+  });
+
+  it('checks after the trim: line breaks and tabs around the name are only padding', () => {
+    expect(parse({ ...valid, name: '\n\t Ada Lovelace \r\n' }).name).toBe(
+      'Ada Lovelace',
+    );
+  });
+
+  it('still reports a name of only line breaks and tabs as required', () => {
+    expect(fieldErrors({ ...valid, name: '\r\n\t' })).toEqual({
+      name: ['required'],
+    });
+  });
+
+  // One code per field: the length is judged first and on its own, like the email's, so a
+  // long name with a line break says `too_long`, and only a name that fits can be `invalid`.
+  it('reports a too-long name that holds a line break as too_long only', () => {
+    expect(
+      fieldErrors({ ...valid, name: `${'a'.repeat(60)}\n${'b'.repeat(60)}` }),
+    ).toEqual({ name: ['too_long'] });
+  });
+
+  it('accepts a name of exactly the limit without control characters', () => {
+    expect(parse({ ...valid, name: 'a'.repeat(100) }).name).toHaveLength(100);
+  });
+
+  it.each([
+    ['José Núñez'],
+    ["Zoë O'Brien-Smith"],
+    ['李雷'],
+    ['Анна Иванова'],
+    ['👩‍💻 Ada'],
+    ['Ada  Lovelace'],
+  ])('accepts the name %j', (name) => {
+    expect(parse({ ...valid, name }).name).toBe(name);
+  });
+
+  it('leaves the message its line breaks and tabs', () => {
+    expect(parse({ ...valid, message: 'one\r\ntwo\tthree' }).message).toBe(
+      'one\r\ntwo\tthree',
+    );
+  });
+
+  it('does not apply the rule to the email, which keeps its own code', () => {
+    expect(fieldErrors({ ...valid, email: 'ada\n@example.com' })).toEqual({
+      email: ['invalid_email'],
+    });
+  });
+});
+
 describe('contactSchema: the email format', () => {
   it.each(['ada@example.com', 'first.last+tag@mail.example.co.uk', 'a@b.co'])(
     'accepts %s',

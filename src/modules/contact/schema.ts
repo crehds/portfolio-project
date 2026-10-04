@@ -70,6 +70,34 @@ function requiredText(maxLength: number) {
 }
 
 /**
+ * Whether `text` holds a C0 control character (U+0000 to U+001F: NUL, TAB, LF, CR and the
+ * rest) or DEL (U+007F). A loop over the UTF-16 code units, not a regular expression:
+ * `no-control-regex` rejects control characters written into one, and every character
+ * tested here sits in the single-unit ASCII range.
+ */
+function hasControlCharacter(text: string): boolean {
+  for (let index = 0; index < text.length; index += 1) {
+    const code = text.charCodeAt(index);
+    if (code <= 0x1f || code === 0x7f) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * The name can end up in a mail header (the template's From Name), where a CR or LF would
+ * start a new header line, so it takes no control character at all. It is a pipe for the
+ * same reason the email's format check is: the pipe's second stage runs only when the
+ * first one passed, so a name that is empty or too long keeps its own code and a field
+ * never reports two. The trim has already run, which makes a line break or a tab at
+ * either end plain padding; one inside the name is what this rejects.
+ */
+const visitorName = requiredText(CONTACT_LIMITS.name).pipe(
+  z.string().refine((name) => !hasControlCharacter(name), { error: INVALID }),
+);
+
+/**
  * The contact form's contract. `defineAction({ accept: 'form', input: contactSchema })`
  * validates the submitted `FormData` with it before the handler runs, so the handler only
  * ever sees `ContactInput`. Keys and shapes follow what Astro's `formDataToObject`
@@ -77,7 +105,7 @@ function requiredText(maxLength: number) {
  * `undefined`.
  */
 export const contactSchema = z.object({
-  name: requiredText(CONTACT_LIMITS.name),
+  name: visitorName,
   // The length is checked first and on its own: the format check only runs on a
   // non-empty value that fits, so a huge value never reaches the email pattern. The
   // default pattern accepts ASCII addresses only.

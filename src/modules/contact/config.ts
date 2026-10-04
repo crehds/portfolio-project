@@ -82,11 +82,42 @@ const requiredText = z.preprocess(
   }),
 );
 
-// `http:` is allowed next to `https:` because the end-to-end harness serves its fakes on
-// `http://127.0.0.1`.
-const optionalHttpUrl = z.preprocess(
+/**
+ * The hosts an `http:` seam URL may name: the machine's own loopback address, which is
+ * where the end-to-end harness serves its fakes. Compared against `URL.hostname`, which
+ * the parser lowercases and which keeps the brackets around an IPv6 address.
+ */
+const LOOPBACK_HOSTS: readonly string[] = ['127.0.0.1', 'localhost', '[::1]'];
+
+/**
+ * `https:` for any host, `http:` for a loopback host only. A seam URL receives a secret in
+ * its request (the EmailJS private key, the Turnstile secret key), so a plain-text hop to
+ * any other machine would expose it. The host is read from the parsed URL, never from the
+ * text, so `http://localhost@example.com` (userinfo, host `example.com`) and
+ * `http://127.0.0.1.example.com` are not loopback. A text `new URL` cannot parse is not a
+ * URL and is rejected rather than thrown on.
+ */
+function isHttpsOrLoopbackUrl(value: string): boolean {
+  try {
+    const { protocol, hostname } = new URL(value);
+
+    return (
+      protocol === 'https:' ||
+      (protocol === 'http:' && LOOPBACK_HOSTS.includes(hostname))
+    );
+  } catch {
+    return false;
+  }
+}
+
+// One schema with one issue per failure: a separate `z.url()` next to this check would
+// report an unparseable value twice, and `parseContactConfig` lists each name once.
+const optionalSeamUrl = z.preprocess(
   normalize,
-  z.url({ protocol: /^https?$/, error: INVALID }).optional(),
+  z
+    .string({ error: INVALID })
+    .refine(isHttpsOrLoopbackUrl, { error: INVALID })
+    .optional(),
 );
 
 const settingsSchema = z
@@ -97,8 +128,8 @@ const settingsSchema = z
     EMAILJS_TEMPLATE_ID: requiredText,
     EMAILJS_PUBLIC_KEY: requiredText,
     EMAILJS_PRIVATE_KEY: requiredText,
-    EMAILJS_API_URL: optionalHttpUrl,
-    TURNSTILE_VERIFY_URL: optionalHttpUrl,
+    EMAILJS_API_URL: optionalSeamUrl,
+    TURNSTILE_VERIFY_URL: optionalSeamUrl,
   })
   .transform((settings): ContactConfig => ({
     turnstile: {
