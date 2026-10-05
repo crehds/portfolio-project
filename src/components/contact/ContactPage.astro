@@ -35,6 +35,11 @@ if (state.kind === 'form' && !siteKey) {
 
 // An alert and the notice that replaces the form carry the email and WhatsApp links
 // themselves; the list below the form is for a page that has neither.
+//
+// Without JavaScript the form cannot get a Turnstile token, so the page hides what needs it
+// (`.contact-form-only`: the lead, the form and that list) and shows `.contact-nojs`, a
+// notice with the same links, in its place. The rules are in global.css, unlayered, under
+// `.no-js`, which BaseLayout's head script removes as soon as JavaScript runs.
 const showsOtherWays = state.kind === 'form' && !state.alert;
 ---
 
@@ -42,7 +47,7 @@ const showsOtherWays = state.kind === 'form' && !state.alert;
   <div class="flex flex-col gap-2">
     <h1 class="mb-0">{dictionary.contactPageHeading}</h1>
     {state.kind === 'form' && (
-      <p class="text-text-muted">{dictionary.contactLead}</p>
+      <p class="contact-form-only text-text-muted">{dictionary.contactLead}</p>
     )}
   </div>
 
@@ -72,6 +77,18 @@ const showsOtherWays = state.kind === 'form' && !state.alert;
     />
   )}
 
+  {state.kind === 'form' && (
+    <section
+      id="contact-nojs"
+      aria-labelledby="contact-nojs-heading"
+      class="contact-nojs space-y-4 rounded border-2 border-text p-4"
+    >
+      <h2 id="contact-nojs-heading">{dictionary.contactNoJsHeading}</h2>
+      <p>{dictionary.contactNoJsBody}</p>
+      <DirectContactLinks links={links} />
+    </section>
+  )}
+
   {state.kind === 'fallback' && (
     <ContactFallback
       message={state.message}
@@ -81,7 +98,10 @@ const showsOtherWays = state.kind === 'form' && !state.alert;
   )}
 
   {showsOtherWays && (
-    <section aria-labelledby="contact-other-ways" class="flex flex-col gap-3">
+    <section
+      aria-labelledby="contact-other-ways"
+      class="contact-form-only flex flex-col gap-3"
+    >
       <h2 id="contact-other-ways">{dictionary.contactOtherWaysHeading}</h2>
       <DirectContactLinks links={links} />
     </section>

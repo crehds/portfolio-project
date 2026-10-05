@@ -165,6 +165,38 @@ test.describe('layout alignment', () => {
 
     expect(hasHorizontalOverflow).toBe(false);
   });
+
+  // The header holds the site name, the primary navigation and the language and theme
+  // controls. The navigation is the widest part, and the Spanish labels are longer than the
+  // English ones ("Experiencia", "Habilidades", "Contacto"), so it must wrap instead of
+  // pushing the page wider than the screen. 320px is the narrowest width the site supports.
+  for (const width of [320, 390, 768]) {
+    for (const { path, lang } of PAGES) {
+      test(`the header does not overflow the page at ${width}px (${lang})`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width, height: 844 });
+        await page.goto(path);
+
+        const overflow = await page.evaluate(() => ({
+          scroll: document.documentElement.scrollWidth,
+          client: document.documentElement.clientWidth,
+        }));
+        expect(overflow.scroll).toBeLessThanOrEqual(overflow.client);
+
+        // Every navigation item is inside the screen too, not just the page's scroll width.
+        const nav = page.getByRole('navigation', {
+          name: lang === 'en' ? 'Primary navigation' : 'Navegación principal',
+        });
+        for (const link of await nav.getByRole('link').all()) {
+          const box = await link.boundingBox();
+          expect(box).not.toBeNull();
+          expect(box!.x).toBeGreaterThanOrEqual(0);
+          expect(box!.x + box!.width).toBeLessThanOrEqual(width);
+        }
+      });
+    }
+  }
 });
 
 async function computedMarkerStyle(link: Locator) {

@@ -475,6 +475,74 @@ describe.each(LOCALES)('the success page (%s)', (locale) => {
   });
 });
 
+describe.each(LOCALES)('a visitor without JavaScript (%s)', (locale) => {
+  const dictionary = getDictionary(locale);
+
+  // The widget cannot run without JavaScript, so a form without a token is no way to write.
+  // The page hides what needs it and shows the notice, with CSS under `.no-js` (global.css),
+  // so the markup carries the classes those rules select.
+  const classesOf = (html: string, id: string) =>
+    (attributeOf(openingTag(html, id), 'class') ?? '').split(/\s+/);
+
+  it('has a notice that says the form needs JavaScript and points to email and WhatsApp', async () => {
+    const html = await render(form(), locale);
+
+    expect(textOf(html, 'contact-nojs-heading')).toBe(
+      dictionary.contactNoJsHeading,
+    );
+    expect(textOf(html, 'contact-nojs')).toContain(dictionary.contactNoJsBody);
+    const inNotice = innerHtmlOf(html, 'contact-nojs');
+    expect(inNotice).toContain('href="mailto:carlos15erh@gmail.com"');
+    expect(inNotice).toContain('href="https://wa.me/51970791041"');
+  });
+
+  it('marks the notice as the one thing shown without JavaScript', async () => {
+    const html = await render(form(), locale);
+
+    expect(classesOf(html, 'contact-nojs')).toContain('contact-nojs');
+  });
+
+  it('marks the lead, the form and the list of other ways as shown only with JavaScript', async () => {
+    const html = await render(form(), locale);
+
+    expect(html).toMatch(/<p[^>]*class="[^"]*contact-form-only[^"]*"[^>]*>/);
+    const formTag = html.match(new RegExp(`<form\\b${ATTRIBUTES}>`))?.[0] ?? '';
+    expect(attributeOf(formTag, 'class')?.split(/\s+/)).toContain(
+      'contact-form-only',
+    );
+    const section = html.match(
+      new RegExp(
+        `<section\\b${ATTRIBUTES}?\\baria-labelledby="contact-other-ways"${ATTRIBUTES}>`,
+      ),
+    )?.[0];
+    expect(attributeOf(section ?? '', 'class')?.split(/\s+/)).toContain(
+      'contact-form-only',
+    );
+  });
+
+  it('lists the ways to write once, in the notice, rather than twice', async () => {
+    const html = await render(form(), locale);
+
+    // Both lists are in the markup; CSS shows one of them.
+    expect(html.match(/href="mailto:/g)).toHaveLength(2);
+  });
+
+  it('has no notice where the form is not shown', async () => {
+    for (const state of [
+      { kind: 'sent', status: 200 } as const,
+      {
+        kind: 'fallback',
+        status: 503,
+        errorTitle: true,
+        cause: 'unavailable',
+        message: '',
+      } as const,
+    ]) {
+      expect(hasId(await render(state, locale), 'contact-nojs')).toBe(false);
+    }
+  });
+});
+
 describe.each(LOCALES)('an alert above the form (%s)', (locale) => {
   const dictionary = getDictionary(locale);
   const alerts = [
@@ -520,7 +588,10 @@ describe.each(LOCALES)('an alert above the form (%s)', (locale) => {
     const html = await render(withAlert('verification_failed', 400), locale);
 
     expect(hasId(html, 'contact-other-ways')).toBe(false);
-    expect(html.match(/href="mailto:/g)).toHaveLength(1);
+    // The notice for a visitor without JavaScript has the links too, and CSS shows it only
+    // then: leave it out, and the alert's own list is the only one.
+    const withoutNotice = html.replace(innerHtmlOf(html, 'contact-nojs'), '');
+    expect(withoutNotice.match(/href="mailto:/g)).toHaveLength(1);
   });
 
   it('keeps the form below the alert, with what was typed in it', async () => {

@@ -1,13 +1,18 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { createServer, type Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
 
 import {
   assertHermeticBuild,
+  assertServerReadsE2eSettings,
   buildOutputProblems,
   e2eVarsProblems,
   parseDevVars,
+  renderedSiteKey,
+  siteKeyProblems,
 } from './support/hermetic-guard';
 import {
   emailjsFailure,
@@ -203,6 +208,125 @@ test.describe('the fake upstreams', () => {
     await expect(startFakeUpstreams({ port })).rejects.toThrow(
       /already in use|EADDRINUSE/,
     );
+  });
+});
+
+test.describe('the site key the running server renders', () => {
+  const widget = (key: string) =>
+    `<div class="cf-turnstile" data-sitekey="${key}" data-size="flexible"></div>`;
+
+  test('is read from the widget on the contact page', () => {
+    expect(
+      renderedSiteKey(`<form>${widget('1x00000000000000000000BB')}</form>`),
+    ).toBe('1x00000000000000000000BB');
+  });
+
+  test('is nothing when the page has no widget', () => {
+    expect(
+      renderedSiteKey('<h1>The form is not available right now</h1>'),
+    ).toBe(undefined);
+  });
+
+  test('is no problem when it is the key of .dev.vars.e2e', () => {
+    expect(
+      siteKeyProblems(
+        widget('1x00000000000000000000BB'),
+        '1x00000000000000000000BB',
+      ),
+    ).toEqual([]);
+  });
+
+  test('is a problem when it is another key: the server read other settings', () => {
+    const problems = siteKeyProblems(
+      widget('1x00000000000000000000AA'),
+      '1x00000000000000000000BB',
+    ).join('\n');
+
+    expect(problems).toContain('TURNSTILE_SITE_KEY');
+    expect(problems).toContain('.dev.vars.e2e');
+  });
+
+  test('is a problem when there is no widget: the server has no complete settings', () => {
+    expect(
+      siteKeyProblems(
+        '<h1>The form is not available right now</h1>',
+        '1x00000000000000000000BB',
+      ).join('\n'),
+    ).toMatch(/no widget|not configured|settings/i);
+  });
+});
+
+test.describe('assertServerReadsE2eSettings', () => {
+  let server: Server;
+  let origin = '';
+  let answer: { status: number; body: string } = { status: 200, body: '' };
+
+  test.beforeAll(async () => {
+    server = createServer((_request, response) => {
+      response.writeHead(answer.status, { 'content-type': 'text/html' });
+      response.end(answer.body);
+    });
+    await new Promise<void>((resolve) =>
+      server.listen(0, '127.0.0.1', resolve),
+    );
+    origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  });
+
+  test.afterAll(async () => {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  });
+
+  const expected = '1x00000000000000000000BB';
+
+  test('passes when the contact page renders the key of the e2e settings', async () => {
+    answer = {
+      status: 200,
+      body: `<div class="cf-turnstile" data-sitekey="${expected}"></div>`,
+    };
+
+    await expect(
+      assertServerReadsE2eSettings(origin, expected),
+    ).resolves.toBeUndefined();
+  });
+
+  test('stops the run when the page renders another key', async () => {
+    answer = {
+      status: 200,
+      body: '<div class="cf-turnstile" data-sitekey="1x00000000000000000000AA"></div>',
+    };
+
+    await expect(
+      assertServerReadsE2eSettings(origin, expected),
+    ).rejects.toThrow(/not hermetic[\s\S]*TURNSTILE_SITE_KEY/);
+  });
+
+  test('stops the run when the page is not served', async () => {
+    answer = { status: 500, body: 'boom' };
+
+    await expect(
+      assertServerReadsE2eSettings(origin, expected),
+    ).rejects.toThrow(/500/);
+  });
+
+  test('stops the run when nobody answers', async () => {
+    await expect(
+      assertServerReadsE2eSettings('http://127.0.0.1:1', expected),
+    ).rejects.toThrow(/could not be reached|ECONNREFUSED|fetch failed/i);
+  });
+
+  test('asks for the page once and sends nothing but a GET', async () => {
+    const seen: string[] = [];
+    const probe = createServer((request, response) => {
+      seen.push(`${request.method} ${request.url}`);
+      response.end(`<div data-sitekey="${expected}"></div>`);
+    });
+    await new Promise<void>((resolve) => probe.listen(0, '127.0.0.1', resolve));
+    const probeOrigin = `http://127.0.0.1:${(probe.address() as AddressInfo).port}`;
+
+    await assertServerReadsE2eSettings(probeOrigin, expected);
+    await new Promise<void>((resolve) => probe.close(() => resolve()));
+
+    expect(seen).toEqual(['GET /contact/']);
   });
 });
 

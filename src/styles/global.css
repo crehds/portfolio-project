@@ -102,3 +102,21 @@
 .no-js .theme-toggle {
   display: none;
 }
+
+/* The contact form needs JavaScript (Turnstile's widget has no other way to produce its token),
+   so while `.no-js` is on `<html>` the form, its lead and the list of other ways are hidden
+   (`.contact-form-only`) and a notice that points to email and WhatsApp is shown in their
+   place (`.contact-nojs`, hidden otherwise). Unlayered for the same reason as the rule
+   above: the form carries `flex`, a `display` utility in a layer that a layered rule could
+   not override. A test keeps all of them out of any `@layer` (src/styles/no-js.test.ts). */
+.contact-nojs {
+  display: none;
+}
+
+.no-js .contact-nojs {
+  display: block;
+}
+
+.no-js .contact-form-only {
+  display: none;
+}

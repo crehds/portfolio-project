@@ -105,6 +105,9 @@ const en = {
   contactFallbackBodyKept:
     'Your message was not sent. Please write to me by email or WhatsApp instead; your message is below so you can copy it.',
   contactFallbackMessageLabel: 'Your message, to copy',
+  contactNoJsHeading: 'The form needs JavaScript',
+  contactNoJsBody:
+    'The contact form runs a spam check that needs JavaScript, which is off or blocked in your browser. Please write to me by email or WhatsApp instead.',
 };
 
 export type UiDictionary = typeof en;
@@ -208,6 +211,9 @@ const es: UiDictionary = {
   contactFallbackBodyKept:
     'Tu mensaje no se envió. Por favor, escríbeme por correo electrónico o WhatsApp; tu mensaje está abajo para que puedas copiarlo.',
   contactFallbackMessageLabel: 'Tu mensaje, para copiarlo',
+  contactNoJsHeading: 'El formulario necesita JavaScript',
+  contactNoJsBody:
+    'El formulario de contacto hace una verificación contra spam que necesita JavaScript, y tu navegador lo tiene desactivado o bloqueado. Por favor, escríbeme por correo electrónico o WhatsApp.',
 };
 
 const dictionaries: Record<Locale, UiDictionary> = { en, es };

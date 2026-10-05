@@ -17,9 +17,16 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { EMAILJS_PATH, TURNSTILE_PATH, UPSTREAM_ORIGIN } from './ports';
+import {
+  APP_ORIGIN,
+  EMAILJS_PATH,
+  TURNSTILE_PATH,
+  UPSTREAM_ORIGIN,
+} from './ports';
 
 export const E2E_VARS_FILE = '.dev.vars.e2e';
+
+const REPOSITORY_ROOT = fileURLToPath(new URL('../../', import.meta.url));
 
 /**
  * Cloudflare's published Turnstile test keys. A real key is none of these.
@@ -214,7 +221,77 @@ export function buildOutputProblems(args: {
   return problems;
 }
 
-const REPOSITORY_ROOT = fileURLToPath(new URL('../../', import.meta.url));
+/** The site key in the widget the contact page renders, when it renders one. */
+export function renderedSiteKey(html: string): string | undefined {
+  return /\bdata-sitekey="([^"]*)"/.exec(html)?.[1];
+}
+
+/**
+ * What is wrong with the contact page the running server answered, as a list of problems:
+ * it must render the widget with the site key of `.dev.vars.e2e`. The page puts the key from
+ * the Worker's own settings in the widget, so it proves which settings the running server
+ * read (a server that read a developer's `.dev.vars` instead shows another key, or no widget
+ * at all when those settings are incomplete), and it takes a plain GET of a page to learn
+ * it: nothing is submitted and no provider is asked.
+ */
+export function siteKeyProblems(html: string, expected: string): string[] {
+  const rendered = renderedSiteKey(html);
+
+  if (rendered === undefined) {
+    return [
+      `The contact page renders no widget: the server did not read complete settings, so it shows the notice that takes the form's place. It should have read ${E2E_VARS_FILE}.`,
+    ];
+  }
+
+  if (rendered !== expected) {
+    return [
+      `The contact page renders a TURNSTILE_SITE_KEY other than the one in ${E2E_VARS_FILE}, so the running server read other settings than the ones checked above.`,
+    ];
+  }
+
+  return [];
+}
+
+/**
+ * Throws, like `assertHermeticBuild`, unless the server running at `origin` renders the
+ * site key of `.dev.vars.e2e` in its contact page. That is the second half of the proof,
+ * and the only one about the running process: a server that was already there (Playwright
+ * never reuses one) or one started from another build would show another key. `expected`
+ * is read from `.dev.vars.e2e` when not given.
+ */
+export async function assertServerReadsE2eSettings(
+  origin: string = APP_ORIGIN,
+  expected?: string,
+): Promise<void> {
+  const siteKey =
+    expected ??
+    parseDevVars(
+      readFileSync(path.join(REPOSITORY_ROOT, E2E_VARS_FILE), 'utf8'),
+    ).TURNSTILE_SITE_KEY;
+
+  let response: Response;
+  try {
+    response = await fetch(`${origin}/contact/`);
+  } catch {
+    throw new Error(
+      `The contact page could not be reached at ${origin}, so the end-to-end run cannot tell which settings the server read.`,
+    );
+  }
+
+  if (response.status !== 200) {
+    throw new Error(
+      `The contact page answered ${response.status} instead of 200, so the end-to-end run cannot tell which settings the server read.`,
+    );
+  }
+
+  const problems = siteKeyProblems(await response.text(), siteKey);
+  if (problems.length > 0) {
+    throw new Error(
+      `The end-to-end run is not hermetic, so it stops before anything is submitted:\n` +
+        problems.map((problem) => `  - ${problem}`).join('\n'),
+    );
+  }
+}
 
 function readIfThere(file: string): string | undefined {
   return existsSync(file) ? readFileSync(file, 'utf8') : undefined;

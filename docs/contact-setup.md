@@ -306,6 +306,7 @@ Turnstile. What each request leaves the visitor with, and the status it is answe
 | ------------------------------------------------------------------------------------ | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | The page is opened                                                                   | 200                              | The form.                                                                                                                                                                  |
 | The page is opened with `?sent=1`                                                    | 200                              | "Your message was sent", announced as a status, and a link to write another.                                                                                               |
+| The page is opened while JavaScript is off or blocked                                | 200                              | The heading and, in place of the form, a notice that says the form needs JavaScript and offers email and WhatsApp. A post that skips the form is still validated.          |
 | The message was delivered, or a bot filled the hidden `website` field                | 303 to the page's own `?sent=1`  | The success message. A reload never sends it again, and a bot gets the answer a person gets. The address is built from the page's locale, never from the request.          |
 | A field is empty, too long or not valid                                              | 400                              | The form again, with what was typed, an error summary that links to each field, and "Error:" before the message under each field. The document title starts with "Error:". |
 | The Turnstile token is missing, or Turnstile did not accept it                       | 400                              | An alert that asks to try again and offers email and WhatsApp, above the form with what was typed.                                                                         |
@@ -327,6 +328,15 @@ because each byte of it grows to three characters when the browser encodes the f
 
 A visitor's text is only ever written back through Astro's escaping, as text, in the form's
 fields and in the notice's text area, never as markup.
+
+Turnstile's widget has no way to work without JavaScript, so the page does not pretend: while
+`<html class="no-js">` is still there (the head script of `BaseLayout.astro` removes it as soon as
+JavaScript runs), CSS hides the form, its lead and the list of other ways (`.contact-form-only`)
+and shows the notice (`.contact-nojs`). The rules are in `src/styles/global.css`, outside every
+cascade layer, because the form carries a `display` utility that a layered rule could not
+override; `src/styles/no-js.test.ts` keeps them there. If the Turnstile script is blocked while
+JavaScript runs, nothing hides the form: a submission then carries no token and is refused with
+the "try again" alert, which offers email and WhatsApp.
 
 ## End-to-end tests
 
@@ -360,9 +370,13 @@ without any care on your part:
   the files the server will read, and stops the whole run, listing the problems, unless
   `.dev.vars.e2e` holds nothing but test and fake values, the build targets the `e2e`
   environment, and the settings baked into the build are exactly those of `.dev.vars.e2e`. It
-  names settings and never prints a value, because the build may hold your real keys. It makes no
-  request: a request that proved the point would be the one that reached a provider.
-
+  names settings and never prints a value, because the build may hold your real keys. Those checks
+  make no request: a request that proved the point would be the one that reached a provider. Once
+  the server is up, one more check asks it for the contact page, a plain GET that asks nothing of
+  any provider, and stops the run unless the widget on it carries the site key of `.dev.vars.e2e`:
+  the page renders the key from the Worker's own settings, so it proves which settings the running
+  process read (the e2e site key is the invisible test key, `...BB`, not the visible one the
+  template for `.dev.vars` suggests, so a server that read your own file shows another key).
 - **No request leaves the machine.** The browser the tests drive resolves no host but the local
   ones (a Chromium launch option in `playwright.config.ts`), so Turnstile's script or any other
   host's fails at once, before a packet is sent; the contact specs answer Turnstile's script
