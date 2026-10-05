@@ -26,6 +26,15 @@ export default defineConfig({
   use: {
     baseURL: APP_ORIGIN,
     trace: 'on-first-retry',
+    launchOptions: {
+      // Nothing a test does may leave the machine, and a page that loads Turnstile's script
+      // or any other host's would: the browser resolves no host but the local ones, so such
+      // a request fails at once, before any packet is sent. The contact specs answer
+      // Turnstile's script themselves (e2e/support/contact-test.ts).
+      args: [
+        '--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE localhost , EXCLUDE 127.0.0.1',
+      ],
+    },
   },
   projects: [
     {

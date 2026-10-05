@@ -1,18 +1,25 @@
 ---
+// Thin composition root, like the Action (`src/actions/index.ts`): the only places that read
+// the Worker's `env`. `loadContactPage` decides what the page shows and with which status;
+// `ContactPage` renders it.
+import { env } from 'cloudflare:workers';
+
 import ContactPage from '../../../components/contact/ContactPage.astro';
+import { loadContactPage } from '../../../components/contact/load-contact-page';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
-import { getDictionary } from '../../../shared/i18n/ui';
 
 // On demand, like `/cv/<locale>.pdf`: the contact form posts to this page, so it has to run
 // on the Worker on every request. Every other page stays a static file.
 export const prerender = false;
 
-const dictionary = getDictionary('es');
+const page = await loadContactPage(Astro, env);
+
+// A message that was sent redirects to this page's `?sent=1`, so a reload never sends it again.
+if ('redirect' in page) {
+  return page.redirect;
+}
 ---
 
-<BaseLayout
-  title={dictionary.contactPageTitle}
-  description={dictionary.contactPageDescription}
->
-  <ContactPage />
+<BaseLayout title={page.title} description={page.description}>
+  <ContactPage state={page.state} siteKey={page.siteKey} links={page.links} />
 </BaseLayout>

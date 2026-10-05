@@ -13,6 +13,7 @@ Run every `wrangler` command from the repository root as `pnpm exec wrangler ...
 - [Turnstile: spam protection](#turnstile-spam-protection)
 - [Putting the secrets in place](#putting-the-secrets-in-place)
 - [End-to-end tests](#end-to-end-tests)
+- [Trying the form by hand](#trying-the-form-by-hand)
 - [Contact troubleshooting](#contact-troubleshooting)
 
 ## CV download (R2)
@@ -326,9 +327,42 @@ without any care on your part:
   names settings and never prints a value, because the build may hold your real keys. It makes no
   request: a request that proved the point would be the one that reached a provider.
 
+- **No request leaves the machine.** The browser the tests drive resolves no host but the local
+  ones (a Chromium launch option in `playwright.config.ts`), so Turnstile's script or any other
+  host's fails at once, before a packet is sent; the contact specs answer Turnstile's script
+  themselves with a stub that does what the real widget does for the form, putting a token in it
+  (`e2e/support/turnstile-stub.ts`).
+- **Tests do not step on each other.** They run in parallel against one fake. Each test puts a
+  marker of its own in the visitor's text and in the token, and reads back only the calls that
+  carry it, and each test run posts from an address of its own (`cf-connecting-ip`), because the
+  rate limit counts per address and Miniflare keeps the one a client sends. Without a header
+  every request would count under the one address 127.0.0.1 and the fourth within a minute
+  would be refused (`e2e/support/contact-test.ts`).
+
 If a run stops with "The end-to-end run is not hermetic", rebuild with `CLOUDFLARE_ENV=e2e`
 (`pnpm test:e2e` does this for you), and remove whatever left a build of another kind in
 `dist/`.
+
+## Trying the form by hand
+
+The tests never use real keys, so the one thing they cannot show is the form working against
+the real providers. Do it once yourself, knowing that it sends a real email and spends one of
+the 200 EmailJS requests of the month:
+
+1. Copy `.dev.vars.example` to `.dev.vars` and fill in the four `EMAILJS_*` values (the
+   [EmailJS steps](#emailjs-email-delivery) say where they come from). Keep the two Turnstile
+   test keys that the template already holds: with them the real widget shows a success tick
+   without a challenge, and Turnstile's real answer is a pass.
+2. Start the site with `pnpm dev` and open `/contact/` (or `/es/contact/`). The dev server reads
+   `.dev.vars`; it is only the end-to-end build that reads `.dev.vars.e2e` instead.
+3. Fill in the form and send it. The page should go to `/contact/?sent=1` and say the message was
+   sent, and an email from the template should reach your inbox with the visitor's address in
+   Reply-To.
+
+If something else happens, the Worker's console (the terminal of `pnpm dev`, or `wrangler tail`
+for a deployed Worker) has one line for the step that failed, and
+[Contact troubleshooting](#contact-troubleshooting) says what each line means. Nothing of a
+visitor's message is ever logged.
 
 ## Contact troubleshooting
 
