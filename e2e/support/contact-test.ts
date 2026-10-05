@@ -38,6 +38,11 @@ export interface SubmitOptions {
   path?: string;
   /** The form fields. A field set to `undefined` is not sent. */
   fields?: Record<string, string | undefined>;
+  /**
+   * A urlencoded body, sent as it is in place of `fields`: for a test that needs the body to
+   * be of an exact size (see form-bodies.ts).
+   */
+  body?: string;
   /** The Origin header; `null` sends none. The site's own origin by default. */
   origin?: string | null;
   /** Other headers, which win over the ones above. */
@@ -94,8 +99,11 @@ export const test = base.extend<ContactFixtures>({
       const origin = options.origin === undefined ? APP_ORIGIN : options.origin;
 
       return request.post(options.path ?? `/contact/${ACTION_QUERY}`, {
-        form,
+        ...(options.body === undefined ? { form } : { data: options.body }),
         headers: {
+          ...(options.body === undefined
+            ? {}
+            : { 'content-type': 'application/x-www-form-urlencoded' }),
           ...(origin === null ? {} : { origin }),
           'cf-connecting-ip': clientIp,
           ...options.headers,

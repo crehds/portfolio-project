@@ -300,7 +300,11 @@ CV route; every other page is a static file. The form posts to the page it is on
 Astro Action (`src/actions/index.ts`) that Astro validates against the form's schema before
 anything else runs. The same Action also answers at `/_actions/contact`, with the same checks, so
 a script that posts there meets the same Origin check, body limit, honeypot, rate limit and
-Turnstile. What each request leaves the visitor with, and the status it is answered with:
+Turnstile. It answers every outcome of a submission, a rate limit included, as HTTP 200 with the
+outcome as its data (`sent`, `rate_limited`, `verification_failed`, `unavailable`,
+`delivery_failed`), not as an error status, so a script reads the body. The statuses below are
+the contact pages'. What each request leaves the visitor with, and the status it is answered
+with:
 
 | What happened                                                                        | Status                           | What the visitor sees                                                                                                                                                      |
 | ------------------------------------------------------------------------------------ | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -314,7 +318,7 @@ Turnstile. What each request leaves the visitor with, and the status it is answe
 | Turnstile could not answer (an outage, a wrong secret key, a code nobody documented) | 503                              | The "form is not available" notice in the form's place: email, WhatsApp, and the message in a read-only text area to copy.                                                 |
 | EmailJS did not take the message                                                     | 502                              | The same notice.                                                                                                                                                           |
 | The Worker lacks a setting or the rate limit binding                                 | 200 for the page, 503 for a post | The same notice, with no message to copy when nobody wrote one. Nothing is asked of any provider.                                                                          |
-| The body is past 32 KiB (`security.actionBodySizeLimit`)                             | 413                              | An alert that asks for a shorter message and offers email and WhatsApp. Nothing is kept: the body is refused before it is read.                                            |
+| The body is past 64 KiB (`security.actionBodySizeLimit`)                             | 413                              | An alert that asks for a shorter message and offers email and WhatsApp. Nothing is kept: the body is refused before it is read.                                            |
 | A post from another origin, or with no origin                                        | 403                              | Astro's plain "Cross-site POST form submissions are forbidden".                                                                                                            |
 
 A failure that is not the visitor's doing (502, 503) never asks them to try again, because trying
@@ -322,9 +326,22 @@ again cannot help; it points to email and WhatsApp instead and gives their messa
 nothing they wrote is lost. The two failures of Turnstile are told apart for that reason: an
 answer that refuses the token is the visitor's (400), and an answer that is a fault of ours, of
 Turnstile's or of the network is not (503). The retry delay is the period of the
-`CONTACT_RATE_LIMIT` binding, and a test keeps the two equal. The 32 KiB limit leaves room for a
-message of 5000 characters in a form body: only text that is mostly not ASCII can approach it,
-because each byte of it grows to three characters when the browser encodes the form.
+`CONTACT_RATE_LIMIT` binding, and a test keeps the two equal.
+
+The body limit is 64 KiB (`ACTION_BODY_LIMIT_BYTES` in `src/modules/contact/form-body-limit.ts`,
+which `astro.config.mjs` hands to Astro), against Astro's default of 1 MiB, so that nobody can
+make the Worker read and buffer a megabyte per request. It has to leave room for the largest
+legitimate submission. A browser sends the form urlencoded, which writes each byte of a
+non-ASCII character as three: a message of 5,000 characters in a script whose characters take
+three bytes in UTF-8 (Chinese, Japanese, Hindi, Thai) is 45,000 bytes, and with the name, an
+email address and a Turnstile token of 2,048 characters, each at its limit, the largest
+submission is about 52 KB. A script of two-byte characters (Cyrillic, Greek, Arabic, Hebrew)
+already passes 32 KiB at full length, which is why the limit is not 32 KiB. A unit test computes
+that largest body from the schema's own limits (`CONTACT_LIMITS` and the verifier's token
+limit) and fails if the limit is below it, or more than twice it, so raising a field's limit
+means raising this one too. The end-to-end tests send the largest submission in both kinds of
+script, through the page, through `/_actions/contact` and from the browser, and a body of exactly
+the limit (read) and one byte more (refused with a 413).
 
 A visitor's text is only ever written back through Astro's escaping, as text, in the form's
 fields and in the notice's text area, never as markup.

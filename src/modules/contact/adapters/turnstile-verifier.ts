@@ -30,7 +30,7 @@ const TURNSTILE_VERIFY_URL =
  * A longer value cannot be genuine, and it is visitor-controlled text, so it is refused
  * before any request is made.
  */
-const MAX_TOKEN_LENGTH = 2048;
+export const MAX_TOKEN_LENGTH = 2048;
 
 /**
  * The body of a 200 answer, parsed. `JSON.parse` quotes the start of what it cannot parse

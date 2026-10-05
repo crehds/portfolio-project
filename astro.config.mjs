@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 import cloudflare from '@astrojs/cloudflare';
 
+import { ACTION_BODY_LIMIT_BYTES } from './src/modules/contact/form-body-limit.ts';
 import { DEFAULT_LOCALE, LOCALES } from './src/shared/i18n/locales.ts';
 
 // https://astro.build/config
@@ -57,12 +58,17 @@ export default defineConfig({
   // SESSION KV binding, so deploys don't provision a KV namespace.
   session: false,
   security: {
-    // The contact form is the only Action. Its fields cap at 100 + 254 + 5,000 characters
-    // plus a Turnstile token of at most 2,048, which a browser sends as a urlencoded body
-    // well under this (a message of accented Spanish letters grows by a few KB; only a
-    // message written in a three-byte script, such as Chinese, could approach it). A body
-    // past the limit is refused before it is parsed: Astro's default is 1 MiB, which
-    // would let anyone make the Worker read and buffer that much per request.
-    actionBodySizeLimit: 32 * 1024,
+    // The contact form is the only Action. A body past the limit is refused before it is
+    // parsed (a 413, and no provider is asked): Astro's default is 1 MiB, which would let
+    // anyone make the Worker read and buffer that much per request. The limit must not
+    // refuse a visitor, though. A browser sends the form urlencoded, which writes each byte
+    // of a non-ASCII character as three, so a message of 5,000 characters in a script of
+    // three-byte characters (CJK, Devanagari, Thai) is 45,000 bytes, and with the name, the
+    // email address and a Turnstile token of 2,048 characters, each at its limit, the largest
+    // submission is about 52 KB; a script of two-byte characters (Cyrillic, Greek, Arabic,
+    // Hebrew) passes 32 KiB at full length. So 64 KiB. The number lives in
+    // `form-body-limit.ts`, where tests keep it above what the schema's limits can produce
+    // and not much above it.
+    actionBodySizeLimit: ACTION_BODY_LIMIT_BYTES,
   },
 });

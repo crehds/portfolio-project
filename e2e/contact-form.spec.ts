@@ -1,7 +1,6 @@
 import {
   ACTION_QUERY,
   expect,
-  retryOnProxyFailure,
   test,
   widgetRenders,
 } from './support/contact-test';
@@ -454,22 +453,6 @@ test.describe('posting the form to the page', () => {
     expect(response.status()).toBe(400);
     expect(await upstream.callsFor(marker)).toEqual([]);
   });
-
-  test('rejects a body past the size limit with a 413 and the page, and asks nothing of the providers', async ({
-    submit,
-    marker,
-    upstream,
-  }) => {
-    const response = await retryOnProxyFailure(() =>
-      submit({
-        fields: { message: `${marker} ${'x'.repeat(40 * 1024)}` },
-      }),
-    );
-
-    expect(response.status()).toBe(413);
-    expect(response.headers()['content-type']).toContain('text/html');
-    expect(await upstream.callsFor(marker)).toEqual([]);
-  });
 });
 
 // Astro exposes every Action at /_actions/<name> as well. It has to get the same checks as
@@ -541,23 +524,6 @@ test.describe('the Action’s own address, /_actions/contact', () => {
     });
 
     expect(response.status()).toBe(415);
-    expect(await upstream.callsFor(marker)).toEqual([]);
-  });
-
-  test('rejects a body past the size limit with a 413', async ({
-    submit,
-    marker,
-    upstream,
-  }) => {
-    const response = await retryOnProxyFailure(() =>
-      submit({
-        path: rpc,
-        fields: { message: `${marker} ${'x'.repeat(40 * 1024)}` },
-      }),
-    );
-
-    expect(response.status()).toBe(413);
-    expect((await response.json()).code).toBe('CONTENT_TOO_LARGE');
     expect(await upstream.callsFor(marker)).toEqual([]);
   });
 });
