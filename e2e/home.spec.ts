@@ -118,6 +118,23 @@ for (const { path, lang } of homePages) {
       });
     }
 
+    test('renders the contact form call to action, which leads to the contact page in the same tab', async ({
+      page,
+    }) => {
+      await page.goto(path);
+
+      const form = page.locator('main').getByRole('link', {
+        name: lang === 'en' ? 'Send a message' : 'Enviar un mensaje',
+      });
+      await expect(form).toHaveCount(1);
+      await expect(form).toHaveAttribute(
+        'href',
+        lang === 'en' ? '/contact/' : '/es/contact/',
+      );
+      // Same tab: it is a page of this site, and a new tab would break the back button.
+      await expect(form).not.toHaveAttribute('target');
+    });
+
     test('renders the whatsapp, email, linkedin and github calls to action', async ({
       page,
     }) => {

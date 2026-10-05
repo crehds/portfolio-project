@@ -1,0 +1,20 @@
+---
+import { localeOfPathname } from '../../shared/i18n/paths';
+import { getDictionary } from '../../shared/i18n/ui';
+import DirectContactLinks from './DirectContactLinks.astro';
+
+// The contact page's content, shared by both locale pages (`src/pages/contact/index.astro`
+// and `src/pages/es/contact/index.astro`), which are thin roots. Self-contained, like the
+// other dedicated pages: it derives its own locale from the URL. See T11d in
+// odd/tasks/portfolio-astro-rebuild.md.
+const locale = localeOfPathname(Astro.url.pathname);
+const dictionary = getDictionary(locale);
+---
+
+<div class="flex max-w-[70ch] flex-col gap-8">
+  <h1>{dictionary.contactPageHeading}</h1>
+  <section aria-labelledby="contact-other-ways" class="flex flex-col gap-3">
+    <h2 id="contact-other-ways">{dictionary.contactOtherWaysHeading}</h2>
+    <DirectContactLinks />
+  </section>
+</div>

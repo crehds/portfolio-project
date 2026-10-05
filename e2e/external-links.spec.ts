@@ -41,6 +41,9 @@ const pages: {
   { path: '/es/experience/', lang: 'es', minimumExternalLinks: 2 },
   { path: '/skills/', lang: 'en', minimumExternalLinks: 2 },
   { path: '/es/skills/', lang: 'es', minimumExternalLinks: 2 },
+  // Footer, and the WhatsApp link among the direct ways to write.
+  { path: '/contact/', lang: 'en', minimumExternalLinks: 2 + 1 },
+  { path: '/es/contact/', lang: 'es', minimumExternalLinks: 2 + 1 },
 ];
 
 for (const { path, lang, minimumExternalLinks } of pages) {

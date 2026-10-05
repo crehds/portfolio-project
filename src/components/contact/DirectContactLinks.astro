@@ -1,0 +1,48 @@
+---
+import { getEntry } from 'astro:content';
+
+import {
+  directContactLinks,
+  type DirectContactId,
+} from '../../modules/profile/domain/direct-contact-links';
+import { localeOfPathname } from '../../shared/i18n/paths';
+import { getDictionary, type UiDictionary } from '../../shared/i18n/ui';
+import { CONTACT_CTA_ICONS } from '../home/contact-cta-icons';
+import Link from '../Link.astro';
+
+// The ways to write without the form: WhatsApp and email. The contact page lists them
+// beside the form, and the notices that take the form's place point to them. Self-contained,
+// like `ContactCtas.astro`, whose button style and icons it shares: it derives its own
+// locale and content. WhatsApp opens in a new tab (see `Link`); the `mailto:` link stays
+// in this one.
+const locale = localeOfPathname(Astro.url.pathname);
+const dictionary = getDictionary(locale);
+
+const profile = await getEntry('profile', 'profile');
+if (!profile) {
+  throw new Error(
+    'The "profile" content entry is missing; the direct contact links need it for their hrefs.',
+  );
+}
+
+const LABEL_KEYS: Record<DirectContactId, keyof UiDictionary> = {
+  whatsapp: 'ctaWhatsappLabel',
+  email: 'ctaEmailLabel',
+};
+
+const links = directContactLinks(profile.data);
+---
+
+<ul class="flex flex-wrap gap-3">
+  {links.map((link) => (
+    <li>
+      <Link
+        href={link.href}
+        class="inline-flex min-h-11 items-center gap-2 rounded border border-border px-3 py-2 text-text"
+      >
+        <Fragment set:html={CONTACT_CTA_ICONS[link.id]} />
+        <span>{dictionary[LABEL_KEYS[link.id]]}</span>
+      </Link>
+    </li>
+  ))}
+</ul>

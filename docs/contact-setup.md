@@ -12,6 +12,7 @@ Run every `wrangler` command from the repository root as `pnpm exec wrangler ...
 - [EmailJS: email delivery](#emailjs-email-delivery)
 - [Turnstile: spam protection](#turnstile-spam-protection)
 - [Putting the secrets in place](#putting-the-secrets-in-place)
+- [End-to-end tests](#end-to-end-tests)
 - [Contact troubleshooting](#contact-troubleshooting)
 
 ## CV download (R2)
@@ -268,11 +269,15 @@ pnpm exec wrangler secret put EMAILJS_PUBLIC_KEY
 pnpm exec wrangler secret put EMAILJS_PRIVATE_KEY
 ```
 
-`TURNSTILE_SITE_KEY` is public, so it is a plain variable in `wrangler.jsonc` (under `vars`),
-which the contact page's change adds, rather than a secret.
+`TURNSTILE_SITE_KEY` is public, so it is a plain variable, not a secret: it belongs in
+`wrangler.jsonc` under `vars`, and under `previews.vars` too, because previews do not inherit
+variables. It is not there yet, on purpose: the code ships no site key, and the key to put there
+is the one of the real widget, which exists only after the Turnstile step above. A dummy key in
+production would make every submission fail on a token error that nothing logs.
 
-**Local development.** Put the settings in `.dev.vars` in the repository root, which git
-ignores. Cloudflare's test keys make Turnstile pass without a real widget:
+**Local development.** Copy `.dev.vars.example` to `.dev.vars` in the repository root (git
+ignores that name) and fill in the blanks. Cloudflare's test keys, already in the template, make
+Turnstile pass without a real widget:
 
 ```ini
 TURNSTILE_SITE_KEY=1x00000000000000000000AA
@@ -285,6 +290,45 @@ EMAILJS_PRIVATE_KEY=<your private key>
 
 With real EmailJS values, submitting the local form sends a real email and spends one of the
 200 monthly requests. Use fake values to see the form fail safely instead.
+
+## End-to-end tests
+
+`pnpm test:e2e` submits the contact form for real, so it must never reach EmailJS (every request
+lands in your inbox and counts against the 200 a month) or Turnstile. It stays away from both
+without any care on your part:
+
+- **A server of its own.** Playwright builds the site and starts `astro preview` on port 4331,
+  and never reuses a server that is already running there: what a server was started with
+  decides which providers it talks to, and a leftover `astro dev` or `astro preview` would have
+  read your own `.dev.vars`. If the port is taken, the run fails at the start; stop the other
+  process.
+- **Its own settings.** The build under test is made with `CLOUDFLARE_ENV=e2e` (Playwright sets
+  it for its own build, and the Build step of `.github/workflows/ci.yml` sets it). The
+  Cloudflare plugin then reads `.dev.vars.e2e` instead of `.dev.vars`, and bakes it into
+  `dist/server/.dev.vars`, which is all the preview server reads. Without the variable, your
+  `.dev.vars` wins, and its real keys end up in the build. wrangler warns that no `env.e2e`
+  section exists in `wrangler.jsonc` and uses the top-level configuration, which is what is
+  wanted: the R2 and rate limit bindings are the real ones. Do not add an `env.e2e` section: a
+  named environment does not inherit bindings, so each one would have to be repeated.
+- **Nothing real in `.dev.vars.e2e`.** It is committed, and holds only Cloudflare's published
+  Turnstile test keys, made-up `e2e-` EmailJS values and two loopback URLs, the test seams
+  (`EMAILJS_API_URL`, `TURNSTILE_VERIFY_URL`), that send the Worker's provider calls to the fakes.
+- **Fake providers.** `e2e/support/fake-upstreams.ts` stands in for EmailJS and Turnstile on
+  `127.0.0.1:4332`, started once per run by `e2e/global-setup.ts`. It records every call, so a
+  test can say exactly what the Worker sent, and any request to another path is recorded as
+  unexpected. A Turnstile token steers its answer (`pass:<marker>`, `refuse:`, `duplicate:`,
+  `fault:`, `unknown-code:`, `http-500:`), and a visitor message containing `[[fake-emailjs:500]]`
+  makes the fake EmailJS answer that status.
+- **A check before the first test.** `e2e/support/hermetic-guard.ts` runs in global setup, reads
+  the files the server will read, and stops the whole run, listing the problems, unless
+  `.dev.vars.e2e` holds nothing but test and fake values, the build targets the `e2e`
+  environment, and the settings baked into the build are exactly those of `.dev.vars.e2e`. It
+  names settings and never prints a value, because the build may hold your real keys. It makes no
+  request: a request that proved the point would be the one that reached a provider.
+
+If a run stops with "The end-to-end run is not hermetic", rebuild with `CLOUDFLARE_ENV=e2e`
+(`pnpm test:e2e` does this for you), and remove whatever left a build of another kind in
+`dist/`.
 
 ## Contact troubleshooting
 

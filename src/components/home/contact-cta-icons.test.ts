@@ -50,7 +50,7 @@ describe('sizedAriaHiddenIcon', () => {
 describe('CONTACT_CTA_ICONS', () => {
   it('has an entry for every contact cta id', () => {
     expect(Object.keys(CONTACT_CTA_ICONS).sort()).toEqual(
-      ['cv', 'email', 'github', 'linkedin', 'whatsapp'].sort(),
+      ['cv', 'email', 'form', 'github', 'linkedin', 'whatsapp'].sort(),
     );
   });
 
@@ -60,5 +60,20 @@ describe('CONTACT_CTA_ICONS', () => {
       expect(CONTACT_CTA_ICONS[id]).toContain('width="18"');
       expect(CONTACT_CTA_ICONS[id]).toContain('height="18"');
     }
+  });
+
+  it('marks the hand-drawn form, email and cv icons aria-hidden, unfocusable and 18px', () => {
+    for (const id of ['form', 'email', 'cv'] as const) {
+      expect(CONTACT_CTA_ICONS[id]).toContain('aria-hidden="true"');
+      expect(CONTACT_CTA_ICONS[id]).toContain('focusable="false"');
+      expect(CONTACT_CTA_ICONS[id]).toContain('width="18"');
+      expect(CONTACT_CTA_ICONS[id]).toContain('height="18"');
+    }
+  });
+
+  it('draws every icon in its own right: no two share the same markup', () => {
+    const markup = Object.values(CONTACT_CTA_ICONS);
+
+    expect(new Set(markup).size).toBe(markup.length);
   });
 });

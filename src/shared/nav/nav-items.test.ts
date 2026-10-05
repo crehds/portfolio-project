@@ -3,12 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { NAV_ITEMS } from './nav-items';
 
 describe('NAV_ITEMS', () => {
-  it('lists the routes that exist today: home, projects, experience and skills, in order', () => {
+  it('lists the routes that exist today: home, projects, experience, skills and contact, in order', () => {
     expect(NAV_ITEMS.map((item) => item.labelKey)).toEqual([
       'navHome',
       'navProjects',
       'navExperience',
       'navSkills',
+      'navContact',
     ]);
   });
 
@@ -38,5 +39,12 @@ describe('NAV_ITEMS', () => {
 
     expect(skills.href('en')).toBe('/skills/');
     expect(skills.href('es')).toBe('/es/skills/');
+  });
+
+  it("resolves the contact entry's href per locale", () => {
+    const [, , , , contact] = NAV_ITEMS;
+
+    expect(contact.href('en')).toBe('/contact/');
+    expect(contact.href('es')).toBe('/es/contact/');
   });
 });

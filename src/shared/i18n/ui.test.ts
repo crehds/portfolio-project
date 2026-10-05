@@ -40,10 +40,12 @@ describe('getDictionary', () => {
       navProjects: 'Projects',
       navExperience: 'Experience',
       navSkills: 'Skills',
+      navContact: 'Contact',
       footerGithubLabel: 'GitHub',
       footerLinkedinLabel: 'LinkedIn',
       footerEmailLabel: 'Email',
       heroPhotoAlt: 'Portrait of',
+      ctaFormLabel: 'Send a message',
       ctaWhatsappLabel: 'WhatsApp',
       ctaEmailLabel: 'Email',
       ctaLinkedinLabel: 'LinkedIn',
@@ -79,6 +81,11 @@ describe('getDictionary', () => {
       skillCategoryDevops: 'DevOps',
       skillCategoryTesting: 'Testing',
       skillCategoryTools: 'Tools',
+      contactPageTitle: 'Contact — Carlos Rodríguez Huerta',
+      contactPageDescription:
+        'Get in touch with Carlos Rodríguez Huerta, full-stack web developer: a contact form, email and WhatsApp.',
+      contactPageHeading: 'Contact',
+      contactOtherWaysHeading: 'Other ways to reach me',
     });
   });
 
@@ -97,10 +104,12 @@ describe('getDictionary', () => {
       navProjects: 'Proyectos',
       navExperience: 'Experiencia',
       navSkills: 'Habilidades',
+      navContact: 'Contacto',
       footerGithubLabel: 'GitHub',
       footerLinkedinLabel: 'LinkedIn',
       footerEmailLabel: 'Correo electrónico',
       heroPhotoAlt: 'Retrato de',
+      ctaFormLabel: 'Enviar un mensaje',
       ctaWhatsappLabel: 'WhatsApp',
       ctaEmailLabel: 'Correo electrónico',
       ctaLinkedinLabel: 'LinkedIn',
@@ -136,6 +145,11 @@ describe('getDictionary', () => {
       skillCategoryDevops: 'DevOps',
       skillCategoryTesting: 'Testing',
       skillCategoryTools: 'Herramientas',
+      contactPageTitle: 'Contacto — Carlos Rodríguez Huerta',
+      contactPageDescription:
+        'Ponte en contacto con Carlos Rodríguez Huerta, desarrollador web full-stack: formulario de contacto, correo electrónico y WhatsApp.',
+      contactPageHeading: 'Contacto',
+      contactOtherWaysHeading: 'Otras formas de contactarme',
     });
   });
 });

@@ -30,14 +30,36 @@
       "bucket_name": "portfolio-cv",
     },
   ],
+  // The contact form's rate limit: at most 3 submissions per client IP in any 60 seconds
+  // (`src/modules/contact/adapters/workers-rate-limiter.ts` counts under the
+  // `cf-connecting-ip` key). `period` can only be 10 or 60. Cloudflare counts per
+  // location and does not promise exact numbers, so this is a soft layer in front of
+  // Turnstile. `namespace_id` is a number, written as text, that must be unique among the
+  // account's rate limit bindings: change it if another Worker already uses it.
+  "ratelimits": [
+    {
+      "name": "CONTACT_RATE_LIMIT",
+      "namespace_id": "7301",
+      "simple": { "limit": 3, "period": 60 },
+    },
+  ],
   // Worker Previews (`wrangler preview`) do not inherit bindings from the top level, so a
-  // preview would have no CV bucket without this mirror. It points at the same bucket: the
-  // CV is public, read-only content and there is no staging copy to keep apart.
+  // preview would have no CV bucket and no rate limiter without this mirror. The bucket is
+  // the same one: the CV is public, read-only content and there is no staging copy to keep
+  // apart. The rate limiter gets its own namespace, so a preview's counters never mix with
+  // production's.
   "previews": {
     "r2_buckets": [
       {
         "binding": "CV_BUCKET",
         "bucket_name": "portfolio-cv",
+      },
+    ],
+    "ratelimits": [
+      {
+        "name": "CONTACT_RATE_LIMIT",
+        "namespace_id": "7302",
+        "simple": { "limit": 3, "period": 60 },
       },
     ],
   },

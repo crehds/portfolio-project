@@ -56,4 +56,13 @@ export default defineConfig({
   // The site doesn't use sessions. Disabling them keeps the adapter from declaring a
   // SESSION KV binding, so deploys don't provision a KV namespace.
   session: false,
+  security: {
+    // The contact form is the only Action. Its fields cap at 100 + 254 + 5,000 characters
+    // plus a Turnstile token of at most 2,048, which a browser sends as a urlencoded body
+    // well under this (a message of accented Spanish letters grows by a few KB; only a
+    // message written in a three-byte script, such as Chinese, could approach it). A body
+    // past the limit is refused before it is parsed: Astro's default is 1 MiB, which
+    // would let anyone make the Worker read and buffer that much per request.
+    actionBodySizeLimit: 32 * 1024,
+  },
 });
