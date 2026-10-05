@@ -5,6 +5,7 @@ import { getEntry, render } from 'astro:content';
 import { formatProjectDate } from '../../modules/projects/domain/format-project-date';
 import { localeOfPathname, pathnameInLocale } from '../../shared/i18n/paths';
 import { getDictionary } from '../../shared/i18n/ui';
+import Link from '../Link.astro';
 
 // Self-contained, like the home page's sections: derives its own locale from the URL
 // and takes only the resolved content entry's id as a prop. See T09 in
@@ -60,12 +61,12 @@ const backHref = pathnameInLocale('/projects/', locale);
     <ul class="flex gap-4 text-sm">
       {data.links.live && (
         <li>
-          <a href={data.links.live}>{dictionary.projectLiveLabel}</a>
+          <Link href={data.links.live}>{dictionary.projectLiveLabel}</Link>
         </li>
       )}
       {data.links.repo && (
         <li>
-          <a href={data.links.repo}>{dictionary.projectRepoLabel}</a>
+          <Link href={data.links.repo}>{dictionary.projectRepoLabel}</Link>
         </li>
       )}
     </ul>

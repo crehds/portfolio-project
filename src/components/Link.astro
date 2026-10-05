@@ -1,0 +1,45 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+import { localeOfPathname } from '../shared/i18n/paths';
+import { getDictionary } from '../shared/i18n/ui';
+import { isExternalHref } from '../shared/links/is-external-href';
+
+// An anchor for any `href` that can be external. A link to another site (see
+// `isExternalHref`) opens in a new tab and says so in its accessible name, through a
+// visually hidden hint; every other `href`, the CV download and `mailto:` links included,
+// renders the plain anchor it always was (a new tab would break the back button, or stay
+// blank behind a mail client or a download). `target` and `rel` are not props: this
+// component owns them.
+//
+// `rel="noopener"`, not `noreferrer`: browsers already send only the origin when a link
+// leaves the site, and the owner's own project sites may want to see the visits that came
+// from the portfolio.
+//
+// The hint follows the label after a plain space, so the text itself reads "GitHub (opens
+// in a new tab)", not just the accessible name a browser computes (which adds a space
+// around the hidden, block-level hint on its own).
+//
+// Self-contained, like `LanguageSwitcher.astro`: the hint's locale comes from the URL.
+type Props = Omit<HTMLAttributes<'a'>, 'target' | 'rel'> & { href: string };
+
+const { href, ...attributes } = Astro.props;
+
+const external = isExternalHref(href);
+const dictionary = getDictionary(localeOfPathname(Astro.url.pathname));
+---
+
+<a
+  href={href}
+  target={external ? '_blank' : undefined}
+  rel={external ? 'noopener' : undefined}
+  {...attributes}
+>
+  <slot />
+  {external && (
+    <>
+      {' '}
+      <span class="sr-only">{dictionary.linkOpensInNewTab}</span>
+    </>
+  )}
+</a>
