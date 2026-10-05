@@ -240,6 +240,12 @@ How the Worker uses the answer, so a failure is easy to read:
   text, and the Worker never logs it. The two lists are all seven codes in Cloudflare's table as
   of 2026-10-04, so an unknown code is a new one or an undocumented one. Any other HTTP status,
   an answer that is not JSON, a network error or a timeout fails the submission as well.
+- What the visitor is told depends on which of the two it was, and nothing is sent in either
+  case. A token that is missing or that Turnstile refused (the ordinary "no") is
+  `verification_failed`: trying again can help. Every failure that is logged, because Turnstile
+  could not judge the token, is `unavailable`: the fault is on the server's side and trying
+  again cannot help, so the visitor is pointed to email and WhatsApp instead of being asked to
+  retry.
 - It does not check the `hostname` Turnstile reports back, because previews run on other
   hostnames than production.
 

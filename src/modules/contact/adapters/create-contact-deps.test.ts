@@ -572,19 +572,21 @@ describe('createContactDeps: the wired dependencies inside submitContact', () =>
 
   // The codes that blame the secret, the request or Turnstile are a failure the owner can
   // act on, so they are logged: a wrong TURNSTILE_SECRET_KEY no longer fails in silence.
+  // The token was never judged, so the visitor is told the form is unavailable, not that
+  // the token was refused.
   it.each([
     'missing-input-secret',
     'invalid-input-secret',
     'bad-request',
     'internal-error',
   ])(
-    'fails the submission without sending, and logs one error ending in (%s), when Turnstile lists it',
+    'answers unavailable without sending, and logs one error ending in (%s), when Turnstile lists it',
     async (code) => {
       const fetchFake = providers({ turnstile: refusing(code) });
 
       const outcome = await run(completeEnv(), fetchFake);
 
-      expect(outcome).toEqual({ kind: 'verification_failed' });
+      expect(outcome).toEqual({ kind: 'unavailable' });
       expect(requestedUrls(fetchFake)).toEqual([TURNSTILE_URL]);
       expect(vi.mocked(console.error)).toHaveBeenCalledTimes(1);
       expect(consoleSpies.flatMap((spy) => spy.mock.calls)).toHaveLength(1);
@@ -604,7 +606,7 @@ describe('createContactDeps: the wired dependencies inside submitContact', () =>
 
     const outcome = await run(completeEnv(), fetchFake);
 
-    expect(outcome).toEqual({ kind: 'verification_failed' });
+    expect(outcome).toEqual({ kind: 'unavailable' });
     expect(logged()).toEqual([`${VERIFIER_LINE} (invalid-input-secret)`]);
   });
 
@@ -615,13 +617,13 @@ describe('createContactDeps: the wired dependencies inside submitContact', () =>
     ['only that code', [SENTINEL]],
     ['that code beside a token code', ['invalid-input-response', SENTINEL]],
   ])(
-    'fails the submission without sending, and logs the verifier line with no suffix, when Turnstile lists a code the Worker does not know (%s)',
+    'answers unavailable without sending, and logs the verifier line with no suffix, when Turnstile lists a code the Worker does not know (%s)',
     async (_label, codes) => {
       const fetchFake = providers({ turnstile: refusing(...codes) });
 
       const outcome = await run(completeEnv(), fetchFake);
 
-      expect(outcome).toEqual({ kind: 'verification_failed' });
+      expect(outcome).toEqual({ kind: 'unavailable' });
       expect(requestedUrls(fetchFake)).toEqual([TURNSTILE_URL]);
       expect(vi.mocked(console.error)).toHaveBeenCalledTimes(1);
       expect(consoleSpies.flatMap((spy) => spy.mock.calls)).toHaveLength(1);
@@ -637,7 +639,7 @@ describe('createContactDeps: the wired dependencies inside submitContact', () =>
 
     const outcome = await run(completeEnv(), fetchFake);
 
-    expect(outcome).toEqual({ kind: 'verification_failed' });
+    expect(outcome).toEqual({ kind: 'unavailable' });
     expect(logged()).toEqual([`${VERIFIER_LINE} (invalid-input-secret)`]);
     expect(logged().join('\n')).not.toContain(SENTINEL);
   });
@@ -670,13 +672,13 @@ describe('createContactDeps: the wired dependencies inside submitContact', () =>
       '',
     ],
   ])(
-    'fails the submission closed, and logs one error in total, when Turnstile %s',
+    'answers unavailable, sends nothing, and logs one error in total, when Turnstile %s',
     async (_label, answer, suffix) => {
       const fetchFake = providers({ turnstile: answer });
 
       const outcome = await run(completeEnv(), fetchFake);
 
-      expect(outcome).toEqual({ kind: 'verification_failed' });
+      expect(outcome).toEqual({ kind: 'unavailable' });
       expect(requestedUrls(fetchFake)).toEqual([TURNSTILE_URL]);
       expect(vi.mocked(console.error)).toHaveBeenCalledTimes(1);
       expect(consoleSpies.flatMap((spy) => spy.mock.calls)).toHaveLength(1);
