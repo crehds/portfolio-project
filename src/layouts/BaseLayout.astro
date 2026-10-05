@@ -3,6 +3,7 @@ import { getEntry } from 'astro:content';
 import { Font } from 'astro:assets';
 
 import LanguageSwitcher from '../components/LanguageSwitcher.astro';
+import Link from '../components/Link.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
 import {
   hreflangAlternates,
@@ -179,14 +180,17 @@ if (!profile) {
         <p>{profile.data.name}</p>
         <ul class="flex items-center gap-4">
           <li>
-            <a href={profile.data.github} class="inline-block min-h-6 py-1">
+            <Link href={profile.data.github} class="inline-block min-h-6 py-1">
               {dictionary.footerGithubLabel}
-            </a>
+            </Link>
           </li>
           <li>
-            <a href={profile.data.linkedin} class="inline-block min-h-6 py-1">
+            <Link
+              href={profile.data.linkedin}
+              class="inline-block min-h-6 py-1"
+            >
               {dictionary.footerLinkedinLabel}
-            </a>
+            </Link>
           </li>
           <li>
             <a
