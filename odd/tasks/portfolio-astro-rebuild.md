@@ -77,10 +77,13 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
 - Running count: ~15,124 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
   T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321 + T08 ~1,021 + T09 ~923 + T09b ~217 +
-  T10 ~778 + T10b ~88 + T11a ~935 + T11b ~1,698 + T11c ~2,978 + T11c-b ~1,573, with tests, excluding lockfiles and
-  the legacy removal). It already passes the ~4,300 forecast, mostly from tests and the review follow-up tasks.
+  T10 ~778 + T10b ~88 + T11a ~935 + T11b ~1,698 + T11c ~2,978 + T11c-b ~1,573 + T10c ~244, with tests, excluding
+  lockfiles and the legacy removal). It already passes the ~4,300 forecast, mostly from tests and the review follow-up
+  tasks.
 - Last reviewed boundary: `62f10ae` (the T11c docs `4bf66b4`, the T11c-b refinement `fc03da1` + T11c-b slice from
-  `8fef017`; the merge `3f44f9f` has the same tree). Earlier, the slice from `8c0409c` (the T10 docs `1edaac9`, T10b, the T10b docs `9b0bcc4`, the T11 plan
+  `8fef017`; the merge `3f44f9f` has the same tree). The slice from `62f10ae` (the T11c-b and T11d-decision records,
+  the T10c plan and T10c: medium, 309 lines) was assessed `under_budget` and stays open until a later commit brings it
+  to the delivery budget. Earlier, the slice from `8c0409c` (the T10 docs `1edaac9`, T10b, the T10b docs `9b0bcc4`, the T11 plan
   `e201a3c` and T11a up to `9ac381e`; medium, 1,184 lines) was skipped by the owner (2026-09-30); as with the legacy
   removal, the next slice started after it.
 
@@ -143,7 +146,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   Owner answers: keep the years line on the experience page and the Spanish wording ("Habilidades", "Tiempo
   completo", "Medio tiempo"). Route: delegated (writer trigger: the e2e spacing test and the page component), plus
   the parent's inline TZ-restore fix in one test file. ~60.
-- [ ] **T10c** External links open in a new tab (owner, 2026-10-04, after looking at the site locally): the footer's
+- [x] **T10c** External links open in a new tab (owner, 2026-10-04, after looking at the site locally): the footer's
   GitHub and LinkedIn, the live and repository links of project cards and project pages, and the home's WhatsApp,
   LinkedIn and GitHub CTAs get `target="_blank"` and `rel="noopener"`, plus a visually hidden, localized "opens in a
   new tab" hint in each link's accessible name. Internal links, `mailto:` and the CV download stay in the same tab (a
@@ -251,6 +254,7 @@ the HTML reporter blocks the shell after a failure.
 | T11b | done (merged `a00b1bd`) | `28bcb2f` form schema with stable error codes, `781efa5` settings parser (names only) + docs, `427370f` rate-limit key from `cf-connecting-ip`, `1984ce8` `submitContact` + ports | Strict TDD: RED `Cannot find module` per module, then assertion-level RED against naive stubs (schema 49/66, config 51/67, rate-limit key 9/27, `submitContact` 30/41 failing), then GREEN; mutations caught (trim after the checks: 6 failures; email format before the trim: 11; logging the thrown error: 2; a truthy non-`true` verifier answer: 1; a fail-closed limiter: 2); scratch checks against Astro's real `defineAction({ accept: 'form' })` (field codes, trimmed values, the honeypot passed through) and `astro check` (`ActionAPIContext` fits `ContactContext`) · lint · format · `pnpm check` 0/0/0 (108 files) · `pnpm test` 455/455 · build 16 pages + Worker · `pnpm test:e2e` 131/131 · dry run unchanged · parent re-ran at the tip: check 0 errors, test 455/455 | T11a docs + T11b slice (from `9ac381e`): medium, 1,746 lines, 1 lens (reliability), approved with 0 findings (`review-0a3c27cc61ffca1d`) |
 | T11c | done (merged `dfdd1e2`) | `42e6953` control characters in `name`, `3211882` loopback-only `http:` seams, `0ece5b3` EmailJS sender + shared HTTP policy, `6db80f8` Turnstile verifier + Workers limiter, `8fef017` `createContactDeps` + owner setup docs | Strict TDD: RED `Cannot find module` per adapter, then assertion-level RED against naive stubs (name 17 failing, seams 32, EmailJS 60/68, Turnstile 85/98, limiter 16/29, wiring 19/54), then GREEN; mutations caught (a plain `.refine` instead of the pipe: the code-order test; a raw-text host match: 16; `!response.ok` instead of `status !== 200`: 201/202/204/206; the message spread into `template_params`: 2; no `redirect`, timeout or no-`cause` rule: 9; four Turnstile mutations: 15; a lenient limiter answer or a detached `limit` call: 10; no `fetchImpl` or no binding check: 27); a short non-JSON body caught the parser's error text quoting the body · lint · format · `pnpm check` 0/0/0 (118 files) · `pnpm test` 793/793 in 38 files · build 16 pages + Worker · `pnpm test:e2e` 131/131 · dry run unchanged · parent readback of every adapter file and the schema/config diffs; parent re-ran: check 0 errors, test 793/793; the merge tree equals the reviewed tree (`7d9a216`) | T11b docs + T11c slice (from `1984ce8`): medium, 3,023 lines, 1 lens (reliability), approved with 0 findings (`review-c6c375c4f8a6bf8c`) |
 | T11c-b | done (merged `3f44f9f`) | `4f1752c` the HTTP status in the log line (`ProviderFailure` + `failureSuffix`), `a27c50c` Turnstile fault codes reject, `62f10ae` unknown codes reject without detail (parent follow-up) | Strict TDD: RED `Cannot find module './provider-failure'`, then a naive stub (25/44 failing); EmailJS status 25/71, Turnstile status 18/103, `submitContact` suffix 4, composed 5 (production files stashed); the fault codes test-first, 64 failing; the unknown codes 23 failing; then GREEN; mutations caught (logging `error.message`: 60; a suffix on the limiter line: 1; duck typing instead of `instanceof`: 25; no re-check in `failureSuffix`: 10; a constructor keeping any value or both details: 24; ignoring the priority order: 9; a token code beside a fault code read as a "no": 3; the fault check before `success: true`: 4; `String(errorCodes).includes`: 4; a `cause`: 9; the unknown code in the message: 18, as a property: 7, and also logged through `error.message`: 55; the unknown check before the fault check: 6; non-strings as unknown: 2; lenient matching: 4) · lint · format · `pnpm check` 0/0/0 (120 files) · `pnpm test` 1013/1013 in 39 files · build 16 pages + Worker · `pnpm test:e2e` 131/131 · dry run unchanged · parent readback of the production diffs and the docs; Cloudflare's Siteverify table re-checked (rendered page and raw source: exactly 7 codes); parent re-ran: check 0/0/0 (120 files), test 1013/1013; the merge tree equals the reviewed tree (`8c65a64`) | T11c docs + T11c-b slice (from `8fef017`): medium, 1,637 lines, 1 lens (reliability), approved with 0 findings (`review-40b8486602bfae27`) |
+| T10c | done (merged `37afe00`) | `ae999ab` the `isExternalHref` rule, `ed190c5` the `linkOpensInNewTab` hint in both dictionaries, `827036f` `Link.astro` and the migrated anchors (footer GitHub/LinkedIn, project card and page live/repo links, every home CTA) | Strict TDD: RED `Cannot find module`, then a naive `startsWith` stub (2/19 failing: `HTTPS://EXAMPLE.COM/`, a bare `https://`); dictionary pin 47 vs 48 keys in both locales; the new e2e spec 10/20 failing before the component (`target … Expected "_blank", Received ""`), then GREEN; mutations caught (no `rel`: 10; a `target` on the `mailto:` CTA: 2; no space before the hint: 10, caught by the text check; a visible hint: 10; a plain repository anchor again: 4; the hint always in English: 5; the hint hidden with `display: none`: 10) · lint · format · `pnpm check` 0/0/0 (124 files) · `pnpm test` 1032/1032 in 40 files · build 16 pages · `pnpm test:e2e` 151/151 · dry run unchanged · 40 full-page screenshots (10 pages, 1280 and 390 px, both themes) byte-identical to the base build · parent readback of the production diff; parent re-ran: check 0/0/0 (124 files), test 1032/1032; the merge tree equals the writer's tree (`7c6a402`) | Slice from `62f10ae` (records + T10c): medium, 309 lines, `under_budget`, not due; it stays open for the next commits |
 
 ## Change log
 
@@ -499,12 +503,27 @@ the HTML reporter blocks the shell after a failure.
   links. Gotchas: the e2e web server reuses whatever already listens on port 4321, so a running `astro dev` must be
   stopped before e2e runs; and with `astro dev --background` piped into another command the server was gone once that
   command ended, while with its output sent to a file it kept running.
+- 2026-10-04: the stop hook offered its whole-branch review a seventeenth time after `5390eaa` (269 files, 43,542
+  lines), but the parent relayed it after the T10c writer had started. The owner granted it, and START refused it with
+  `invalid_request` ("untracked files require an explicit declaration": the writer's new files), so nothing was
+  created. Lesson kept: answer the whole-branch prompt before launching a writer.
+- 2026-10-04: T10c. `src/shared/links/is-external-href.ts` says whether an `href` leads to another site (an absolute
+  `http:` or `https:` URL, read with the browser's URL parser), and `src/components/Link.astro` renders every anchor
+  whose `href` can be external: for those it adds `target="_blank"`, `rel="noopener"` (not `noreferrer`: browsers send
+  only the origin, and the owner's own sites may want to see visits from the portfolio) and a visually hidden hint
+  after a plain space, so the accessible name reads "GitHub (opens in a new tab)" / "GitHub (se abre en una pestaña
+  nueva)". The e2e spec checks every anchor on 10 pages (both locales), with a floor of external links per page, so a
+  future external link cannot slip through. 40 full-page screenshots were byte-identical to the base build, so the
+  change is invisible. Known limits: an absolute URL to the site's own origin counts as external, and a
+  protocol-relative `//host` counts as internal (neither exists today); links written inside a project's markdown body
+  would render as plain anchors (none exist today; when a case study adds one, add a rehype plugin or a components
+  override for it).
 
 ## Next step
 
-T10c (external links in a new tab), then T11d (contact page, action, form, e2e harness, and the `unavailable` outcome
-for a verifier that cannot answer), then T11e (404 pages); T10d when the owner gives the color direction. Owner, in
-parallel: create the R2 bucket `portfolio-cv` and upload
+T11d (contact page, action, form, e2e harness, and the `unavailable` outcome for a verifier that cannot answer), then
+T11e (404 pages); T10d when the owner gives the color direction. Before T11d's writer runs e2e, stop any `astro dev`
+on port 4321. Owner, in parallel: create the R2 bucket `portfolio-cv` and upload
 `en.pdf` and `es.pdf` before `feat/astro-rebuild` is pushed (Workers Builds deploys every pushed branch); create the
 Turnstile widget early to confirm it accepts the `carlos15erh.workers.dev` hostname; set up EmailJS (service, template,
 non-browser API, keys; see `docs/contact-setup.md`) before T11d. Optional: the heading-spacing rhythm noted in T10b.
