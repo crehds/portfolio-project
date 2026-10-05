@@ -143,6 +143,16 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   Owner answers: keep the years line on the experience page and the Spanish wording ("Habilidades", "Tiempo
   completo", "Medio tiempo"). Route: delegated (writer trigger: the e2e spacing test and the page component), plus
   the parent's inline TZ-restore fix in one test file. ~60.
+- [ ] **T10c** External links open in a new tab (owner, 2026-10-04, after looking at the site locally): the footer's
+  GitHub and LinkedIn, the live and repository links of project cards and project pages, and the home's WhatsApp,
+  LinkedIn and GitHub CTAs get `target="_blank"` and `rel="noopener"`, plus a visually hidden, localized "opens in a
+  new tab" hint in each link's accessible name. Internal links, `mailto:` and the CV download stay in the same tab (a
+  new tab would break the back button, or stay blank for a mail client or a download). One link component and one
+  pure "is external" rule; an e2e check over every page. Route: delegated (writer trigger: the link component and the
+  e2e spec, plus mechanical swaps in four components). ~250.
+- [ ] **T10d** Dark theme color adjustments (owner, 2026-10-04: "that light blue", the cyan accent, needs work; later,
+  not now). Every text/background token pair must still meet WCAG AA (the token contrast test). Optionally with the
+  heading-spacing rhythm noted in T10b. Route: decided when the owner gives the direction.
 - [ ] **T11** Contact: form via Astro Action (Zod validation), `EmailSender` port + EmailJS adapter, Turnstile + honeypot +
   rate limit, WhatsApp + mailto, CV download (R2), 404 page. Planned on 2026-09-30 by a read-only planning pass (see the
   change log) as five sub-tasks, each on its own branch `feat/astro-rebuild-11<x>-<slug>`. ~2,500-3,000 with tests and
@@ -482,11 +492,19 @@ the HTML reporter blocks the shell after a failure.
   undocumented. Open for T11d (owner question): what the visitor sees when the verifier cannot answer.
 - 2026-10-04: owner decision for T11d: a verifier that cannot answer shows the "form unavailable" notice (email and
   WhatsApp), because the fault is on the server's side and retrying cannot help the visitor.
+- 2026-10-04: the stop hook offered its whole-branch review a sixteenth time after `3780201` (269 files, 43,524 lines);
+  granted; it stopped with `lens_context_budget_exceeded`, and nothing was created.
+- 2026-10-04: the owner looked at the site on the local dev server ("pretty good") and asked for two changes: links
+  open in a new tab (T10c, now) and the dark theme's cyan adjusted (T10d, later). The parent scoped T10c to external
+  links. Gotchas: the e2e web server reuses whatever already listens on port 4321, so a running `astro dev` must be
+  stopped before e2e runs; and with `astro dev --background` piped into another command the server was gone once that
+  command ended, while with its output sent to a file it kept running.
 
 ## Next step
 
-T11d (contact page, action, form, e2e harness, and the `unavailable` outcome for a verifier that cannot answer); then
-T11e (404 pages). Owner, in parallel: create the R2 bucket `portfolio-cv` and upload
+T10c (external links in a new tab), then T11d (contact page, action, form, e2e harness, and the `unavailable` outcome
+for a verifier that cannot answer), then T11e (404 pages); T10d when the owner gives the color direction. Owner, in
+parallel: create the R2 bucket `portfolio-cv` and upload
 `en.pdf` and `es.pdf` before `feat/astro-rebuild` is pushed (Workers Builds deploys every pushed branch); create the
 Turnstile widget early to confirm it accepts the `carlos15erh.workers.dev` hostname; set up EmailJS (service, template,
 non-browser API, keys; see `docs/contact-setup.md`) before T11d. Optional: the heading-spacing rhythm noted in T10b.
