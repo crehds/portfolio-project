@@ -24,6 +24,12 @@ import { getDictionary } from '../../shared/i18n/ui';
 // Every visitor value is written through Astro's escaping (text and attributes): there is no
 // `set:html` here, and there must never be one.
 //
+// The honeypot: a text field named `website` that people never see, so anything in it means a
+// bot filled in every field it found. It is taken off screen (positioned far to the left), not
+// removed with `display: none`, which a bot may skip; hidden from assistive technology
+// (`aria-hidden`), out of the tab order (`tabindex="-1"`) and kept out of autofill
+// (`autocomplete="off"`). `submitContact` answers it with a silent success.
+//
 // Turnstile's widget: api.js scans the page for `.cf-turnstile` when it loads and puts the
 // token in a hidden `cf-turnstile-response` field of the form, which the Action checks. The
 // widget sits in a wrapper that scrolls, so that a viewport narrower than its 300 px
@@ -162,6 +168,23 @@ const invalid = (field: VisibleField) =>
       aria-describedby={describedBy('message')}
       class={controlClass('message')}
     >{values.message}</textarea>
+  </div>
+
+  <div
+    id="contact-honeypot"
+    aria-hidden="true"
+    class="absolute -left-[10000px] top-auto h-px w-px overflow-hidden"
+  >
+    <label id="contact-website-label" for="contact-website">
+      {dictionary.contactHoneypotLabel}
+    </label>
+    <input
+      id="contact-website"
+      name="website"
+      type="text"
+      tabindex="-1"
+      autocomplete="off"
+    />
   </div>
 
   <div class="max-w-full overflow-x-auto">

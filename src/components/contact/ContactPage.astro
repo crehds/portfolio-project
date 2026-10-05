@@ -3,6 +3,8 @@ import type { ContactPageState } from '../../modules/contact/page-state';
 import type { DirectContactLink } from '../../modules/profile/domain/direct-contact-links';
 import { localeOfPathname, pathnameInLocale } from '../../shared/i18n/paths';
 import { getDictionary } from '../../shared/i18n/ui';
+import ContactAlert from './ContactAlert.astro';
+import ContactFallback from './ContactFallback.astro';
 import ContactForm from './ContactForm.astro';
 import DirectContactLinks from './DirectContactLinks.astro';
 
@@ -30,6 +32,10 @@ if (state.kind === 'form' && !siteKey) {
     'The contact form needs the Turnstile site key: the page root shows it only when the Worker is configured.',
   );
 }
+
+// An alert and the notice that replaces the form carry the email and WhatsApp links
+// themselves; the list below the form is for a page that has neither.
+const showsOtherWays = state.kind === 'form' && !state.alert;
 ---
 
 <div class="flex max-w-[70ch] flex-col gap-8">
@@ -53,6 +59,10 @@ if (state.kind === 'form' && !siteKey) {
     </div>
   )}
 
+  {state.kind === 'form' && state.alert && (
+    <ContactAlert alert={state.alert} links={links} />
+  )}
+
   {state.kind === 'form' && siteKey && (
     <ContactForm
       locale={locale}
@@ -62,7 +72,15 @@ if (state.kind === 'form' && !siteKey) {
     />
   )}
 
-  {state.kind !== 'sent' && (
+  {state.kind === 'fallback' && (
+    <ContactFallback
+      message={state.message}
+      failed={state.errorTitle}
+      links={links}
+    />
+  )}
+
+  {showsOtherWays && (
     <section aria-labelledby="contact-other-ways" class="flex flex-col gap-3">
       <h2 id="contact-other-ways">{dictionary.contactOtherWaysHeading}</h2>
       <DirectContactLinks links={links} />

@@ -92,6 +92,15 @@ function hasId(html: string, id: string): boolean {
   return new RegExp(`\\bid="${id}"`).test(html);
 }
 
+/** The markup between the tags of the element with this id. */
+function innerHtmlOf(html: string, id: string): string {
+  const open = openingTag(html, id);
+  const name = /^<([a-z0-9]+)/.exec(open)?.[1] ?? '';
+  const start = html.indexOf(open) + open.length;
+
+  return html.slice(start, html.indexOf(`</${name}>`, start));
+}
+
 /** The text of the element with this id: tags removed, spaces collapsed, entities decoded. */
 function textOf(html: string, id: string): string {
   const open = openingTag(html, id);
@@ -463,5 +472,236 @@ describe.each(LOCALES)('the success page (%s)', (locale) => {
 
     expect(html).not.toContain('<form');
     expect(html).not.toContain('challenges.cloudflare.com');
+  });
+});
+
+describe.each(LOCALES)('an alert above the form (%s)', (locale) => {
+  const dictionary = getDictionary(locale);
+  const alerts = [
+    ['verification_failed', 'contactAlertVerificationFailed', 400],
+    ['rate_limited', 'contactAlertRateLimited', 429],
+    ['invalid_request', 'contactAlertInvalidRequest', 400],
+    ['too_large', 'contactAlertTooLarge', 413],
+  ] as const;
+
+  const withAlert = (
+    alert: (typeof alerts)[number][0],
+    status: 400 | 413 | 429,
+  ) =>
+    form({
+      status,
+      errorTitle: true,
+      alert,
+      values: { name: 'Ada', email: 'ada@example.com', message: 'Keep me' },
+    });
+
+  it.each(alerts)(
+    'says what %s means, in the visitor’s language, as an alert',
+    async (alert, key, status) => {
+      const html = await render(withAlert(alert, status), locale);
+
+      expect(openingTag(html, 'contact-alert')).toContain('role="alert"');
+      expect(textOf(html, 'contact-alert')).toContain(dictionary[key]);
+    },
+  );
+
+  it.each(alerts)(
+    'offers email and WhatsApp inside the alert (%s)',
+    async (alert, _key, status) => {
+      const html = await render(withAlert(alert, status), locale);
+      const inAlert = innerHtmlOf(html, 'contact-alert');
+
+      expect(inAlert).toContain('href="mailto:carlos15erh@gmail.com"');
+      expect(inAlert).toContain('href="https://wa.me/51970791041"');
+    },
+  );
+
+  it('does not list the other ways a second time below the form', async () => {
+    const html = await render(withAlert('verification_failed', 400), locale);
+
+    expect(hasId(html, 'contact-other-ways')).toBe(false);
+    expect(html.match(/href="mailto:/g)).toHaveLength(1);
+  });
+
+  it('keeps the form below the alert, with what was typed in it', async () => {
+    const html = await render(withAlert('rate_limited', 429), locale);
+
+    expect(html.indexOf('id="contact-alert"')).toBeLessThan(
+      html.indexOf('<form'),
+    );
+    expect(openingTag(html, 'contact-name')).toContain('value="Ada"');
+    expect(textOf(html, 'contact-message')).toBe('Keep me');
+    expect(html).toContain(`data-sitekey="${SITE_KEY}"`);
+  });
+
+  it('shows no alert for a form that only has fields to correct', async () => {
+    const html = await render(
+      form({ status: 400, fieldErrors: { name: 'required' } }),
+      locale,
+    );
+
+    expect(hasId(html, 'contact-alert')).toBe(false);
+  });
+});
+
+describe.each(LOCALES)('the fallback notice (%s)', (locale) => {
+  const dictionary = getDictionary(locale);
+  const failed: Shown = {
+    kind: 'fallback',
+    status: 503,
+    errorTitle: true,
+    cause: 'unavailable',
+    message: 'Hello <b>there</b>,\nplease write back.',
+  };
+
+  it('puts the notice in the form’s place: no form, no Turnstile, no field', async () => {
+    const html = await render(failed, locale);
+
+    expect(html).not.toContain('<form');
+    expect(html).not.toContain('challenges.cloudflare.com');
+    expect(hasId(html, 'contact-name')).toBe(false);
+    expect(html).not.toContain('name="website"');
+  });
+
+  it('says the form is not available and points to email and WhatsApp', async () => {
+    const html = await render(failed, locale);
+
+    expect(textOf(html, 'contact-fallback-heading')).toBe(
+      dictionary.contactFallbackHeading,
+    );
+    const inNotice = innerHtmlOf(html, 'contact-fallback');
+    expect(inNotice).toContain('href="mailto:carlos15erh@gmail.com"');
+    expect(inNotice).toContain('href="https://wa.me/51970791041"');
+    expect(html.match(/href="mailto:/g)).toHaveLength(1);
+  });
+
+  it('is an alert when it answers a submission that failed', async () => {
+    const html = await render(failed, locale);
+
+    expect(openingTag(html, 'contact-fallback')).toContain('role="alert"');
+  });
+
+  it('tells the visitor their message was not sent and where to copy it from', async () => {
+    const html = await render(failed, locale);
+
+    expect(textOf(html, 'contact-fallback')).toContain(
+      dictionary.contactFallbackBodyKept,
+    );
+  });
+
+  it('gives the message back in a labelled, read-only text area, escaped', async () => {
+    const html = await render(failed, locale);
+
+    expect(textOf(html, 'contact-fallback-message-label')).toBe(
+      dictionary.contactFallbackMessageLabel,
+    );
+    const area = openingTag(html, 'contact-fallback-message');
+    expect(area).toMatch(/^<textarea/);
+    expect(area).toMatch(/\sreadonly\b/);
+    expect(html).toContain(
+      'Hello &lt;b&gt;there&lt;/b&gt;,\nplease write back.</textarea>',
+    );
+    expect(html).not.toContain('<b>there</b>');
+  });
+
+  it.each(['delivery_failed', 'unavailable'] as const)(
+    'is the same notice whatever the cause (%s)',
+    async (cause) => {
+      const html = await render({ ...failed, cause }, locale);
+
+      expect(textOf(html, 'contact-fallback-heading')).toBe(
+        dictionary.contactFallbackHeading,
+      );
+      expect(hasId(html, 'contact-fallback-message')).toBe(true);
+    },
+  );
+
+  describe('when the Worker is not configured and nobody has written anything', () => {
+    const notConfigured: Shown = {
+      kind: 'fallback',
+      status: 200,
+      errorTitle: false,
+      cause: 'not_configured',
+      message: '',
+    };
+
+    it('shows the notice without a message to copy', async () => {
+      const html = await render(notConfigured, locale);
+
+      expect(textOf(html, 'contact-fallback')).toContain(
+        dictionary.contactFallbackBody,
+      );
+      expect(textOf(html, 'contact-fallback')).not.toContain(
+        dictionary.contactFallbackBodyKept,
+      );
+      expect(hasId(html, 'contact-fallback-message')).toBe(false);
+    });
+
+    it('is not an alert: nothing went wrong for this visitor', async () => {
+      const html = await render(notConfigured, locale);
+
+      expect(openingTag(html, 'contact-fallback')).not.toContain('role=');
+    });
+  });
+
+  it('shows no text area for a message that is only white space', async () => {
+    const html = await render({ ...failed, message: '  \n\t ' }, locale);
+
+    expect(hasId(html, 'contact-fallback-message')).toBe(false);
+    expect(textOf(html, 'contact-fallback')).toContain(
+      dictionary.contactFallbackBody,
+    );
+  });
+});
+
+describe.each(LOCALES)('the honeypot (%s)', (locale) => {
+  const dictionary = getDictionary(locale);
+
+  it('is a text field named website that people never see: hidden from assistive technology and out of the tab order', async () => {
+    const html = await render(form(), locale);
+
+    expect(openingTag(html, 'contact-honeypot')).toContain(
+      'aria-hidden="true"',
+    );
+    const input = openingTag(html, 'contact-website');
+    expect(input).toContain('name="website"');
+    expect(input).toContain('type="text"');
+    expect(input).toContain('tabindex="-1"');
+    expect(input).toContain('autocomplete="off"');
+    expect(textOf(html, 'contact-website-label')).toBe(
+      dictionary.contactHoneypotLabel,
+    );
+  });
+
+  it('is taken off screen, never removed with display: none, which a bot could skip', async () => {
+    const html = await render(form(), locale);
+
+    const wrapper = openingTag(html, 'contact-honeypot');
+    const classes = (attributeOf(wrapper, 'class') ?? '').split(/\s+/);
+    // `hidden` (Tailwind) is `display: none`; `invisible` is `visibility: hidden`. Neither.
+    expect(classes).not.toContain('hidden');
+    expect(classes).not.toContain('invisible');
+    expect(wrapper).not.toMatch(/\shidden[\s>=]/);
+    expect(wrapper).not.toContain('display');
+    // Positioned far to the left of the page instead.
+    expect(classes).toContain('absolute');
+    expect(classes.some((name) => name.startsWith('-left-['))).toBe(true);
+  });
+
+  it('is empty when the page is served, so a person who never sees it sends nothing in it', async () => {
+    const html = await render(form(), locale);
+
+    expect(openingTag(html, 'contact-website')).not.toMatch(/\svalue=/);
+  });
+
+  it('is part of the form that posts, after the visible fields', async () => {
+    const html = await render(form(), locale);
+
+    expect(html.indexOf('id="contact-honeypot"')).toBeGreaterThan(
+      html.indexOf('id="contact-message"'),
+    );
+    expect(html.indexOf('id="contact-honeypot"')).toBeLessThan(
+      html.indexOf('</form>'),
+    );
   });
 });

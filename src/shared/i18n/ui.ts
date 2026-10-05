@@ -91,6 +91,20 @@ const en = {
   contactSentMessage:
     'Your message was sent. Thank you! I will reply to the address you gave me as soon as I can.',
   contactSentAnother: 'Send another message',
+  contactHoneypotLabel: 'Leave this field empty',
+  contactAlertVerificationFailed:
+    'The spam check did not pass, so your message was not sent. Please try again, or write to me by email or WhatsApp.',
+  contactAlertRateLimited:
+    'You have sent several messages in a short time, so this one was not sent. Please wait a minute and try again, or write to me by email or WhatsApp.',
+  contactAlertInvalidRequest:
+    'The form could not be processed, so your message was not sent. Please try again, or write to me by email or WhatsApp.',
+  contactAlertTooLarge:
+    'Your message is too large to send, so it was not sent. Please shorten it, or write to me by email or WhatsApp.',
+  contactFallbackHeading: 'The form is not available right now',
+  contactFallbackBody: 'Please write to me by email or WhatsApp instead.',
+  contactFallbackBodyKept:
+    'Your message was not sent. Please write to me by email or WhatsApp instead; your message is below so you can copy it.',
+  contactFallbackMessageLabel: 'Your message, to copy',
 };
 
 export type UiDictionary = typeof en;
@@ -179,6 +193,21 @@ const es: UiDictionary = {
   contactSentMessage:
     'Tu mensaje fue enviado. ¡Gracias! Te responderé a la dirección que me indicaste lo antes posible.',
   contactSentAnother: 'Enviar otro mensaje',
+  contactHoneypotLabel: 'Deja este campo vacío',
+  contactAlertVerificationFailed:
+    'La verificación contra spam no se superó, así que tu mensaje no se envió. Inténtalo de nuevo, o escríbeme por correo electrónico o WhatsApp.',
+  contactAlertRateLimited:
+    'Has enviado varios mensajes en poco tiempo, así que este no se envió. Espera un minuto e inténtalo de nuevo, o escríbeme por correo electrónico o WhatsApp.',
+  contactAlertInvalidRequest:
+    'No se pudo procesar el formulario, así que tu mensaje no se envió. Inténtalo de nuevo, o escríbeme por correo electrónico o WhatsApp.',
+  contactAlertTooLarge:
+    'Tu mensaje es demasiado grande para enviarlo, así que no se envió. Acórtalo, o escríbeme por correo electrónico o WhatsApp.',
+  contactFallbackHeading: 'El formulario no está disponible por ahora',
+  contactFallbackBody:
+    'Por favor, escríbeme por correo electrónico o WhatsApp.',
+  contactFallbackBodyKept:
+    'Tu mensaje no se envió. Por favor, escríbeme por correo electrónico o WhatsApp; tu mensaje está abajo para que puedas copiarlo.',
+  contactFallbackMessageLabel: 'Tu mensaje, para copiarlo',
 };
 
 const dictionaries: Record<Locale, UiDictionary> = { en, es };

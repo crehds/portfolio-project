@@ -125,6 +125,37 @@ export const test = base.extend<ContactFixtures>({
 });
 
 /**
+ * Runs `attempt` again, up to `attempts` times, when the connection is reset or the answer
+ * is a server error. Meant for a post the server refuses from its headers alone, such as a
+ * body past the size limit: it answers 413 without reading the upload, and the local preview
+ * server (the Cloudflare plugin's proxy to Miniflare) sometimes fails while the client is
+ * still sending it, in about one post in eighty: the client sees the connection reset, or
+ * once in a while a 500. Production has no such proxy. Only those two outcomes are retried:
+ * any other answer, a wrong 4xx or a 200 included, is returned as it is, and a server error
+ * that persists through every attempt is returned too, and fails the test.
+ */
+export async function retryOnProxyFailure(
+  attempt: () => Promise<APIResponse>,
+  attempts = 5,
+): Promise<APIResponse> {
+  for (let tried = 1; ; tried += 1) {
+    try {
+      const response = await attempt();
+      if (response.status() < 500 || tried >= attempts) {
+        return response;
+      }
+    } catch (error) {
+      const reset =
+        error instanceof Error &&
+        /aborted|ECONNRESET|socket hang up/i.test(error.message);
+      if (!reset || tried >= attempts) {
+        throw error;
+      }
+    }
+  }
+}
+
+/**
  * Sets the token the widget stub puts in the form of pages this page loads from now on:
  * a string, or `null` for a widget that never produced one. A later call wins.
  */

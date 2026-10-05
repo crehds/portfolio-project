@@ -16,6 +16,7 @@ import {
   upstreamClient,
   type FakeUpstreams,
 } from './support/fake-upstreams';
+import { waitForRateLimitWindow } from './support/rate-limit-window';
 import { EMAILJS_PATH, TURNSTILE_PATH, UPSTREAM_ORIGIN } from './support/ports';
 
 // The harness is what keeps the end-to-end tests from ever reaching a real provider, so it
@@ -202,6 +203,71 @@ test.describe('the fake upstreams', () => {
     await expect(startFakeUpstreams({ port })).rejects.toThrow(
       /already in use|EADDRINUSE/,
     );
+  });
+});
+
+test.describe('waitForRateLimitWindow', () => {
+  // Miniflare's local rate limiter counts in fixed windows aligned to the wall clock (the
+  // window of `now` is `floor(now / period)`), so a burst that straddles a minute boundary
+  // starts over in the middle of it: four posts in a row can all be let through. A test that
+  // needs the fourth refused first waits for a window with enough of its minute left.
+  const MINUTE = 60_000;
+
+  test('does not wait when enough of the minute is left', async () => {
+    const slept: number[] = [];
+
+    await waitForRateLimitWindow(15_000, {
+      now: () => 10 * MINUTE + 20_000,
+      sleep: async (ms) => {
+        slept.push(ms);
+      },
+    });
+
+    expect(slept).toEqual([]);
+  });
+
+  test('waits for the next window, and a little longer, when too little of the minute is left', async () => {
+    const slept: number[] = [];
+
+    await waitForRateLimitWindow(15_000, {
+      now: () => 10 * MINUTE + 50_000,
+      sleep: async (ms) => {
+        slept.push(ms);
+      },
+    });
+
+    // 10 s left in this window: sleep through them and past the boundary.
+    expect(slept).toHaveLength(1);
+    expect(slept[0]).toBeGreaterThanOrEqual(10_000);
+    expect(slept[0]).toBeLessThan(11_000);
+  });
+
+  test('treats the last instant of a window like any other late moment', async () => {
+    const slept: number[] = [];
+
+    await waitForRateLimitWindow(15_000, {
+      now: () => 10 * MINUTE + 59_999,
+      sleep: async (ms) => {
+        slept.push(ms);
+      },
+    });
+
+    expect(slept).toHaveLength(1);
+    expect(slept[0]).toBeGreaterThanOrEqual(1);
+    expect(slept[0]).toBeLessThan(1_000);
+  });
+
+  test('does not wait at the very start of a window', async () => {
+    const slept: number[] = [];
+
+    await waitForRateLimitWindow(15_000, {
+      now: () => 10 * MINUTE,
+      sleep: async (ms) => {
+        slept.push(ms);
+      },
+    });
+
+    expect(slept).toEqual([]);
   });
 });
 

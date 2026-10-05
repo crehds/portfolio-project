@@ -1,9 +1,11 @@
 import {
   ACTION_QUERY,
   expect,
+  retryOnProxyFailure,
   test,
   widgetRenders,
 } from './support/contact-test';
+import { COPY } from './support/contact-copy';
 import { turnstileToken } from './support/fake-upstreams';
 
 // The contact form against the real Worker (a build with the fake providers, see
@@ -14,47 +16,7 @@ import { turnstileToken } from './support/fake-upstreams';
 
 const SITE_KEY = '1x00000000000000000000BB';
 
-const locales = [
-  {
-    lang: 'en',
-    path: '/contact/',
-    sentPath: '/contact/?sent=1',
-    name: 'Name',
-    email: 'Email address',
-    message: 'Message',
-    submit: 'Send message',
-    sent: 'Your message was sent. Thank you!',
-    another: 'Send another message',
-    summary: 'There is a problem with the form',
-    errorWord: 'Error:',
-    nameRequired: 'Enter your name.',
-    emailRequired: 'Enter your email address.',
-    emailInvalid: 'Enter a valid email address, like name@example.com.',
-    messageRequired: 'Enter a message.',
-    title: 'Contact — Carlos Rodríguez Huerta',
-  },
-  {
-    lang: 'es',
-    path: '/es/contact/',
-    sentPath: '/es/contact/?sent=1',
-    name: 'Nombre',
-    email: 'Correo electrónico',
-    message: 'Mensaje',
-    submit: 'Enviar mensaje',
-    sent: 'Tu mensaje fue enviado. ¡Gracias!',
-    another: 'Enviar otro mensaje',
-    summary: 'Hay un problema con el formulario',
-    errorWord: 'Error:',
-    nameRequired: 'Escribe tu nombre.',
-    emailRequired: 'Escribe tu correo electrónico.',
-    emailInvalid:
-      'Escribe un correo electrónico válido, como nombre@ejemplo.com.',
-    messageRequired: 'Escribe un mensaje.',
-    title: 'Contacto — Carlos Rodríguez Huerta',
-  },
-];
-
-for (const L of locales) {
+for (const L of COPY) {
   test.describe(`the contact form in the browser (${L.lang})`, () => {
     test('shows a form with a labelled field for each thing it asks', async ({
       page,
@@ -381,7 +343,7 @@ test.describe('Turnstile’s script', () => {
 });
 
 test.describe('posting the form to the page', () => {
-  for (const L of locales) {
+  for (const L of COPY) {
     test(`answers a valid post with a 303 to the page’s own success address (${L.lang})`, async ({
       submit,
       marker,
@@ -498,9 +460,11 @@ test.describe('posting the form to the page', () => {
     marker,
     upstream,
   }) => {
-    const response = await submit({
-      fields: { message: `${marker} ${'x'.repeat(40 * 1024)}` },
-    });
+    const response = await retryOnProxyFailure(() =>
+      submit({
+        fields: { message: `${marker} ${'x'.repeat(40 * 1024)}` },
+      }),
+    );
 
     expect(response.status()).toBe(413);
     expect(response.headers()['content-type']).toContain('text/html');
@@ -585,10 +549,12 @@ test.describe('the Action’s own address, /_actions/contact', () => {
     marker,
     upstream,
   }) => {
-    const response = await submit({
-      path: rpc,
-      fields: { message: `${marker} ${'x'.repeat(40 * 1024)}` },
-    });
+    const response = await retryOnProxyFailure(() =>
+      submit({
+        path: rpc,
+        fields: { message: `${marker} ${'x'.repeat(40 * 1024)}` },
+      }),
+    );
 
     expect(response.status()).toBe(413);
     expect((await response.json()).code).toBe('CONTENT_TOO_LARGE');
