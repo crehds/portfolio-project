@@ -85,7 +85,31 @@ describe('getDictionary', () => {
       contactPageDescription:
         'Get in touch with Carlos Rodríguez Huerta, full-stack web developer: a contact form, email and WhatsApp.',
       contactPageHeading: 'Contact',
+      contactLead:
+        'Send me a message with this form, or reach me directly by email or WhatsApp. I will reply to the address you give me.',
       contactOtherWaysHeading: 'Other ways to reach me',
+      contactFormNameLabel: 'Name',
+      contactFormEmailLabel: 'Email address',
+      contactFormMessageLabel: 'Message',
+      contactFormSubmit: 'Send message',
+      contactErrorPrefix: 'Error:',
+      contactErrorSummaryHeading: 'There is a problem with the form',
+      contactErrorNameRequired: 'Enter your name.',
+      contactErrorNameTooLong: 'Your name must be {limit} characters or fewer.',
+      contactErrorNameInvalid:
+        'Your name cannot contain line breaks or other control characters.',
+      contactErrorEmailRequired: 'Enter your email address.',
+      contactErrorEmailInvalid:
+        'Enter a valid email address, like name@example.com.',
+      contactErrorEmailTooLong:
+        'Your email address must be {limit} characters or fewer.',
+      contactErrorMessageRequired: 'Enter a message.',
+      contactErrorMessageTooLong:
+        'Your message must be {limit} characters or fewer.',
+      contactErrorInvalidValue: 'This value cannot be used.',
+      contactSentMessage:
+        'Your message was sent. Thank you! I will reply to the address you gave me as soon as I can.',
+      contactSentAnother: 'Send another message',
     });
   });
 
@@ -149,7 +173,32 @@ describe('getDictionary', () => {
       contactPageDescription:
         'Ponte en contacto con Carlos Rodríguez Huerta, desarrollador web full-stack: formulario de contacto, correo electrónico y WhatsApp.',
       contactPageHeading: 'Contacto',
+      contactLead:
+        'Envíame un mensaje con este formulario, o escríbeme directamente por correo electrónico o WhatsApp. Responderé a la dirección que me indiques.',
       contactOtherWaysHeading: 'Otras formas de contactarme',
+      contactFormNameLabel: 'Nombre',
+      contactFormEmailLabel: 'Correo electrónico',
+      contactFormMessageLabel: 'Mensaje',
+      contactFormSubmit: 'Enviar mensaje',
+      contactErrorPrefix: 'Error:',
+      contactErrorSummaryHeading: 'Hay un problema con el formulario',
+      contactErrorNameRequired: 'Escribe tu nombre.',
+      contactErrorNameTooLong:
+        'Tu nombre debe tener {limit} caracteres o menos.',
+      contactErrorNameInvalid:
+        'Tu nombre no puede contener saltos de línea ni otros caracteres de control.',
+      contactErrorEmailRequired: 'Escribe tu correo electrónico.',
+      contactErrorEmailInvalid:
+        'Escribe un correo electrónico válido, como nombre@ejemplo.com.',
+      contactErrorEmailTooLong:
+        'Tu correo electrónico debe tener {limit} caracteres o menos.',
+      contactErrorMessageRequired: 'Escribe un mensaje.',
+      contactErrorMessageTooLong:
+        'Tu mensaje debe tener {limit} caracteres o menos.',
+      contactErrorInvalidValue: 'Este valor no se puede usar.',
+      contactSentMessage:
+        'Tu mensaje fue enviado. ¡Gracias! Te responderé a la dirección que me indicaste lo antes posible.',
+      contactSentAnother: 'Enviar otro mensaje',
     });
   });
 });
