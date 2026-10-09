@@ -3,8 +3,9 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { expect, test } from '@playwright/test';
+import { expect, test, type APIRequestContext } from '@playwright/test';
 
+import { retryOnProxyFailure } from './support/contact-test';
 import {
   assertHermeticBuild,
   assertServerReadsE2eSettings,
@@ -392,6 +393,129 @@ test.describe('waitForRateLimitWindow', () => {
     });
 
     expect(slept).toEqual([]);
+  });
+});
+
+test.describe('retryOnProxyFailure', () => {
+  // The preview proxy sometimes fails a post the Worker refuses from its headers alone (see
+  // contact-test.ts), and the retry hides that from the test that made it. So a retry must
+  // leave a trace of its own: an annotation on the test and a warning on the console.
+  type Answer = number | 'reset';
+
+  /**
+   * A server on a port of its own that answers its requests as `script` says, one answer
+   * for each request and a 200 after the last: a number is the status, `'reset'` closes the
+   * connection with no answer, the way the proxy fails.
+   */
+  async function serving(script: readonly Answer[]) {
+    let requests = 0;
+    const server = createServer((request, response) => {
+      const answer = script[requests] ?? 200;
+      requests += 1;
+      if (answer === 'reset') {
+        request.socket.destroy();
+        return;
+      }
+      response.writeHead(answer).end();
+    });
+    await new Promise<void>((resolve) =>
+      server.listen(0, '127.0.0.1', resolve),
+    );
+
+    return {
+      url: `http://127.0.0.1:${(server.address() as AddressInfo).port}/`,
+      requests: () => requests,
+      close: () =>
+        new Promise<void>((resolve) => {
+          server.close(() => resolve());
+          server.closeAllConnections();
+        }),
+    };
+  }
+
+  /**
+   * Runs `retryOnProxyFailure` on a GET of a server that answers as `script` says, and
+   * reports what came of it: the final status, how many requests the server saw, and the
+   * warnings the retries wrote to the console.
+   */
+  async function runAgainst(request: APIRequestContext, script: Answer[]) {
+    const server = await serving(script);
+    const warnings: string[] = [];
+    const warn = console.warn;
+    console.warn = (message: unknown) => {
+      warnings.push(String(message));
+    };
+
+    try {
+      const response = await retryOnProxyFailure(() => request.get(server.url));
+      return {
+        status: response.status(),
+        requests: server.requests(),
+        warnings,
+      };
+    } finally {
+      console.warn = warn;
+      await server.close();
+    }
+  }
+
+  test('leaves one annotation and one warning for a request that fails once and then succeeds', async ({
+    request,
+  }) => {
+    const outcome = await runAgainst(request, [500]);
+
+    expect(outcome).toEqual({
+      status: 200,
+      requests: 2,
+      warnings: [
+        'retryOnProxyFailure: attempt 1 of 5 failed: HTTP 500; trying again',
+      ],
+    });
+    expect(test.info().annotations).toEqual([
+      { type: 'proxy-retry', description: 'attempt 1 of 5 failed: HTTP 500' },
+    ]);
+  });
+
+  test('names the keyword of the error when the connection is reset', async ({
+    request,
+  }) => {
+    const outcome = await runAgainst(request, ['reset']);
+
+    expect(outcome).toMatchObject({ status: 200, requests: 2 });
+    expect(outcome.warnings).toHaveLength(1);
+    expect(test.info().annotations).toHaveLength(1);
+    expect(test.info().annotations[0]).toMatchObject({
+      type: 'proxy-retry',
+      description: expect.stringMatching(
+        /^attempt 1 of 5 failed: (socket hang up|ECONNRESET)$/i,
+      ),
+    });
+  });
+
+  test('leaves one annotation for each retried attempt, and returns the last answer when every attempt fails', async ({
+    request,
+  }) => {
+    const outcome = await runAgainst(request, [500, 500, 500, 500, 500]);
+
+    expect(outcome).toMatchObject({ status: 500, requests: 5 });
+    // The fifth attempt is not retried, so it leaves none: its answer is what fails the test.
+    expect(
+      test.info().annotations.map((annotation) => annotation.description),
+    ).toEqual([
+      'attempt 1 of 5 failed: HTTP 500',
+      'attempt 2 of 5 failed: HTTP 500',
+      'attempt 3 of 5 failed: HTTP 500',
+      'attempt 4 of 5 failed: HTTP 500',
+    ]);
+  });
+
+  test('leaves nothing for an answer it does not retry', async ({
+    request,
+  }) => {
+    const outcome = await runAgainst(request, [413]);
+
+    expect(outcome).toEqual({ status: 413, requests: 1, warnings: [] });
+    expect(test.info().annotations).toEqual([]);
   });
 });
 
