@@ -141,26 +141,49 @@ export const test = base.extend<ContactFixtures>({
  * once in a while a 500. Production has no such proxy. Only those two outcomes are retried:
  * any other answer, a wrong 4xx or a 200 included, is returned as it is, and a server error
  * that persists through every attempt is returned too, and fails the test.
+ *
+ * A retry never goes unseen: each retried attempt leaves an annotation on the test (type
+ * `proxy-retry`, shown in the HTML report) and a warning on the console, naming the attempt
+ * and its cause, the status or the keyword of the error. A proxy that fails more often than
+ * one post in eighty then shows in the report instead of passing as a clean run.
  */
 export async function retryOnProxyFailure(
   attempt: () => Promise<APIResponse>,
   attempts = 5,
 ): Promise<APIResponse> {
   for (let tried = 1; ; tried += 1) {
+    let cause: string;
+
     try {
       const response = await attempt();
       if (response.status() < 500 || tried >= attempts) {
         return response;
       }
+      cause = `HTTP ${response.status()}`;
     } catch (error) {
-      const reset =
-        error instanceof Error &&
-        /aborted|ECONNRESET|socket hang up/i.test(error.message);
-      if (!reset || tried >= attempts) {
+      const keyword =
+        error instanceof Error
+          ? /aborted|ECONNRESET|socket hang up/i.exec(error.message)?.[0]
+          : undefined;
+      if (keyword === undefined || tried >= attempts) {
         throw error;
       }
+      cause = keyword;
     }
+
+    noteRetry(tried, attempts, cause);
   }
+}
+
+/**
+ * Leaves the trace of a retried attempt: the cause only, never the message of an error,
+ * which for a failed request carries its whole call log.
+ */
+function noteRetry(tried: number, attempts: number, cause: string): void {
+  const description = `attempt ${tried} of ${attempts} failed: ${cause}`;
+
+  test.info().annotations.push({ type: 'proxy-retry', description });
+  console.warn(`retryOnProxyFailure: ${description}; trying again`);
 }
 
 /**

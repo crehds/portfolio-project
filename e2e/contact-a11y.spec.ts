@@ -77,6 +77,10 @@ const states: {
   {
     name: 'the alert for the rate limit',
     reach: async ({ page, L, marker, submit }) => {
+      // Four posts from one address (three here, then the form's) must not straddle a window
+      // of the local limiter (see waitForRateLimitWindow). No other state posts more than
+      // once, so none of them waits.
+      await waitForRateLimitWindow();
       for (let attempt = 0; attempt < 3; attempt += 1) {
         await submit();
       }
@@ -114,12 +118,6 @@ const states: {
 for (const L of COPY) {
   for (const colorScheme of ['light', 'dark'] as const) {
     test.describe(`axe on the contact page (${L.lang}, ${colorScheme})`, () => {
-      // The rate limit state sends four posts from one address, which must not straddle a
-      // window of the local limiter (see waitForRateLimitWindow).
-      test.beforeEach(async () => {
-        await waitForRateLimitWindow();
-      });
-
       for (const state of states) {
         test(`finds no violation in ${state.name}`, async ({
           page,

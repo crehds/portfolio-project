@@ -380,9 +380,11 @@ without any care on your part:
 - **Fake providers.** `e2e/support/fake-upstreams.ts` stands in for EmailJS and Turnstile on
   `127.0.0.1:4332`, started once per run by `e2e/global-setup.ts`. It records every call, so a
   test can say exactly what the Worker sent, and any request to another path is recorded as
-  unexpected. A Turnstile token steers its answer (`pass:<marker>`, `refuse:`, `duplicate:`,
-  `fault:`, `unknown-code:`, `http-500:`), and a visitor message containing `[[fake-emailjs:500]]`
-  makes the fake EmailJS answer that status.
+  unexpected. The run then fails when it ends, naming the method and path of each such request
+  and nothing else: the Worker should reach only the two endpoints `.dev.vars.e2e` names, so a
+  seam URL is wrong or the site now calls something new. A Turnstile token steers its answer
+  (`pass:<marker>`, `refuse:`, `duplicate:`, `fault:`, `unknown-code:`, `http-500:`), and a
+  visitor message containing `[[fake-emailjs:500]]` makes the fake EmailJS answer that status.
 - **A check before the first test.** `e2e/support/hermetic-guard.ts` runs in global setup, reads
   the files the server will read, and stops the whole run, listing the problems, unless
   `.dev.vars.e2e` holds nothing but test and fake values, the build targets the `e2e`

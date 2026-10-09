@@ -287,3 +287,25 @@ export function upstreamClient(origin: string) {
       (await getJson('/__unexpected')) as RecordedCall[],
   };
 }
+
+/**
+ * What the record of unexpected calls (`unexpectedCalls`) says about the run, as a list of
+ * problems: one for each method and path that was called, with how many times when it was
+ * more than once, in the order each first came. A problem names the method and the path and
+ * nothing else, since the record keeps the body of each request, and a body can hold a
+ * visitor's text or a token.
+ */
+export function unexpectedCallProblems(
+  calls: readonly RecordedCall[],
+): string[] {
+  const counts = new Map<string, number>();
+
+  for (const { method, path } of calls) {
+    const call = `${method} ${path}`;
+    counts.set(call, (counts.get(call) ?? 0) + 1);
+  }
+
+  return [...counts].map(([call, count]) =>
+    count === 1 ? call : `${call} (${count} times)`,
+  );
+}

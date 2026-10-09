@@ -365,7 +365,7 @@ describe('submitContact: Turnstile', () => {
     expect(outcome).toEqual({ kind: 'rate_limited' });
   });
 
-  it('fails a submission Turnstile rejects, and does not send', async () => {
+  it('fails a submission Turnstile refuses, and does not send', async () => {
     const { deps, verifyTurnstile, send } = fakes();
     verifyTurnstile.mockResolvedValue(false);
 
@@ -428,16 +428,16 @@ describe('submitContact: Turnstile', () => {
     },
   );
 
-  it('keeps unavailable apart from a rejected token: only a rejection of the verifier itself is unavailable', async () => {
-    const rejected = fakes();
-    rejected.verifyTurnstile.mockResolvedValue(false);
+  it('keeps unavailable apart from a refused token: only a rejection of the verifier itself is unavailable', async () => {
+    const refused = fakes();
+    refused.verifyTurnstile.mockResolvedValue(false);
     const broken = fakes();
     broken.verifyTurnstile.mockRejectedValue(
       new Error('siteverify unreachable'),
     );
 
     expect(
-      await submitContact(submission(), rejected.deps, fromCloudflare()),
+      await submitContact(submission(), refused.deps, fromCloudflare()),
     ).toEqual({ kind: 'verification_failed' });
     expect(
       await submitContact(submission(), broken.deps, fromCloudflare()),

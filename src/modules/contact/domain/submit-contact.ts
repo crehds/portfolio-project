@@ -75,10 +75,10 @@ async function withinRateLimit(
  * What asking Turnstile about a token came to:
  *
  * - `verified`: the verifier resolved `true`, and nothing else counts as that.
- * - `rejected`: the verifier answered, with anything but `true`: the token is not accepted.
+ * - `refused`: the verifier answered, with anything but `true`: the token is not accepted.
  * - `unavailable`: the verifier itself rejected or threw, so it could not say either way.
  */
-type Verification = 'verified' | 'rejected' | 'unavailable';
+type Verification = 'verified' | 'refused' | 'unavailable';
 
 /**
  * Fails closed in both ways: neither a refused token nor a verifier that cannot answer lets
@@ -92,7 +92,7 @@ async function verification(
   remoteIp: string | undefined,
 ): Promise<Verification> {
   try {
-    return (await verify(token, remoteIp)) === true ? 'verified' : 'rejected';
+    return (await verify(token, remoteIp)) === true ? 'verified' : 'refused';
   } catch (error) {
     console.error(VERIFIER_FAILED + failureSuffix(error));
     return 'unavailable';
@@ -145,7 +145,7 @@ export async function submitContact(
     return { kind: 'unavailable' };
   }
 
-  if (verdict === 'rejected') {
+  if (verdict === 'refused') {
     return { kind: 'verification_failed' };
   }
 

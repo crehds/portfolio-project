@@ -1,4 +1,8 @@
-import { startFakeUpstreams } from './support/fake-upstreams';
+import {
+  startFakeUpstreams,
+  unexpectedCallProblems,
+  upstreamClient,
+} from './support/fake-upstreams';
 import {
   assertHermeticBuild,
   assertServerReadsE2eSettings,
@@ -16,7 +20,11 @@ import { UPSTREAM_PORT } from './support/ports';
  * nothing of any provider. Only then does a test run, so a misconfigured run never reaches
  * EmailJS or Turnstile.
  *
- * It returns the function that stops the fakes when the run ends.
+ * It returns the function that ends the fakes when the run ends. It reads what they recorded
+ * for a path that is neither provider endpoint, stops them, and fails the run when there was
+ * any such call (`unexpectedCallProblems`): the Worker should reach only the two endpoints
+ * `.dev.vars.e2e` names, and a call anywhere else means a seam URL is wrong or the site now
+ * calls something new.
  */
 export default async function globalSetup(): Promise<() => Promise<void>> {
   assertHermeticBuild();
@@ -30,5 +38,20 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
     throw error;
   }
 
-  return () => upstreams.close();
+  return async () => {
+    try {
+      const problems = unexpectedCallProblems(
+        await upstreamClient(upstreams.origin).unexpectedCalls(),
+      );
+
+      if (problems.length > 0) {
+        throw new Error(
+          `The fake upstreams were called at paths that are neither the EmailJS nor the Turnstile endpoint:\n` +
+            problems.map((problem) => `  - ${problem}`).join('\n'),
+        );
+      }
+    } finally {
+      await upstreams.close();
+    }
+  };
 }
