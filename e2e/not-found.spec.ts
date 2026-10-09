@@ -146,7 +146,10 @@ for (const locale of locales) {
         await expect(page.locator('html')).toHaveAttribute('lang', other.lang);
       });
 
-      test('marks no navigation item as current', async ({ page }) => {
+      // Built for /404, so no item can match: the errorPage guard is tested in base-layout.test.ts.
+      test('has no navigation item marked as current in the built page', async ({
+        page,
+      }) => {
         await open(page, path, heading);
 
         const nav = page.getByRole('navigation', {
