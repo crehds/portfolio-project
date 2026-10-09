@@ -75,15 +75,15 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~15,124 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+- Running count: ~23,293 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
   T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321 + T08 ~1,021 + T09 ~923 + T09b ~217 +
-  T10 ~778 + T10b ~88 + T11a ~935 + T11b ~1,698 + T11c ~2,978 + T11c-b ~1,573 + T10c ~244, with tests, excluding
-  lockfiles and the legacy removal). It already passes the ~4,300 forecast, mostly from tests and the review follow-up
-  tasks.
-- Last reviewed boundary: `62f10ae` (the T11c docs `4bf66b4`, the T11c-b refinement `fc03da1` + T11c-b slice from
-  `8fef017`; the merge `3f44f9f` has the same tree). The slice from `62f10ae` (the T11c-b and T11d-decision records,
-  the T10c plan and T10c: medium, 309 lines) was assessed `under_budget` and stays open until a later commit brings it
-  to the delivery budget. Earlier, the slice from `8c0409c` (the T10 docs `1edaac9`, T10b, the T10b docs `9b0bcc4`, the T11 plan
+  T10 ~778 + T10b ~88 + T11a ~935 + T11b ~1,698 + T11c ~2,978 + T11c-b ~1,573 + T10c ~244 + T11d ~7,936, with tests,
+  excluding lockfiles and the legacy removal; the terms before T11d sum to 15,357, so the earlier total of ~15,124 was
+  an addition slip). It already passes the ~4,300 forecast, mostly from tests, the e2e harness and the review
+  follow-up tasks.
+- Last reviewed boundary: `1acfe20`, the T11d tip (the merge `4745fc1` has the same tree, `c10d368`). The open slice
+  from `62f10ae` (the T11c-b and T11d-decision records, the T10c plan, T10c and its record) was reviewed with T11d in
+  three slices (see T11d in Progress). Earlier, the slice from `8c0409c` (the T10 docs `1edaac9`, T10b, the T10b docs `9b0bcc4`, the T11 plan
   `e201a3c` and T11a up to `9ac381e`; medium, 1,184 lines) was skipped by the owner (2026-09-30); as with the legacy
   removal, the next slice started after it.
 
@@ -185,14 +185,25 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
     detail, so it is logged without printing Turnstile's text (parent, 2026-10-04). The hostname check goes to T13
     (allow `carlos15erh.workers.dev` and its subdomains). Route: delegated (writer trigger: the failure type, two
     adapters, `submitContact`, their tests and the setup docs). ~200 forecast, ~1,573 actual (tests ~1,217).
-  - [ ] **T11d** Contact page, Action and form (EN/ES), in four commits: the hermetic e2e harness (fake EmailJS and
+  - [x] **T11d** Contact page, Action and form (EN/ES), in four commits: the hermetic e2e harness (fake EmailJS and
     Turnstile server, `.dev.vars.e2e`, `CLOUDFLARE_ENV=e2e`) with the page shell, nav item and home form CTA; the action
     and form (303 to `?sent=1` on success, localized field errors with the values kept); the Turnstile widget and the
     honeypot; the no-JS and "form unavailable" notices, axe. Route: delegated. Owner, before live checks: EmailJS
     (service, template, non-browser API, keys), the Turnstile widget and keys, Worker secrets. Owner decision
     (2026-10-04): when the verifier cannot answer (an outage or a wrong secret), the visitor gets the "form
     unavailable" notice with the email and WhatsApp links, not the rejected-token message, so `submitContact` gains an
-    outcome for it (e.g. `unavailable`, with its tests).
+    outcome for it (e.g. `unavailable`, with its tests). Delivered in seven commits, the last one raising the Action
+    body limit to 64 KiB (see Progress).
+  - [ ] **T11d-b** Follow-ups from the T11d review: the six advisory findings still true at the tip, all non-blocking.
+    (1) `e2e/external-links.spec.ts` skips the accessible-name and hint checks for every link that is not visible;
+    narrow the skip to the no-JS notice's links (warning). (2) `retryOnProxyFailure` (`e2e/support/contact-test.ts`)
+    retries any 5xx up to five times, so an intermittent server error at the body limit would pass unseen; count or
+    log the retries. (3) The axe matrix waits for a fresh rate-limit window before all 32 state tests; only the
+    rate-limited state needs it. (4) The global teardown should fail the run when the fake upstreams recorded
+    unexpected calls (`e2e/global-setup.ts`). (5) Rename the `rejected` verification verdict in `submit-contact.ts`:
+    it reads like the rejected verifier promise, which means `unavailable`. (6) Share the direct-contact button
+    between `DirectContactLinks.astro` and `ContactCtas.astro` (the `LABEL_KEYS` map and the class string are copied
+    today). Route: decided at launch.
   - [ ] **T11e** 404 pages in EN and ES (`src/pages/404.astro`, `src/pages/es/404.astro`). Route: delegated.
 
 ### Phase 3 · Launch
@@ -254,7 +265,8 @@ the HTML reporter blocks the shell after a failure.
 | T11b | done (merged `a00b1bd`) | `28bcb2f` form schema with stable error codes, `781efa5` settings parser (names only) + docs, `427370f` rate-limit key from `cf-connecting-ip`, `1984ce8` `submitContact` + ports | Strict TDD: RED `Cannot find module` per module, then assertion-level RED against naive stubs (schema 49/66, config 51/67, rate-limit key 9/27, `submitContact` 30/41 failing), then GREEN; mutations caught (trim after the checks: 6 failures; email format before the trim: 11; logging the thrown error: 2; a truthy non-`true` verifier answer: 1; a fail-closed limiter: 2); scratch checks against Astro's real `defineAction({ accept: 'form' })` (field codes, trimmed values, the honeypot passed through) and `astro check` (`ActionAPIContext` fits `ContactContext`) · lint · format · `pnpm check` 0/0/0 (108 files) · `pnpm test` 455/455 · build 16 pages + Worker · `pnpm test:e2e` 131/131 · dry run unchanged · parent re-ran at the tip: check 0 errors, test 455/455 | T11a docs + T11b slice (from `9ac381e`): medium, 1,746 lines, 1 lens (reliability), approved with 0 findings (`review-0a3c27cc61ffca1d`) |
 | T11c | done (merged `dfdd1e2`) | `42e6953` control characters in `name`, `3211882` loopback-only `http:` seams, `0ece5b3` EmailJS sender + shared HTTP policy, `6db80f8` Turnstile verifier + Workers limiter, `8fef017` `createContactDeps` + owner setup docs | Strict TDD: RED `Cannot find module` per adapter, then assertion-level RED against naive stubs (name 17 failing, seams 32, EmailJS 60/68, Turnstile 85/98, limiter 16/29, wiring 19/54), then GREEN; mutations caught (a plain `.refine` instead of the pipe: the code-order test; a raw-text host match: 16; `!response.ok` instead of `status !== 200`: 201/202/204/206; the message spread into `template_params`: 2; no `redirect`, timeout or no-`cause` rule: 9; four Turnstile mutations: 15; a lenient limiter answer or a detached `limit` call: 10; no `fetchImpl` or no binding check: 27); a short non-JSON body caught the parser's error text quoting the body · lint · format · `pnpm check` 0/0/0 (118 files) · `pnpm test` 793/793 in 38 files · build 16 pages + Worker · `pnpm test:e2e` 131/131 · dry run unchanged · parent readback of every adapter file and the schema/config diffs; parent re-ran: check 0 errors, test 793/793; the merge tree equals the reviewed tree (`7d9a216`) | T11b docs + T11c slice (from `1984ce8`): medium, 3,023 lines, 1 lens (reliability), approved with 0 findings (`review-c6c375c4f8a6bf8c`) |
 | T11c-b | done (merged `3f44f9f`) | `4f1752c` the HTTP status in the log line (`ProviderFailure` + `failureSuffix`), `a27c50c` Turnstile fault codes reject, `62f10ae` unknown codes reject without detail (parent follow-up) | Strict TDD: RED `Cannot find module './provider-failure'`, then a naive stub (25/44 failing); EmailJS status 25/71, Turnstile status 18/103, `submitContact` suffix 4, composed 5 (production files stashed); the fault codes test-first, 64 failing; the unknown codes 23 failing; then GREEN; mutations caught (logging `error.message`: 60; a suffix on the limiter line: 1; duck typing instead of `instanceof`: 25; no re-check in `failureSuffix`: 10; a constructor keeping any value or both details: 24; ignoring the priority order: 9; a token code beside a fault code read as a "no": 3; the fault check before `success: true`: 4; `String(errorCodes).includes`: 4; a `cause`: 9; the unknown code in the message: 18, as a property: 7, and also logged through `error.message`: 55; the unknown check before the fault check: 6; non-strings as unknown: 2; lenient matching: 4) · lint · format · `pnpm check` 0/0/0 (120 files) · `pnpm test` 1013/1013 in 39 files · build 16 pages + Worker · `pnpm test:e2e` 131/131 · dry run unchanged · parent readback of the production diffs and the docs; Cloudflare's Siteverify table re-checked (rendered page and raw source: exactly 7 codes); parent re-ran: check 0/0/0 (120 files), test 1013/1013; the merge tree equals the reviewed tree (`8c65a64`) | T11c docs + T11c-b slice (from `8fef017`): medium, 1,637 lines, 1 lens (reliability), approved with 0 findings (`review-40b8486602bfae27`) |
-| T10c | done (merged `37afe00`) | `ae999ab` the `isExternalHref` rule, `ed190c5` the `linkOpensInNewTab` hint in both dictionaries, `827036f` `Link.astro` and the migrated anchors (footer GitHub/LinkedIn, project card and page live/repo links, every home CTA) | Strict TDD: RED `Cannot find module`, then a naive `startsWith` stub (2/19 failing: `HTTPS://EXAMPLE.COM/`, a bare `https://`); dictionary pin 47 vs 48 keys in both locales; the new e2e spec 10/20 failing before the component (`target … Expected "_blank", Received ""`), then GREEN; mutations caught (no `rel`: 10; a `target` on the `mailto:` CTA: 2; no space before the hint: 10, caught by the text check; a visible hint: 10; a plain repository anchor again: 4; the hint always in English: 5; the hint hidden with `display: none`: 10) · lint · format · `pnpm check` 0/0/0 (124 files) · `pnpm test` 1032/1032 in 40 files · build 16 pages · `pnpm test:e2e` 151/151 · dry run unchanged · 40 full-page screenshots (10 pages, 1280 and 390 px, both themes) byte-identical to the base build · parent readback of the production diff; parent re-ran: check 0/0/0 (124 files), test 1032/1032; the merge tree equals the writer's tree (`7c6a402`) | Slice from `62f10ae` (records + T10c): medium, 309 lines, `under_budget`, not due; it stays open for the next commits |
+| T10c | done (merged `37afe00`) | `ae999ab` the `isExternalHref` rule, `ed190c5` the `linkOpensInNewTab` hint in both dictionaries, `827036f` `Link.astro` and the migrated anchors (footer GitHub/LinkedIn, project card and page live/repo links, every home CTA) | Strict TDD: RED `Cannot find module`, then a naive `startsWith` stub (2/19 failing: `HTTPS://EXAMPLE.COM/`, a bare `https://`); dictionary pin 47 vs 48 keys in both locales; the new e2e spec 10/20 failing before the component (`target … Expected "_blank", Received ""`), then GREEN; mutations caught (no `rel`: 10; a `target` on the `mailto:` CTA: 2; no space before the hint: 10, caught by the text check; a visible hint: 10; a plain repository anchor again: 4; the hint always in English: 5; the hint hidden with `display: none`: 10) · lint · format · `pnpm check` 0/0/0 (124 files) · `pnpm test` 1032/1032 in 40 files · build 16 pages · `pnpm test:e2e` 151/151 · dry run unchanged · 40 full-page screenshots (10 pages, 1280 and 390 px, both themes) byte-identical to the base build · parent readback of the production diff; parent re-ran: check 0/0/0 (124 files), test 1032/1032; the merge tree equals the writer's tree (`7c6a402`) | Slice from `62f10ae` (records + T10c): medium, 309 lines, `under_budget`, not due; reviewed with T11d (slice A, see T11d) |
+| T11d | done (merged `4745fc1`) | `ba08701` `unavailable` outcome, `00d272b` page shell + hermetic e2e harness, `23beec4` pure page-state core, `d43c37e` Action + form + Turnstile widget, `b854657` honeypot + every failure state, `a41099a` no-JS notice + the guard's runtime half + axe + layout, `1acfe20` Action body limit 64 KiB (parent follow-up) | Writer, final verification on `1acfe20`: lint · format · `pnpm check` 0 errors · `pnpm test` 1255/1255 in 48 files · `pnpm test:e2e` 383/383 three times · plain build · dry run: `CV_BUCKET`, `CONTACT_RATE_LIMIT` (3 per 60 s), `ASSETS`. The body limit test-first: unit RED (missing module), e2e RED against 32 KiB (8 failed, 1 passed), then GREEN 9/9, 25 repeats 225/225, 4 unit mutations caught; RED evidence for the first six commits is not in this record or in Engram · parent re-ran on `1acfe20` (2026-10-08): lint, format, check 0/0/0 (164 files), test 1255/1255 in 48 files, e2e 383/383 in 39.9 s, tree clean; the merge tree equals the reviewed and tested tree (`c10d368`) | The open slice from `62f10ae` plus T11d (72 files, 7,946 lines, ~361 KB of diff, high) was about three times the largest slice that has passed (T11c, ~125 KB), so it was reviewed in three slices of that size: A `62f10ae..00d272b` (records, T10c, `unavailable`, harness; high: CI shell; 41 files, 2,276 lines; 4 lenses; approved, `review-38f3aaca5c3c29e4`, 6 advisory findings), B `00d272b..d43c37e` (medium; 24 files, 3,239 lines; 1 lens, reliability; approved, `review-a045570c6bf420f1`, 3 advisory findings), C `d43c37e..1acfe20` (medium; 29 files, 2,709 lines; 1 lens, reliability; approved, `review-e737fc673b43fc0e`, 3 advisory findings). 0 blocking findings; all three granted by the owner and acknowledged. 6 of the 12 findings were already fixed by later commits (A: the 32 KiB body limit, 2 warnings, and a dangling spec reference; B: the alert and the fallback notice not rendered, 2 warnings, and their render tests); the 6 still true at the tip became T11d-b |
 
 ## Change log
 
@@ -518,12 +530,59 @@ the HTML reporter blocks the shell after a failure.
   protocol-relative `//host` counts as internal (neither exists today); links written inside a project's markdown body
   would render as plain anchors (none exist today; when a case study adds one, add a rehype plugin or a components
   override for it).
+- 2026-10-04: the stop hook offered its whole-branch review an eighteenth time at the end of the session (after
+  `741f4c3`); granted; nothing was created.
+- 2026-10-05: T11d, from the parent design (Engram #439). `submitContact` answers `unavailable` when the verifier
+  rejects or throws (an outage, a timeout, a wrong secret, a fault or an unknown code), because it never judged the
+  token; a missing or blank token, or any answer but `true`, stays `verification_failed`; nothing is sent either way and
+  the one log line is unchanged. One pure `contactPageState` turns the Action's answer and the Worker's config into the
+  page state and status: the form (200); field errors (400, the values kept, an error summary, an "Error:" line per
+  field, `aria-invalid` and `aria-describedby`, the title prefixed); a try-again alert with email and WhatsApp (400); a
+  429 with `Retry-After: 60`; a 413 (the body is never read, so nothing is kept); the fallback notice in place of the
+  form, with the visitor's message in a labelled read-only text area to copy (502 when delivery fails, 503 when the
+  verifier cannot answer, 200 when the Worker lacks a setting, which `handleContact` logs by name only); and for
+  `sent`, the honeypot's silent answer included, a 303 to the page's own localized `?sent=1`, built from the locale
+  alone (no open redirect). The pages are thin roots that read `env` from `cloudflare:workers`; the components render a
+  view model and are tested by container render in both locales, and visitor text is written only through Astro's
+  escaping. The honeypot field `website` is off screen, `aria-hidden`, out of the tab order and out of autofill.
+  Without JavaScript, unlayered rules in `global.css` hide the form and show a notice with email and WhatsApp (a test
+  keeps them out of every `@layer`). `TURNSTILE_SITE_KEY` stays out of `wrangler.jsonc` until the owner creates the
+  widget (a dummy key would fail every submission with an unlogged token error); a missing key shows the notice.
+  `CONTACT_RATE_LIMIT` allows 3 posts per 60 s from one address, in namespace `7301` (`7302` for previews; owner
+  question Q5: are both unused in the account?). `/_actions/contact` answers every outcome as HTTP 200 with the outcome
+  as data; the statuses above are the contact pages'. The e2e harness is hermetic: its own build (`CLOUDFLARE_ENV=e2e`
+  reads `.dev.vars.e2e`: Cloudflare's Turnstile test keys, fake `e2e-` EmailJS values, loopback seams) on port 4331,
+  never reusing a server; fake EmailJS and Turnstile servers on 4332 that record every call; a guard in global setup
+  that checks the files the server reads (names only, never values) and, once the server is up, that the contact page
+  carries the e2e site key, or the run stops before the first test. CI's Build step sets the same variable. The axe and
+  layout checks (every state, both locales and themes; 320, 390, 768 and 1280 px) found that the header nav no longer
+  fit once Contact joined it (wider than the screen at 320 px in English and 390 px in Spanish); it wraps now. Owner
+  question Q7: the Spanish contact copy. Writer notes: Engram #440 (platform facts from a spike), #447 (test and
+  tooling gotchas), #448 (implementation decisions).
+- 2026-10-05: T11d follow-up (parent): the Action body limit went from 32 KiB to 64 KiB (`1acfe20`). A browser sends
+  the form urlencoded, which writes each byte of a non-ASCII character as three, so the largest valid submission is
+  52,869 bytes, and a full-length message in a two-byte script (Cyrillic, Greek, Arabic, Hebrew) already got a 413.
+  `ACTION_BODY_LIMIT_BYTES` lives in `src/modules/contact/form-body-limit.ts` next to `largestFormBodyBytes`, which
+  computes that body from the schema's own limits; a unit test keeps the limit between it and twice it. Three full e2e
+  runs (383 tests, 14 workers) took 16.8 to 24.4 s, far under the 10-minute rule for a second CI worker, so CI keeps
+  one. The earlier 7.8- and 10.0-minute runs were not representative: the machine was under unrelated CPU load.
+  Engram #451.
+- 2026-10-05: the stop hook offered its whole-branch review a nineteenth time during the T11d follow-up; the owner
+  granted it, but START refused it with `stale_target_identity` because the writer's commit landed while the question
+  was open; nothing was created.
+- 2026-10-08: T11d review and merge, after the owner's "Let's complete T11d". A review's candidate always runs from a
+  base to HEAD, so slices A and B ran from temporary detached worktrees at their last commits (`00d272b`, `d43c37e`;
+  removed afterwards) and slice C from the branch tip. The owner granted each one; each was approved with 0 blocking
+  findings and acknowledged (see the T11d row). Merged `--no-ff` as `4745fc1`, whose tree equals the reviewed and
+  tested tree `c10d368`. The six findings still true at the tip became T11d-b. Nothing was pushed: the owner rotates
+  the credentials first (planned for the weekend of 2026-10-10).
 
 ## Next step
 
-T11d (contact page, action, form, e2e harness, and the `unavailable` outcome for a verifier that cannot answer), then
-T11e (404 pages); T10d when the owner gives the color direction. Before T11d's writer runs e2e, stop any `astro dev`
-on port 4321. Owner, in parallel: create the R2 bucket `portfolio-cv` and upload
-`en.pdf` and `es.pdf` before `feat/astro-rebuild` is pushed (Workers Builds deploys every pushed branch); create the
-Turnstile widget early to confirm it accepts the `carlos15erh.workers.dev` hostname; set up EmailJS (service, template,
-non-browser API, keys; see `docs/contact-setup.md`) before T11d. Optional: the heading-spacing rhythm noted in T10b.
+T11e (404 pages), then T11d-b (the review's follow-ups); T10d when the owner gives the color direction. Before a writer
+runs e2e, stop any `astro dev` on port 4321. Owner, before `feat/astro-rebuild` is pushed: rotate the credentials
+(planned for the weekend of 2026-10-10); create the R2 bucket `portfolio-cv` and upload `en.pdf` and `es.pdf` (Workers
+Builds deploys every pushed branch); answer Q5 (are the rate-limit namespaces `7301` and `7302` unused in the
+Cloudflare account?) and Q7 (the Spanish contact copy). Before live checks of the form: create the Turnstile widget
+(confirm it accepts the `carlos15erh.workers.dev` hostname), set up EmailJS (service, template, non-browser API, keys;
+see `docs/contact-setup.md`) and add the Worker secrets. Optional: the heading-spacing rhythm noted in T10b.
