@@ -1,0 +1,63 @@
+---
+import type { DirectContactLink } from '../../modules/profile/domain/direct-contact-links';
+import { localeOfPathname } from '../../shared/i18n/paths';
+import { getDictionary } from '../../shared/i18n/ui';
+import DirectContactLinks from './DirectContactLinks.astro';
+
+// The notice that takes the form's place when the form cannot work or a message could not be
+// delivered: the Worker is not configured, EmailJS did not take the message, or Turnstile could
+// not be asked. Nothing the visitor can do makes the form work, so it points to email and
+// WhatsApp, and gives back what they wrote, in a read-only text area they can select and copy,
+// so that a message they took the trouble to write is never lost.
+//
+// An alert when it answers a submission that failed (`failed`), a plain notice when nobody has
+// submitted anything (the Worker is simply not configured). Presentational: the page root
+// decides, and the message goes through Astro's escaping like every visitor value.
+interface Props {
+  /** What the visitor wrote; empty when there is nothing to give back. */
+  message: string;
+  /** Whether this answers a submission that failed. */
+  failed: boolean;
+  links: readonly DirectContactLink[];
+}
+
+const { message, failed, links } = Astro.props;
+
+const dictionary = getDictionary(localeOfPathname(Astro.url.pathname));
+
+const hasMessage = message.trim() !== '';
+---
+
+<section
+  id="contact-fallback"
+  role={failed ? 'alert' : undefined}
+  aria-labelledby="contact-fallback-heading"
+  class="flex flex-col gap-4 rounded border-2 border-text p-4"
+>
+  <h2 id="contact-fallback-heading" class="mb-0">
+    {dictionary.contactFallbackHeading}
+  </h2>
+  <p>
+    {hasMessage
+      ? dictionary.contactFallbackBodyKept
+      : dictionary.contactFallbackBody}
+  </p>
+  <DirectContactLinks links={links} />
+  {hasMessage && (
+    <div class="flex flex-col gap-2">
+      <label
+        id="contact-fallback-message-label"
+        for="contact-fallback-message"
+        class="font-bold"
+      >
+        {dictionary.contactFallbackMessageLabel}
+      </label>
+      <textarea
+        id="contact-fallback-message"
+        readonly
+        rows="8"
+        class="w-full rounded border border-border bg-surface px-3 py-2 text-text"
+      >{message}</textarea>
+    </div>
+  )}
+</section>

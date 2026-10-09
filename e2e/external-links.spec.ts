@@ -41,6 +41,9 @@ const pages: {
   { path: '/es/experience/', lang: 'es', minimumExternalLinks: 2 },
   { path: '/skills/', lang: 'en', minimumExternalLinks: 2 },
   { path: '/es/skills/', lang: 'es', minimumExternalLinks: 2 },
+  // Footer, and the WhatsApp link among the direct ways to write.
+  { path: '/contact/', lang: 'en', minimumExternalLinks: 2 + 1 },
+  { path: '/es/contact/', lang: 'es', minimumExternalLinks: 2 + 1 },
 ];
 
 for (const { path, lang, minimumExternalLinks } of pages) {
@@ -67,13 +70,22 @@ for (const { path, lang, minimumExternalLinks } of pages) {
           'rel',
           /(^|\s)noopener(\s|$)/,
         );
+        // The accessible name alone cannot prove the space: a browser adds one around a
+        // block-level child such as the clipped, absolutely positioned hint, so the name
+        // reads well even if the markup does not. The text content is the markup's own, and
+        // it is there for every link, shown or not.
+        await expect(link, `text of ${href}`).toHaveText(endsWithHint);
+
+        // A link CSS hides while JavaScript runs (the contact page's notice for a visitor
+        // without JavaScript, whose rules are in global.css) has no accessible name or box
+        // to ask for; it is still checked above, since that visitor reads it.
+        if (!(await link.isVisible())) {
+          continue;
+        }
+
         await expect(link, `accessible name of ${href}`).toHaveAccessibleName(
           endsWithHint,
         );
-        // The accessible name alone cannot prove the space: a browser adds one around a
-        // block-level child such as the clipped, absolutely positioned hint, so the name
-        // reads well even if the markup does not. The text content is the markup's own.
-        await expect(link, `text of ${href}`).toHaveText(endsWithHint);
 
         // Visually hidden: clipped to a pixel, so it takes up no room. A hint that shows
         // would change the layout. (One taken out of the page with `display: none` is

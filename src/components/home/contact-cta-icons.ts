@@ -43,6 +43,8 @@ const ICON_ATTRS =
   'viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"';
 
 export const CONTACT_CTA_ICONS: Record<ContactCtaId, string> = {
+  // A speech bubble with its tail at the bottom left (hand-drawn; not a brand mark).
+  form: `<svg ${ICON_ATTRS}><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-4.5 3.5V17H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"></path></svg>`,
   whatsapp: sizedAriaHiddenIcon(brandWhatsapp, ICON_SIZE_PX),
   // A classic envelope (hand-drawn; not a brand mark, see the module comment above).
   email: `<svg ${ICON_ATTRS}><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg>`,

@@ -34,6 +34,11 @@ The dev server runs at http://localhost:4321.
 | `pnpm e2e:seed`       | Fill the local R2 bucket with the test CVs (e2e runs it)     |
 | `pnpm generate-types` | Regenerate `worker-configuration.d.ts` from `wrangler.jsonc` |
 
+The end-to-end tests start their own site on port 4331 and fake EmailJS and Turnstile servers on
+4332, never reuse a server that is already running, and never reach a real provider; if either
+port is busy the run stops at the start. See
+[`docs/contact-setup.md`](docs/contact-setup.md#end-to-end-tests).
+
 ## Stack
 
 | Area      | Choice                              |

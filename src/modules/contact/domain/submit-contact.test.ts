@@ -375,17 +375,20 @@ describe('submitContact: Turnstile', () => {
     expect(send).not.toHaveBeenCalled();
   });
 
-  it('fails the submission when the verifier rejects (fail closed)', async () => {
+  // A verifier that rejects could not say anything about the token: the fault is on the
+  // server's side, so the visitor is told the form is unavailable (and may write instead),
+  // not that the token was refused. Either way nothing is sent (fail closed).
+  it('answers unavailable, and sends nothing, when the verifier rejects (fail closed)', async () => {
     const { deps, verifyTurnstile, send } = fakes();
     verifyTurnstile.mockRejectedValue(new Error('siteverify unreachable'));
 
     const outcome = await submitContact(submission(), deps, fromCloudflare());
 
-    expect(outcome).toEqual({ kind: 'verification_failed' });
+    expect(outcome).toEqual({ kind: 'unavailable' });
     expect(send).not.toHaveBeenCalled();
   });
 
-  it('fails the submission when the verifier throws synchronously', async () => {
+  it('answers unavailable, and sends nothing, when the verifier throws synchronously', async () => {
     const { deps, verifyTurnstile, send } = fakes();
     verifyTurnstile.mockImplementation(() => {
       throw new Error('siteverify unreachable');
@@ -393,7 +396,62 @@ describe('submitContact: Turnstile', () => {
 
     const outcome = await submitContact(submission(), deps, fromCloudflare());
 
-    expect(outcome).toEqual({ kind: 'verification_failed' });
+    expect(outcome).toEqual({ kind: 'unavailable' });
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['a plain Error', () => new Error('siteverify unreachable')],
+    [
+      'a ProviderFailure with a status',
+      () => new ProviderFailure('Turnstile answered', { status: 503 }),
+    ],
+    [
+      'a ProviderFailure with a fault code',
+      () =>
+        new ProviderFailure('Turnstile answered', {
+          code: 'invalid-input-secret',
+        }),
+    ],
+    ['a string', () => 'siteverify unreachable'],
+    ['undefined', () => undefined],
+  ])(
+    'answers unavailable for whatever the verifier rejects with: %s',
+    async (_label, makeRejection) => {
+      const { deps, verifyTurnstile, send } = fakes();
+      verifyTurnstile.mockRejectedValue(makeRejection());
+
+      const outcome = await submitContact(submission(), deps, fromCloudflare());
+
+      expect(outcome).toEqual({ kind: 'unavailable' });
+      expect(send).not.toHaveBeenCalled();
+    },
+  );
+
+  it('keeps unavailable apart from a rejected token: only a rejection of the verifier itself is unavailable', async () => {
+    const rejected = fakes();
+    rejected.verifyTurnstile.mockResolvedValue(false);
+    const broken = fakes();
+    broken.verifyTurnstile.mockRejectedValue(
+      new Error('siteverify unreachable'),
+    );
+
+    expect(
+      await submitContact(submission(), rejected.deps, fromCloudflare()),
+    ).toEqual({ kind: 'verification_failed' });
+    expect(
+      await submitContact(submission(), broken.deps, fromCloudflare()),
+    ).toEqual({ kind: 'unavailable' });
+  });
+
+  it('asks the limiter and the verifier once each, and never the sender, when the verifier is unavailable', async () => {
+    const { deps, verifyTurnstile, rateLimiter, send } = fakes();
+    verifyTurnstile.mockRejectedValue(new Error('siteverify unreachable'));
+
+    await submitContact(submission(), deps, fromCloudflare());
+
+    expect(rateLimiter).toHaveBeenCalledTimes(1);
+    expect(verifyTurnstile).toHaveBeenCalledTimes(1);
     expect(send).not.toHaveBeenCalled();
   });
 
@@ -475,7 +533,7 @@ const closedSteps: [
   [
     'the verifier',
     VERIFIER_LINE,
-    { kind: 'verification_failed' },
+    { kind: 'unavailable' },
     (f, error) => f.verifyTurnstile.mockRejectedValue(error),
   ],
   [
@@ -535,7 +593,7 @@ describe('submitContact: the line a failed dependency leaves in the log', () => 
   );
 
   it.each(closedSteps)(
-    'gives the visitor the same outcome as before when %s fails with a ProviderFailure',
+    'gives the visitor the outcome of that step, whatever detail the ProviderFailure carries, when %s fails',
     async (_step, _line, outcome, failWith) => {
       const f = fakes();
       failWith(
@@ -763,12 +821,25 @@ describe('submitContact: nothing private leaves through an outcome or a log', ()
     },
   );
 
-  it('keeps the outcome to its kind alone', async () => {
-    const f = fakes();
-    f.send.mockRejectedValue(failure());
+  it.each([
+    [
+      'the sender',
+      (f: ReturnType<typeof fakes>) => f.send.mockRejectedValue(failure()),
+    ],
+    [
+      'the verifier',
+      (f: ReturnType<typeof fakes>) =>
+        f.verifyTurnstile.mockRejectedValue(failure()),
+    ],
+  ])(
+    'keeps the outcome to its kind alone when %s fails',
+    async (_label, breakIt) => {
+      const f = fakes();
+      breakIt(f);
 
-    const outcome = await submitContact(visitor(), f.deps, fromCloudflare());
+      const outcome = await submitContact(visitor(), f.deps, fromCloudflare());
 
-    expect(Object.keys(outcome)).toEqual(['kind']);
-  });
+      expect(Object.keys(outcome)).toEqual(['kind']);
+    },
+  );
 });

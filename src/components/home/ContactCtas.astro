@@ -5,15 +5,15 @@ import {
   buildContactCtas,
   type ContactCtaId,
 } from '../../modules/profile/domain/build-contact-ctas';
-import { localeOfPathname } from '../../shared/i18n/paths';
+import { localeOfPathname, pathnameInLocale } from '../../shared/i18n/paths';
 import { getDictionary, type UiDictionary } from '../../shared/i18n/ui';
 import Link from '../Link.astro';
 import { CONTACT_CTA_ICONS } from './contact-cta-icons';
 
 // Self-contained, like `Hero.astro`: derives its own locale and content. See T08 in
 // odd/tasks/portfolio-astro-rebuild.md. Every CTA renders through `Link`, which opens the
-// external ones (WhatsApp, LinkedIn, GitHub) in a new tab and leaves the email and CV ones
-// alone.
+// external ones (WhatsApp, LinkedIn, GitHub) in a new tab and leaves the form, email and
+// CV ones alone.
 const locale = localeOfPathname(Astro.url.pathname);
 const dictionary = getDictionary(locale);
 
@@ -25,6 +25,7 @@ if (!profile) {
 }
 
 const LABEL_KEYS: Record<ContactCtaId, keyof UiDictionary> = {
+  form: 'ctaFormLabel',
   whatsapp: 'ctaWhatsappLabel',
   email: 'ctaEmailLabel',
   linkedin: 'ctaLinkedinLabel',
@@ -33,6 +34,7 @@ const LABEL_KEYS: Record<ContactCtaId, keyof UiDictionary> = {
 };
 
 const ctas = buildContactCtas({
+  form: pathnameInLocale('/contact/', locale),
   whatsapp: profile.data.whatsapp,
   email: profile.data.email,
   linkedin: profile.data.linkedin,

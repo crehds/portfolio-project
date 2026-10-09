@@ -39,8 +39,15 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
+      # CLOUDFLARE_ENV=e2e makes the Cloudflare plugin read .dev.vars.e2e (fake and test
+      # values, fake provider URLs) when it builds, and bake it into dist/server/.dev.vars,
+      # which the e2e step's preview server reads. This build is for the e2e step only:
+      # nothing here is deployed (Cloudflare builds the deployed Worker itself). Without the
+      # variable the e2e run stops before the first test (e2e/support/hermetic-guard.ts).
       - name: Build
         run: pnpm build
+        env:
+          CLOUDFLARE_ENV: e2e
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { buildContactCtas } from './build-contact-ctas';
 
 const baseProfile = {
+  form: '/contact/',
   whatsapp: '+51970791041',
   email: 'carlos15erh@gmail.com',
   linkedin: 'https://www.linkedin.com/in/carlos-rodriguez-huerta-362ab716a/',
@@ -10,15 +11,27 @@ const baseProfile = {
 };
 
 describe('buildContactCtas', () => {
-  it('always includes whatsapp, email, linkedin and github, in that order', () => {
+  it('always includes the form, whatsapp, email, linkedin and github, in that order', () => {
     const ctas = buildContactCtas(baseProfile);
 
     expect(ctas.map((cta) => cta.id)).toEqual([
+      'form',
       'whatsapp',
       'email',
       'linkedin',
       'github',
     ]);
+  });
+
+  it('points the form cta at the contact page path it is given, whichever locale it is in', () => {
+    expect(
+      buildContactCtas(baseProfile).find((cta) => cta.id === 'form')?.href,
+    ).toBe('/contact/');
+    expect(
+      buildContactCtas({ ...baseProfile, form: '/es/contact/' }).find(
+        (cta) => cta.id === 'form',
+      )?.href,
+    ).toBe('/es/contact/');
   });
 
   it('derives the whatsapp href from the E.164 number via wa.me', () => {

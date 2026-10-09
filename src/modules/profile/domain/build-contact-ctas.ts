@@ -1,7 +1,8 @@
 // Pure domain logic: no Astro/Zod imports.
-import { whatsappLink } from './whatsapp-link';
+import { directContactLinks } from './direct-contact-links';
 
-export type ContactCtaId = 'whatsapp' | 'email' | 'linkedin' | 'github' | 'cv';
+export type ContactCtaId =
+  'form' | 'whatsapp' | 'email' | 'linkedin' | 'github' | 'cv';
 
 export interface ContactCta {
   id: ContactCtaId;
@@ -9,6 +10,8 @@ export interface ContactCta {
 }
 
 export interface ContactCtaProfile {
+  /** The contact page's pathname in the page's locale (see `NAV_ITEMS`). */
+  form: string;
   whatsapp: string;
   email: string;
   linkedin: string;
@@ -19,14 +22,15 @@ export interface ContactCtaProfile {
 }
 
 /**
- * Builds the home page's contact call-to-action list, in display order. WhatsApp,
- * email, LinkedIn and GitHub always come from the profile; the CV download only
- * appears once `profile.cv` is set.
+ * Builds the home page's contact call-to-action list, in display order. The contact form
+ * leads (it is the way the site asks people to write), then WhatsApp and email (see
+ * `directContactLinks`), LinkedIn and GitHub, which always come from the profile; the CV
+ * download only appears once `profile.cv` is set.
  */
 export function buildContactCtas(profile: ContactCtaProfile): ContactCta[] {
   const ctas: ContactCta[] = [
-    { id: 'whatsapp', href: whatsappLink(profile.whatsapp) },
-    { id: 'email', href: `mailto:${profile.email}` },
+    { id: 'form', href: profile.form },
+    ...directContactLinks(profile),
     { id: 'linkedin', href: profile.linkedin },
     { id: 'github', href: profile.github },
   ];

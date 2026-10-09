@@ -12,6 +12,9 @@ Run every `wrangler` command from the repository root as `pnpm exec wrangler ...
 - [EmailJS: email delivery](#emailjs-email-delivery)
 - [Turnstile: spam protection](#turnstile-spam-protection)
 - [Putting the secrets in place](#putting-the-secrets-in-place)
+- [What the visitor sees](#what-the-visitor-sees)
+- [End-to-end tests](#end-to-end-tests)
+- [Trying the form by hand](#trying-the-form-by-hand)
 - [Contact troubleshooting](#contact-troubleshooting)
 
 ## CV download (R2)
@@ -240,6 +243,12 @@ How the Worker uses the answer, so a failure is easy to read:
   text, and the Worker never logs it. The two lists are all seven codes in Cloudflare's table as
   of 2026-10-04, so an unknown code is a new one or an undocumented one. Any other HTTP status,
   an answer that is not JSON, a network error or a timeout fails the submission as well.
+- What the visitor is told depends on which of the two it was, and nothing is sent in either
+  case. A token that is missing or that Turnstile refused (the ordinary "no") is
+  `verification_failed`: trying again can help. Every failure that is logged, because Turnstile
+  could not judge the token, is `unavailable`: the fault is on the server's side and trying
+  again cannot help, so the visitor is pointed to email and WhatsApp instead of being asked to
+  retry.
 - It does not check the `hostname` Turnstile reports back, because previews run on other
   hostnames than production.
 
@@ -262,11 +271,15 @@ pnpm exec wrangler secret put EMAILJS_PUBLIC_KEY
 pnpm exec wrangler secret put EMAILJS_PRIVATE_KEY
 ```
 
-`TURNSTILE_SITE_KEY` is public, so it is a plain variable in `wrangler.jsonc` (under `vars`),
-which the contact page's change adds, rather than a secret.
+`TURNSTILE_SITE_KEY` is public, so it is a plain variable, not a secret: it belongs in
+`wrangler.jsonc` under `vars`, and under `previews.vars` too, because previews do not inherit
+variables. It is not there yet, on purpose: the code ships no site key, and the key to put there
+is the one of the real widget, which exists only after the Turnstile step above. A dummy key in
+production would make every submission fail on a token error that nothing logs.
 
-**Local development.** Put the settings in `.dev.vars` in the repository root, which git
-ignores. Cloudflare's test keys make Turnstile pass without a real widget:
+**Local development.** Copy `.dev.vars.example` to `.dev.vars` in the repository root (git
+ignores that name) and fill in the blanks. Cloudflare's test keys, already in the template, make
+Turnstile pass without a real widget:
 
 ```ini
 TURNSTILE_SITE_KEY=1x00000000000000000000AA
@@ -280,6 +293,147 @@ EMAILJS_PRIVATE_KEY=<your private key>
 With real EmailJS values, submitting the local form sends a real email and spends one of the
 200 monthly requests. Use fake values to see the form fail safely instead.
 
+## What the visitor sees
+
+The contact pages, `/contact/` and `/es/contact/`, run on the Worker on every request, like the
+CV route; every other page is a static file. The form posts to the page it is on, through an
+Astro Action (`src/actions/index.ts`) that Astro validates against the form's schema before
+anything else runs. The same Action also answers at `/_actions/contact`, with the same checks, so
+a script that posts there meets the same Origin check, body limit, honeypot, rate limit and
+Turnstile. It answers every outcome of a submission, a rate limit included, as HTTP 200 with the
+outcome as its data (`sent`, `rate_limited`, `verification_failed`, `unavailable`,
+`delivery_failed`), not as an error status, so a script reads the body. The statuses below are
+the contact pages'. What each request leaves the visitor with, and the status it is answered
+with:
+
+| What happened                                                                        | Status                           | What the visitor sees                                                                                                                                                      |
+| ------------------------------------------------------------------------------------ | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The page is opened                                                                   | 200                              | The form.                                                                                                                                                                  |
+| The page is opened with `?sent=1`                                                    | 200                              | "Your message was sent", announced as a status, and a link to write another.                                                                                               |
+| The page is opened while JavaScript is off or blocked                                | 200                              | The heading and, in place of the form, a notice that says the form needs JavaScript and offers email and WhatsApp. A post that skips the form is still validated.          |
+| The message was delivered, or a bot filled the hidden `website` field                | 303 to the page's own `?sent=1`  | The success message. A reload never sends it again, and a bot gets the answer a person gets. The address is built from the page's locale, never from the request.          |
+| A field is empty, too long or not valid                                              | 400                              | The form again, with what was typed, an error summary that links to each field, and "Error:" before the message under each field. The document title starts with "Error:". |
+| The Turnstile token is missing, or Turnstile did not accept it                       | 400                              | An alert that asks to try again and offers email and WhatsApp, above the form with what was typed.                                                                         |
+| The fourth submission within a minute from one address                               | 429, `Retry-After: 60`           | An alert that asks to wait a minute and offers email and WhatsApp, above the form with what was typed.                                                                     |
+| Turnstile could not answer (an outage, a wrong secret key, a code nobody documented) | 503                              | The "form is not available" notice in the form's place: email, WhatsApp, and the message in a read-only text area to copy.                                                 |
+| EmailJS did not take the message                                                     | 502                              | The same notice.                                                                                                                                                           |
+| The Worker lacks a setting or the rate limit binding                                 | 200 for the page, 503 for a post | The same notice, with no message to copy when nobody wrote one. Nothing is asked of any provider.                                                                          |
+| The body is past 64 KiB (`security.actionBodySizeLimit`)                             | 413                              | An alert that asks for a shorter message and offers email and WhatsApp. Nothing is kept: the body is refused before it is read.                                            |
+| A post from another origin, or with no origin                                        | 403                              | Astro's plain "Cross-site POST form submissions are forbidden".                                                                                                            |
+
+A failure that is not the visitor's doing (502, 503) never asks them to try again, because trying
+again cannot help; it points to email and WhatsApp instead and gives their message back, so that
+nothing they wrote is lost. The two failures of Turnstile are told apart for that reason: an
+answer that refuses the token is the visitor's (400), and an answer that is a fault of ours, of
+Turnstile's or of the network is not (503). The retry delay is the period of the
+`CONTACT_RATE_LIMIT` binding, and a test keeps the two equal.
+
+The body limit is 64 KiB (`ACTION_BODY_LIMIT_BYTES` in `src/modules/contact/form-body-limit.ts`,
+which `astro.config.mjs` hands to Astro), against Astro's default of 1 MiB, so that nobody can
+make the Worker read and buffer a megabyte per request. It has to leave room for the largest
+legitimate submission. A browser sends the form urlencoded, which writes each byte of a
+non-ASCII character as three: a message of 5,000 characters in a script whose characters take
+three bytes in UTF-8 (Chinese, Japanese, Hindi, Thai) is 45,000 bytes, and with the name, an
+email address and a Turnstile token of 2,048 characters, each at its limit, the largest
+submission is about 52 KB. A script of two-byte characters (Cyrillic, Greek, Arabic, Hebrew)
+already passes 32 KiB at full length, which is why the limit is not 32 KiB. A unit test computes
+that largest body from the schema's own limits (`CONTACT_LIMITS` and the verifier's token
+limit) and fails if the limit is below it, or more than twice it, so raising a field's limit
+means raising this one too. The end-to-end tests send the largest submission in both kinds of
+script, through the page, through `/_actions/contact` and from the browser, and a body of exactly
+the limit (read) and one byte more (refused with a 413).
+
+A visitor's text is only ever written back through Astro's escaping, as text, in the form's
+fields and in the notice's text area, never as markup.
+
+Turnstile's widget has no way to work without JavaScript, so the page does not pretend: while
+`<html class="no-js">` is still there (the head script of `BaseLayout.astro` removes it as soon as
+JavaScript runs), CSS hides the form, its lead and the list of other ways (`.contact-form-only`)
+and shows the notice (`.contact-nojs`). The rules are in `src/styles/global.css`, outside every
+cascade layer, because the form carries a `display` utility that a layered rule could not
+override; `src/styles/no-js.test.ts` keeps them there. If the Turnstile script is blocked while
+JavaScript runs, nothing hides the form: a submission then carries no token and is refused with
+the "try again" alert, which offers email and WhatsApp.
+
+## End-to-end tests
+
+`pnpm test:e2e` submits the contact form for real, so it must never reach EmailJS (every request
+lands in your inbox and counts against the 200 a month) or Turnstile. It stays away from both
+without any care on your part:
+
+- **A server of its own.** Playwright builds the site and starts `astro preview` on port 4331,
+  and never reuses a server that is already running there: what a server was started with
+  decides which providers it talks to, and a leftover `astro dev` or `astro preview` would have
+  read your own `.dev.vars`. If the port is taken, the run fails at the start; stop the other
+  process.
+- **Its own settings.** The build under test is made with `CLOUDFLARE_ENV=e2e` (Playwright sets
+  it for its own build, and the Build step of `.github/workflows/ci.yml` sets it). The
+  Cloudflare plugin then reads `.dev.vars.e2e` instead of `.dev.vars`, and bakes it into
+  `dist/server/.dev.vars`, which is all the preview server reads. Without the variable, your
+  `.dev.vars` wins, and its real keys end up in the build. wrangler warns that no `env.e2e`
+  section exists in `wrangler.jsonc` and uses the top-level configuration, which is what is
+  wanted: the R2 and rate limit bindings are the real ones. Do not add an `env.e2e` section: a
+  named environment does not inherit bindings, so each one would have to be repeated.
+- **Nothing real in `.dev.vars.e2e`.** It is committed, and holds only Cloudflare's published
+  Turnstile test keys, made-up `e2e-` EmailJS values and two loopback URLs, the test seams
+  (`EMAILJS_API_URL`, `TURNSTILE_VERIFY_URL`), that send the Worker's provider calls to the fakes.
+- **Fake providers.** `e2e/support/fake-upstreams.ts` stands in for EmailJS and Turnstile on
+  `127.0.0.1:4332`, started once per run by `e2e/global-setup.ts`. It records every call, so a
+  test can say exactly what the Worker sent, and any request to another path is recorded as
+  unexpected. A Turnstile token steers its answer (`pass:<marker>`, `refuse:`, `duplicate:`,
+  `fault:`, `unknown-code:`, `http-500:`), and a visitor message containing `[[fake-emailjs:500]]`
+  makes the fake EmailJS answer that status.
+- **A check before the first test.** `e2e/support/hermetic-guard.ts` runs in global setup, reads
+  the files the server will read, and stops the whole run, listing the problems, unless
+  `.dev.vars.e2e` holds nothing but test and fake values, the build targets the `e2e`
+  environment, and the settings baked into the build are exactly those of `.dev.vars.e2e`. It
+  names settings and never prints a value, because the build may hold your real keys. Those checks
+  make no request: a request that proved the point would be the one that reached a provider. Once
+  the server is up, one more check asks it for the contact page, a plain GET that asks nothing of
+  any provider, and stops the run unless the widget on it carries the site key of `.dev.vars.e2e`:
+  the page renders the key from the Worker's own settings, so it proves which settings the running
+  process read (the e2e site key is the invisible test key, `...BB`, not the visible one the
+  template for `.dev.vars` suggests, so a server that read your own file shows another key).
+- **No request leaves the machine.** The browser the tests drive resolves no host but the local
+  ones (a Chromium launch option in `playwright.config.ts`), so Turnstile's script or any other
+  host's fails at once, before a packet is sent; the contact specs answer Turnstile's script
+  themselves with a stub that does what the real widget does for the form, putting a token in it
+  (`e2e/support/turnstile-stub.ts`).
+- **Tests do not step on each other.** They run in parallel against one fake. Each test puts a
+  marker of its own in the visitor's text and in the token, and reads back only the calls that
+  carry it, and each test run posts from an address of its own (`cf-connecting-ip`), because the
+  rate limit counts per address and Miniflare keeps the one a client sends. Without a header
+  every request would count under the one address 127.0.0.1 and the fourth within a minute
+  would be refused (`e2e/support/contact-test.ts`). Miniflare's local limiter also counts in
+  fixed windows aligned to the wall clock, so a test that expects the fourth post of a minute to
+  be refused first waits, when fewer than 15 seconds of the current minute are left, for the next
+  one (`e2e/support/rate-limit-window.ts`); otherwise one run in thirty would let it through.
+
+If a run stops with "The end-to-end run is not hermetic", rebuild with `CLOUDFLARE_ENV=e2e`
+(`pnpm test:e2e` does this for you), and remove whatever left a build of another kind in
+`dist/`.
+
+## Trying the form by hand
+
+The tests never use real keys, so the one thing they cannot show is the form working against
+the real providers. Do it once yourself, knowing that it sends a real email and spends one of
+the 200 EmailJS requests of the month:
+
+1. Copy `.dev.vars.example` to `.dev.vars` and fill in the four `EMAILJS_*` values (the
+   [EmailJS steps](#emailjs-email-delivery) say where they come from). Keep the two Turnstile
+   test keys that the template already holds: with them the real widget shows a success tick
+   without a challenge, and Turnstile's real answer is a pass.
+2. Start the site with `pnpm dev` and open `/contact/` (or `/es/contact/`). The dev server reads
+   `.dev.vars`; it is only the end-to-end build that reads `.dev.vars.e2e` instead.
+3. Fill in the form and send it. The page should go to `/contact/?sent=1` and say the message was
+   sent, and an email from the template should reach your inbox with the visitor's address in
+   Reply-To.
+
+If something else happens, the Worker's console (the terminal of `pnpm dev`, or `wrangler tail`
+for a deployed Worker) has one line for the step that failed, and
+[Contact troubleshooting](#contact-troubleshooting) says what each line means. Nothing of a
+visitor's message is ever logged.
+
 ## Contact troubleshooting
 
 The Worker never logs what a provider said: a provider's error can quote a key or the visitor's
@@ -288,14 +442,15 @@ may end with one closed detail in brackets: the HTTP status the provider answere
 `(HTTP 403)`, or, for Turnstile, one of its error codes, as in `(invalid-input-secret)`. Nothing
 else of a failure is logged.
 
-| Worker log line                                                                          | What it means                                                                                                                                                                                                                                          |
-| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `contact: the email sender failed`                                                       | EmailJS could not be asked: the request failed on the network or took more than 8 s.                                                                                                                                                                   |
-| `contact: the email sender failed (HTTP <status>)`                                       | EmailJS answered with that status instead of 200. See the first item below.                                                                                                                                                                            |
-| `contact: the Turnstile verifier failed, so the submission was rejected`                 | Turnstile could not be asked (an answer that is not JSON, a network error, no answer in 8 s) or it listed an error code the Worker does not know. The code lists match Cloudflare's table as of 2026-10-04, so an unknown code is new or undocumented. |
-| `contact: the Turnstile verifier failed, so the submission was rejected (HTTP <status>)` | Turnstile answered with that status instead of 200. Its documentation gives no HTTP status for an error answer, so what a status means is not documented.                                                                                              |
-| `contact: the Turnstile verifier failed, so the submission was rejected (<code>)`        | Turnstile answered 200 but blamed the secret, the request or itself instead of the token. See the second item below.                                                                                                                                   |
-| `contact: the rate limiter failed, so the request was let through`                       | The `CONTACT_RATE_LIMIT` binding did not answer. The request went on, and the form still works.                                                                                                                                                        |
+| Worker log line                                                                                                        | What it means                                                                                                                                                                                                                                                                             |
+| ---------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contact: the email sender failed`                                                                                     | EmailJS could not be asked: the request failed on the network or took more than 8 s.                                                                                                                                                                                                      |
+| `contact: the email sender failed (HTTP <status>)`                                                                     | EmailJS answered with that status instead of 200. See the first item below.                                                                                                                                                                                                               |
+| `contact: the Turnstile verifier failed, so the submission was rejected`                                               | Turnstile could not be asked (an answer that is not JSON, a network error, no answer in 8 s) or it listed an error code the Worker does not know. The code lists match Cloudflare's table as of 2026-10-04, so an unknown code is new or undocumented.                                    |
+| `contact: the Turnstile verifier failed, so the submission was rejected (HTTP <status>)`                               | Turnstile answered with that status instead of 200. Its documentation gives no HTTP status for an error answer, so what a status means is not documented.                                                                                                                                 |
+| `contact: the Turnstile verifier failed, so the submission was rejected (<code>)`                                      | Turnstile answered 200 but blamed the secret, the request or itself instead of the token. See the second item below.                                                                                                                                                                      |
+| `contact: the rate limiter failed, so the request was let through`                                                     | The `CONTACT_RATE_LIMIT` binding did not answer. The request went on, and the form still works.                                                                                                                                                                                           |
+| `contact: the form is not configured, so the submission was answered unavailable (missing: <names>; invalid: <names>)` | A submission reached a Worker that lacks a setting or the `CONTACT_RATE_LIMIT` binding, or holds one that cannot be used. The names are all it says, and `none` stands for an empty list. The visitor gets the "form is not available" notice. See [Contact settings](#contact-settings). |
 
 - **Messages are not delivered (`contact: the email sender failed`).** The status in brackets is
   what EmailJS answered, and a line with no status means the request never got an answer.

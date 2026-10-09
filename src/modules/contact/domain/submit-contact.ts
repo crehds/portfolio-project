@@ -26,7 +26,12 @@ export interface ContactContext {
  *
  * - `sent`: delivered to the owner. A filled honeypot gets this too, silently.
  * - `rate_limited`: the client used up its budget.
- * - `verification_failed`: the Turnstile token was missing, rejected or unverifiable.
+ * - `verification_failed`: the visitor's Turnstile token was missing, or Turnstile answered
+ *   and did not accept it. Trying again can help.
+ * - `unavailable`: the verifier could not answer (an outage, a timeout, a wrong secret, an
+ *   error code nobody documented), so the token was never judged. The fault is on the
+ *   server's side and trying again cannot help: the visitor is pointed to email and
+ *   WhatsApp instead. Nothing is sent, as with `verification_failed`.
  * - `delivery_failed`: the email provider did not accept the message.
  *
  * It carries the kind and nothing else, so no visitor text, token or error can ride along.
@@ -35,6 +40,7 @@ export type ContactOutcome =
   | { readonly kind: 'sent' }
   | { readonly kind: 'rate_limited' }
   | { readonly kind: 'verification_failed' }
+  | { readonly kind: 'unavailable' }
   | { readonly kind: 'delivery_failed' };
 
 // Fixed text, on purpose: a failing provider's error can quote the visitor's message, a
@@ -66,19 +72,30 @@ async function withinRateLimit(
 }
 
 /**
- * Fails closed: a verifier that cannot answer proves nothing, so the submission does not
- * go through. Only an explicit `true` verifies.
+ * What asking Turnstile about a token came to:
+ *
+ * - `verified`: the verifier resolved `true`, and nothing else counts as that.
+ * - `rejected`: the verifier answered, with anything but `true`: the token is not accepted.
+ * - `unavailable`: the verifier itself rejected or threw, so it could not say either way.
  */
-async function isVerified(
+type Verification = 'verified' | 'rejected' | 'unavailable';
+
+/**
+ * Fails closed in both ways: neither a refused token nor a verifier that cannot answer lets
+ * the submission through. They are told apart because the visitor is told something
+ * different, and a verifier that cannot answer is logged: one fixed line, plus the closed
+ * suffix `failureSuffix` allows.
+ */
+async function verification(
   verify: TurnstileVerifier,
   token: string,
   remoteIp: string | undefined,
-): Promise<boolean> {
+): Promise<Verification> {
   try {
-    return (await verify(token, remoteIp)) === true;
+    return (await verify(token, remoteIp)) === true ? 'verified' : 'rejected';
   } catch (error) {
     console.error(VERIFIER_FAILED + failureSuffix(error));
-    return false;
+    return 'unavailable';
   }
 }
 
@@ -91,7 +108,10 @@ async function isVerified(
  *   so a bot cannot tell it was caught (and spends nothing of the limiter or the quota).
  * - The rate limit comes before Turnstile so that a bot sending no token still spends its
  *   budget, and a flood never reaches Turnstile's API.
- * - A missing or blank token fails without asking Turnstile.
+ * - A missing or blank token fails without asking Turnstile, as `verification_failed`.
+ * - A verifier that rejects is `unavailable`, which is not the visitor's doing; a verifier
+ *   that answers with anything but `true` is `verification_failed`. Nothing is sent in
+ *   either case.
  */
 export async function submitContact(
   input: ContactInput,
@@ -111,10 +131,21 @@ export async function submitContact(
 
   const token = input['cf-turnstile-response']?.trim();
 
-  if (
-    !token ||
-    !(await isVerified(deps.verifyTurnstile, token, clientIp(headers)))
-  ) {
+  if (!token) {
+    return { kind: 'verification_failed' };
+  }
+
+  const verdict = await verification(
+    deps.verifyTurnstile,
+    token,
+    clientIp(headers),
+  );
+
+  if (verdict === 'unavailable') {
+    return { kind: 'unavailable' };
+  }
+
+  if (verdict === 'rejected') {
     return { kind: 'verification_failed' };
   }
 
