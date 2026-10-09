@@ -79,10 +79,15 @@ for (const { path, lang, minimumExternalLinks } of pages) {
         // it is there for every link, shown or not.
         await expect(link, `text of ${href}`).toHaveText(endsWithHint);
 
-        // A link CSS hides while JavaScript runs (the contact page's notice for a visitor
-        // without JavaScript, whose rules are in global.css) has no accessible name or box
-        // to ask for; it is still checked above, since that visitor reads it.
-        if (!(await link.isVisible())) {
+        // The contact page's notice for a visitor without JavaScript is hidden by CSS while
+        // JavaScript runs (the rules are in global.css), and a hidden link has no accessible
+        // name or box to ask for; it is still checked above, since that visitor reads it.
+        // Only its links are excused: any other link that is not visible fails the checks
+        // below.
+        const inNoJsNotice = await link.evaluate(
+          (element) => element.closest('#contact-nojs') !== null,
+        );
+        if (inNoJsNotice && !(await link.isVisible())) {
           continue;
         }
 
