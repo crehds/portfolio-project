@@ -138,12 +138,19 @@ if (!profile) {
           <ul class="flex flex-wrap items-center gap-x-4 gap-y-1">
             {NAV_ITEMS.map((item) => {
               const href = item.href(locale);
-              const isCurrentPage = pathnamesMatch(pathname, href);
+              // An error page is no nav item's page or section. Prerendered, it is built for
+              // `/404`, which matches none; rendered on demand (as `astro dev` does), it is
+              // built for the address the visitor asked for, and a mistyped address under a
+              // real section would mark that section.
+              const isCurrentPage =
+                !errorPage && pathnamesMatch(pathname, href);
               // A nested page (e.g. a project's own detail page) marks its top-level nav
               // item current too, just not as literally "the current page" - see
               // `pathnameIsWithinSection`.
               const isCurrentSection =
-                !isCurrentPage && pathnameIsWithinSection(pathname, href);
+                !errorPage &&
+                !isCurrentPage &&
+                pathnameIsWithinSection(pathname, href);
               const ariaCurrent = isCurrentPage
                 ? 'page'
                 : isCurrentSection
