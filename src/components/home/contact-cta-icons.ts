@@ -1,4 +1,4 @@
-// Decorative icon markup for the contact CTAs (`ContactCtas.astro`). Each CTA already
+// Decorative icon markup for the contact CTAs (`ContactCtaButton.astro`). Each CTA already
 // carries its own visible text label, so these are purely decorative and marked
 // `aria-hidden` - the accessible name never depends on them.
 //

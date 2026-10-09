@@ -1,21 +1,15 @@
 ---
 import { getEntry } from 'astro:content';
 
-import {
-  buildContactCtas,
-  type ContactCtaId,
-} from '../../modules/profile/domain/build-contact-ctas';
+import { buildContactCtas } from '../../modules/profile/domain/build-contact-ctas';
 import { localeOfPathname, pathnameInLocale } from '../../shared/i18n/paths';
-import { getDictionary, type UiDictionary } from '../../shared/i18n/ui';
-import Link from '../Link.astro';
-import { CONTACT_CTA_ICONS } from './contact-cta-icons';
+import ContactCtaButton from './ContactCtaButton.astro';
 
 // Self-contained, like `Hero.astro`: derives its own locale and content. See T08 in
-// odd/tasks/portfolio-astro-rebuild.md. Every CTA renders through `Link`, which opens the
-// external ones (WhatsApp, LinkedIn, GitHub) in a new tab and leaves the form, email and
-// CV ones alone.
+// odd/tasks/portfolio-astro-rebuild.md. Every CTA renders as a `ContactCtaButton`, which
+// goes through `Link`: the external ones (WhatsApp, LinkedIn, GitHub) open in a new tab, the
+// form, email and CV ones do not.
 const locale = localeOfPathname(Astro.url.pathname);
-const dictionary = getDictionary(locale);
 
 const profile = await getEntry('profile', 'profile');
 if (!profile) {
@@ -23,15 +17,6 @@ if (!profile) {
     'The "profile" content entry is missing; the contact CTAs need it for their hrefs.',
   );
 }
-
-const LABEL_KEYS: Record<ContactCtaId, keyof UiDictionary> = {
-  form: 'ctaFormLabel',
-  whatsapp: 'ctaWhatsappLabel',
-  email: 'ctaEmailLabel',
-  linkedin: 'ctaLinkedinLabel',
-  github: 'ctaGithubLabel',
-  cv: 'ctaCvLabel',
-};
 
 const ctas = buildContactCtas({
   form: pathnameInLocale('/contact/', locale),
@@ -46,13 +31,7 @@ const ctas = buildContactCtas({
 <ul class="flex flex-wrap gap-3">
   {ctas.map((cta) => (
     <li>
-      <Link
-        href={cta.href}
-        class="inline-flex min-h-11 items-center gap-2 rounded border border-border px-3 py-2 text-text"
-      >
-        <Fragment set:html={CONTACT_CTA_ICONS[cta.id]} />
-        <span>{dictionary[LABEL_KEYS[cta.id]]}</span>
-      </Link>
+      <ContactCtaButton id={cta.id} href={cta.href} />
     </li>
   ))}
 </ul>

@@ -1,0 +1,39 @@
+---
+import type { ContactCtaId } from '../../modules/profile/domain/build-contact-ctas';
+import { localeOfPathname } from '../../shared/i18n/paths';
+import { getDictionary, type UiDictionary } from '../../shared/i18n/ui';
+import Link from '../Link.astro';
+import { CONTACT_CTA_ICONS } from './contact-cta-icons';
+
+// One way to reach the owner, as a bordered button: the icon, then the label in the page's
+// locale. The home page's call-to-action list (`ContactCtas.astro`) and the contact page's
+// direct links (`DirectContactLinks.astro`) render each of their entries with it, so the two
+// lists keep one look and one wording. It goes through `Link`, which opens the external
+// addresses (WhatsApp, LinkedIn, GitHub) in a new tab and leaves the form, email and CV ones
+// alone. Self-contained, like `LanguageSwitcher.astro`: the locale comes from the URL.
+interface Props {
+  id: ContactCtaId;
+  href: string;
+}
+
+const { id, href } = Astro.props;
+
+const dictionary = getDictionary(localeOfPathname(Astro.url.pathname));
+
+const LABEL_KEYS: Record<ContactCtaId, keyof UiDictionary> = {
+  form: 'ctaFormLabel',
+  whatsapp: 'ctaWhatsappLabel',
+  email: 'ctaEmailLabel',
+  linkedin: 'ctaLinkedinLabel',
+  github: 'ctaGithubLabel',
+  cv: 'ctaCvLabel',
+};
+---
+
+<Link
+  href={href}
+  class="inline-flex min-h-11 items-center gap-2 rounded border border-border px-3 py-2 text-text"
+>
+  <Fragment set:html={CONTACT_CTA_ICONS[id]} />
+  <span>{dictionary[LABEL_KEYS[id]]}</span>
+</Link>
