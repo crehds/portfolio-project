@@ -75,15 +75,15 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~23,828 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+- Running count: ~24,310 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
   T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321 + T08 ~1,021 + T09 ~923 + T09b ~217 +
-  T10 ~778 + T10b ~88 + T11a ~935 + T11b ~1,698 + T11c ~2,978 + T11c-b ~1,573 + T10c ~244 + T11d ~7,936 + T11e ~535,
-  with tests,
-  excluding lockfiles and the legacy removal; the terms before T11d sum to 15,357, so the earlier total of ~15,124 was
-  an addition slip). It already passes the ~4,300 forecast, mostly from tests, the e2e harness and the review
-  follow-up tasks.
-- Last reviewed boundary: `f31d941`, the T11e tip (the merge `9c35533` has the same tree, `26ecc4a`); the T11d record
-  `5d56525` was reviewed with T11e. Before that, `1acfe20`, the T11d tip (the merge `4745fc1` has the same tree,
+  T10 ~778 + T10b ~88 + T11a ~935 + T11b ~1,698 + T11c ~2,978 + T11c-b ~1,573 + T10c ~244 + T11d ~7,936 + T11e ~535 +
+  T11d-b ~482, with tests, excluding lockfiles and the legacy removal; the terms before T11d sum to 15,357, so the
+  earlier total of ~15,124 was an addition slip). It already passes the ~4,300 forecast, mostly from tests, the e2e
+  harness and the review follow-up tasks.
+- Last reviewed boundary: `ae71410`, the T11d-b tip (the merge `5f29f95` has the same tree, `8dbc3bd`); the T11e record
+  `1d41d29` was reviewed with T11d-b. Before that, `f31d941`, the T11e tip (the merge `9c35533` has the same tree,
+  `26ecc4a`), with the T11d record `5d56525`; and `1acfe20`, the T11d tip (the merge `4745fc1` has the same tree,
   `c10d368`): the open slice from `62f10ae` (the T11c-b and T11d-decision records, the T10c plan, T10c and its record)
   was reviewed with T11d in three slices (see T11d in Progress). Earlier, the slice from `8c0409c` (the T10 docs `1edaac9`, T10b, the T10b docs `9b0bcc4`, the T11 plan
   `e201a3c` and T11a up to `9ac381e`; medium, 1,184 lines) was skipped by the owner (2026-09-30); as with the legacy
@@ -158,7 +158,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 - [ ] **T10d** Dark theme color adjustments (owner, 2026-10-04: "that light blue", the cyan accent, needs work; later,
   not now). Every text/background token pair must still meet WCAG AA (the token contrast test). Optionally with the
   heading-spacing rhythm noted in T10b. Route: decided when the owner gives the direction.
-- [ ] **T11** Contact: form via Astro Action (Zod validation), `EmailSender` port + EmailJS adapter, Turnstile + honeypot +
+- [x] **T11** Contact: form via Astro Action (Zod validation), `EmailSender` port + EmailJS adapter, Turnstile + honeypot +
   rate limit, WhatsApp + mailto, CV download (R2), 404 page. Planned on 2026-09-30 by a read-only planning pass (see the
   change log) as five sub-tasks, each on its own branch `feat/astro-rebuild-11<x>-<slug>`. ~2,500-3,000 with tests and
   the e2e harness (the first estimate was ~450).
@@ -196,7 +196,8 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
     unavailable" notice with the email and WhatsApp links, not the rejected-token message, so `submitContact` gains an
     outcome for it (e.g. `unavailable`, with its tests). Delivered in seven commits, the last one raising the Action
     body limit to 64 KiB (see Progress).
-  - [ ] **T11d-b** Follow-ups from the T11d and T11e reviews, all non-blocking: the six T11d findings still true at the
+  - [x] **T11d-b** Follow-ups from the T11d and T11e reviews, all non-blocking (delivered in eight commits, see
+    Progress): the six T11d findings still true at the
     tip, and (7) below from T11e.
     (1) `e2e/external-links.spec.ts` skips the accessible-name and hint checks for every link that is not visible;
     narrow the skip to the no-JS notice's links (warning). (2) `retryOnProxyFailure` (`e2e/support/contact-test.ts`)
@@ -217,7 +218,8 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 - [ ] **T12** SEO: meta, Open Graph/Twitter, OG images, JSON-LD Person, sitemap + robots, canonical, favicons/manifest. Also, from T11e: `noindex` on the 404 pages (`/404` and `/es/404/` answer 200 as plain assets, `/404/` and `/es/404` a 307), no canonical there (the `errorPage` flag), and keep them out of the sitemap. Route: delegated. ~300.
 - [ ] **T13** Hardening: axe on every page, Lighthouse CI budgets, link check, security headers. Also, from T11c: check
   the hostname in Turnstile's answer (allow `carlos15erh.workers.dev` and its subdomains, so previews keep working).
-  Route: delegated. ~200.
+  And from the T11d-b review: a harness test for the global teardown's wiring (a stray call to a private fake makes the
+  teardown reject with the method and path, and the fake still closes). Route: delegated. ~200.
 - [ ] **T14** Launch: production deploy, analytics, final README, prune stale branches (owner approval). Route: inline + owner. ~80.
 
 ### Phase 4 · Project sync (future)
@@ -274,6 +276,7 @@ the HTML reporter blocks the shell after a failure.
 | T10c | done (merged `37afe00`) | `ae999ab` the `isExternalHref` rule, `ed190c5` the `linkOpensInNewTab` hint in both dictionaries, `827036f` `Link.astro` and the migrated anchors (footer GitHub/LinkedIn, project card and page live/repo links, every home CTA) | Strict TDD: RED `Cannot find module`, then a naive `startsWith` stub (2/19 failing: `HTTPS://EXAMPLE.COM/`, a bare `https://`); dictionary pin 47 vs 48 keys in both locales; the new e2e spec 10/20 failing before the component (`target … Expected "_blank", Received ""`), then GREEN; mutations caught (no `rel`: 10; a `target` on the `mailto:` CTA: 2; no space before the hint: 10, caught by the text check; a visible hint: 10; a plain repository anchor again: 4; the hint always in English: 5; the hint hidden with `display: none`: 10) · lint · format · `pnpm check` 0/0/0 (124 files) · `pnpm test` 1032/1032 in 40 files · build 16 pages · `pnpm test:e2e` 151/151 · dry run unchanged · 40 full-page screenshots (10 pages, 1280 and 390 px, both themes) byte-identical to the base build · parent readback of the production diff; parent re-ran: check 0/0/0 (124 files), test 1032/1032; the merge tree equals the writer's tree (`7c6a402`) | Slice from `62f10ae` (records + T10c): medium, 309 lines, `under_budget`, not due; reviewed with T11d (slice A, see T11d) |
 | T11d | done (merged `4745fc1`) | `ba08701` `unavailable` outcome, `00d272b` page shell + hermetic e2e harness, `23beec4` pure page-state core, `d43c37e` Action + form + Turnstile widget, `b854657` honeypot + every failure state, `a41099a` no-JS notice + the guard's runtime half + axe + layout, `1acfe20` Action body limit 64 KiB (parent follow-up) | Writer, final verification on `1acfe20`: lint · format · `pnpm check` 0 errors · `pnpm test` 1255/1255 in 48 files · `pnpm test:e2e` 383/383 three times · plain build · dry run: `CV_BUCKET`, `CONTACT_RATE_LIMIT` (3 per 60 s), `ASSETS`. The body limit test-first: unit RED (missing module), e2e RED against 32 KiB (8 failed, 1 passed), then GREEN 9/9, 25 repeats 225/225, 4 unit mutations caught; RED evidence for the first six commits is not in this record or in Engram · parent re-ran on `1acfe20` (2026-10-08): lint, format, check 0/0/0 (164 files), test 1255/1255 in 48 files, e2e 383/383 in 39.9 s, tree clean; the merge tree equals the reviewed and tested tree (`c10d368`) | The open slice from `62f10ae` plus T11d (72 files, 7,946 lines, ~361 KB of diff, high) was about three times the largest slice that has passed (T11c, ~125 KB), so it was reviewed in three slices of that size: A `62f10ae..00d272b` (records, T10c, `unavailable`, harness; high: CI shell; 41 files, 2,276 lines; 4 lenses; approved, `review-38f3aaca5c3c29e4`, 6 advisory findings), B `00d272b..d43c37e` (medium; 24 files, 3,239 lines; 1 lens, reliability; approved, `review-a045570c6bf420f1`, 3 advisory findings), C `d43c37e..1acfe20` (medium; 29 files, 2,709 lines; 1 lens, reliability; approved, `review-e737fc673b43fc0e`, 3 advisory findings). 0 blocking findings; all three granted by the owner and acknowledged. 6 of the 12 findings were already fixed by later commits (A: the 32 KiB body limit, 2 warnings, and a dangling spec reference; B: the alert and the fallback notice not rendered, 2 warnings, and their render tests); the 6 still true at the tip became T11d-b |
 | T11e | done (merged `9c35533`) | `378ff97` 404 copy EN/ES, `530347d` switcher `errorPage` prop (links to the home pages), `fc7eae3` the two 404 pages + e2e, `f31d941` no current nav item on an error page (dev-mode fix) | Strict TDD: dictionary pin RED (83 vs 89 keys in both locales); switcher container tests 2/5 RED (`/es/404/` instead of `/es/`); with Astro's built-in 404, `not-found.spec` 49/49 RED; with the pages but without the flag, 18 RED (3 hreflang alternates instead of 0; the switcher at `/es/404/`) while status, `lang`, title and `h1` already passed (the `/es/404` proof); then GREEN 107/107 in the three specs; layout container test 1/6 RED (`Projects=true` when rendered for `/projects/x`), then 6/6; a mutation (a 400 px-wide block and an `img` without alt) failed 8 tests, then reverted · writer: lint · format · check 0/0/0 (170 files) · test 1266/1266 in 50 files · e2e 442/442 · build 18 pages + Worker · dry run unchanged · parent re-ran: check 0/0/0 (170 files), test 1266/1266, e2e 442/442 (21.2 s), tree clean; the merge tree equals the reviewed tree (`26ecc4a`) | Slice from `1acfe20` (the T11d record + T11e): medium, 13 files, 628 lines, 1 lens (reliability), approved with 1 advisory suggestion (`review-e4fdf0b15a6bcdd2`), routed to T11d-b |
+| T11d-b | done (merged `5f29f95`) | `c9c1a4a` `refused` verdict, `6d2ffb0` shared `ContactCtaButton`, `546a320` 404 nav test renamed, `1ada384` rate-limit wait only in the rate-limited state, `093bdd1` only the no-JS notice's links excused, `0a65dd2` every proxy retry visible, `cdd365a` the teardown fails on unexpected fake calls, `ae71410` docs | Behavior changes test-first: (1) with a footer link hidden, the old spec passed 28/28 (blind) and the narrowed one failed 14 (one per page), then 28/28 restored; (2) retry tests 3/4 RED (no warning, 0 annotations), then 4/4; (4) `unexpectedCallProblems` RED (missing export), then 4/4, and a temporary stray-call spec turned exit 0 into exit 1 with the method and path named (no body or query). Refactors under green tests: (3) axe-matrix waits 32 → 4, 32/32 pass; (5) 96 `submit-contact` tests pass; (6) both lists' HTML byte-identical in both locales and the prerendered home pages byte-identical to the base build, and a wrong label is caught by the new button test · writer: lint · format · check 0/0/0 (172 files) · test 1290/1290 in 51 files · e2e 450/450 · build · dry run · parent re-ran: check 0/0/0 (172 files), test 1290/1290, e2e 450/450 (18.7 s), tree clean; the merge tree equals the reviewed tree (`8dbc3bd`) | Slice from `f31d941` (the T11e record + T11d-b): medium, 16 files, 542 lines, 1 lens (reliability), approved with 1 advisory suggestion (`review-7cb94fd344ff2eac`), routed to T13 |
 
 ## Change log
 
@@ -603,14 +606,33 @@ the HTML reporter blocks the shell after a failure.
   acknowledged; merged `--no-ff` as `9c35533`, whose tree equals the reviewed and tested tree `26ecc4a`. Meanwhile the
   owner creates the R2 bucket in the dashboard: Standard storage class, the Public Development URL and custom domains
   left off, objects named `en.pdf` and `es.pdf` (`docs/contact-setup.md` describes the CLI path).
+- 2026-10-09: the stop hook offered its whole-branch review a twenty-first time after `1d41d29` (321 files, 51,857
+  lines, high); granted. The START's output was lost to a broken pipe in the parent's shell; a lineage-bound read-only
+  STATUS showed no authority created and the target still fresh, so nothing was created. Lesson kept: one-shot review
+  commands write their output to a file first.
+- 2026-10-09: T11d-b (writer note: Engram #487). The external-links spec excuses only invisible links inside
+  `#contact-nojs`. `retryOnProxyFailure` keeps its policy but records every retry as a `proxy-retry` annotation and a
+  console warning; the cause is the HTTP status or a matched keyword, never the error message, which carries a whole
+  call log. The rate-limit window wait runs only for the rate-limited axe state (4 of 32 tests). The global teardown
+  fails the run naming each unexpected `METHOD /path` (never a body or query) and still closes the fakes in a
+  `finally`; Playwright then exits 1 with "1 error was not a part of any test" while the tests count as passed. The
+  verification verdict `rejected` is now `refused`; the adapter comments keep "rejected token" in the visitor-token
+  sense, and the log line is unchanged by design. `src/components/home/ContactCtaButton.astro` is the one place for the
+  CTA label map and button classes. The reset keyword was seen only on Windows (`socket hang up`); the first Linux CI
+  run will show whether `ECONNRESET` matches there. `docs/contact-setup.md` mentions the teardown failure.
+- 2026-10-09: T11d-b review and merge, after the owner's "yes. Go ahead". The slice from `f31d941` (the T11e record and
+  T11d-b) was granted, approved with one advisory suggestion (a harness test for the teardown wiring, now in T13) and
+  acknowledged; merged `--no-ff` as `5f29f95`, whose tree equals the reviewed and tested tree `8dbc3bd`. T11 is
+  complete. The owner created the R2 bucket `portfolio-cv` with `en.pdf` and `es.pdf`, so the credential rotation is
+  the last gate before the branch push.
 
 ## Next step
 
-T11d-b (the review follow-ups), then T12 (SEO); T10d when the owner gives the color direction. Before a writer runs
-e2e, stop any `astro dev` on port 4321. Owner, before `feat/astro-rebuild` is pushed: rotate the credentials (planned
-for the weekend of 2026-10-10); finish the R2 bucket `portfolio-cv` with `en.pdf` and `es.pdf` (Workers Builds deploys
-every pushed branch); answer Q5 (are the rate-limit namespaces `7301` and `7302` unused in the Cloudflare account?)
-and Q7 (the Spanish copy of the contact and 404 pages). After the push, check `/cv/en.pdf`, `/cv/es.pdf`,
-`/no-such-page` and `/es/no-such-page` on the branch preview. Before live checks of the form: create the Turnstile
+T12 (SEO, including `noindex` on the 404 pages), then T13 (hardening) and T14 (launch); T10d when the owner gives the
+color direction. Before a writer runs e2e, stop any `astro dev` on port 4321. Owner, before `feat/astro-rebuild` is
+pushed: rotate the credentials (planned for the weekend of 2026-10-10); the R2 bucket is ready. Answer Q5 (are the
+rate-limit namespaces `7301` and `7302` unused in the Cloudflare account?) and Q7 (the Spanish copy of the contact and
+404 pages). After the push, check `/cv/en.pdf`, `/cv/es.pdf`, `/no-such-page` and `/es/no-such-page` on the branch
+preview, and the first Linux CI run. Before live checks of the form: create the Turnstile
 widget (confirm it accepts the `carlos15erh.workers.dev` hostname), set up EmailJS (service, template, non-browser API,
 keys; see `docs/contact-setup.md`) and add the Worker secrets. Optional: the heading-spacing rhythm noted in T10b.
