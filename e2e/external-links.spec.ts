@@ -44,6 +44,9 @@ const pages: {
   // Footer, and the WhatsApp link among the direct ways to write.
   { path: '/contact/', lang: 'en', minimumExternalLinks: 2 + 1 },
   { path: '/es/contact/', lang: 'es', minimumExternalLinks: 2 + 1 },
+  // The error pages (see not-found.spec.ts): only the footer's links.
+  { path: '/no-such-page', lang: 'en', minimumExternalLinks: 2 },
+  { path: '/es/no-such-page', lang: 'es', minimumExternalLinks: 2 },
 ];
 
 for (const { path, lang, minimumExternalLinks } of pages) {

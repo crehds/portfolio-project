@@ -1,0 +1,18 @@
+---
+import NotFoundPage from '../components/not-found/NotFoundPage.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getDictionary } from '../shared/i18n/ui';
+
+// The error page for every address without a page, except those under `/es/` (they get
+// `es/404.astro`). Prerendered like every page but the contact ones: the Worker fetches
+// it from the static assets and answers with the 404 status. See e2e/not-found.spec.ts.
+const dictionary = getDictionary('en');
+---
+
+<BaseLayout
+  title={dictionary.notFoundPageTitle}
+  description={dictionary.notFoundPageDescription}
+  errorPage
+>
+  <NotFoundPage />
+</BaseLayout>

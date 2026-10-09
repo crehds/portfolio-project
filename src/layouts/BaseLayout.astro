@@ -25,9 +25,16 @@ import '../styles/global.css';
 interface Props {
   title: string;
   description: string;
+  /**
+   * Whether the page is an error page (the 404 pages). It has no translation of itself and
+   * no address of its own to describe, so it renders no hreflang alternates, and its
+   * language switcher links to the home pages instead. A canonical link, when T12 adds
+   * one, skips it too.
+   */
+  errorPage?: boolean;
 }
 
-const { title, description } = Astro.props;
+const { title, description, errorPage = false } = Astro.props;
 
 const pathname = Astro.url.pathname;
 const locale = localeOfPathname(pathname);
@@ -39,7 +46,9 @@ if (!Astro.site) {
   );
 }
 
-const alternates = hreflangAlternates(pathname, Astro.site.href);
+const alternates = errorPage
+  ? []
+  : hreflangAlternates(pathname, Astro.site.href);
 
 const profile = await getEntry('profile', 'profile');
 if (!profile) {
@@ -129,12 +138,19 @@ if (!profile) {
           <ul class="flex flex-wrap items-center gap-x-4 gap-y-1">
             {NAV_ITEMS.map((item) => {
               const href = item.href(locale);
-              const isCurrentPage = pathnamesMatch(pathname, href);
+              // An error page is no nav item's page or section. Prerendered, it is built for
+              // `/404`, which matches none; rendered on demand (as `astro dev` does), it is
+              // built for the address the visitor asked for, and a mistyped address under a
+              // real section would mark that section.
+              const isCurrentPage =
+                !errorPage && pathnamesMatch(pathname, href);
               // A nested page (e.g. a project's own detail page) marks its top-level nav
               // item current too, just not as literally "the current page" - see
               // `pathnameIsWithinSection`.
               const isCurrentSection =
-                !isCurrentPage && pathnameIsWithinSection(pathname, href);
+                !errorPage &&
+                !isCurrentPage &&
+                pathnameIsWithinSection(pathname, href);
               const ariaCurrent = isCurrentPage
                 ? 'page'
                 : isCurrentSection
@@ -162,7 +178,7 @@ if (!profile) {
           </ul>
         </nav>
         <div class="flex items-center gap-3">
-          <LanguageSwitcher />
+          <LanguageSwitcher errorPage={errorPage} />
           <ThemeToggle />
         </div>
       </div>

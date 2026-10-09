@@ -6,6 +6,13 @@ const PAGES: { path: string; lang: string }[] = [
   { path: '/es/', lang: 'es' },
 ];
 
+// An address with no page behind it gets the error page of its locale (see
+// not-found.spec.ts). It shares the header, so it has to fit the screen like any page.
+const NOT_FOUND_PAGES: { path: string; lang: string }[] = [
+  { path: '/no-such-page', lang: 'en' },
+  { path: '/es/no-such-page', lang: 'es' },
+];
+
 async function axeViolations(page: Page) {
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
@@ -171,8 +178,8 @@ test.describe('layout alignment', () => {
   // English ones ("Experiencia", "Habilidades", "Contacto"), so it must wrap instead of
   // pushing the page wider than the screen. 320px is the narrowest width the site supports.
   for (const width of [320, 390, 768]) {
-    for (const { path, lang } of PAGES) {
-      test(`the header does not overflow the page at ${width}px (${lang})`, async ({
+    for (const { path, lang } of [...PAGES, ...NOT_FOUND_PAGES]) {
+      test(`the header does not overflow the page at ${width}px (${lang}, ${path})`, async ({
         page,
       }) => {
         await page.setViewportSize({ width, height: 844 });

@@ -4,11 +4,26 @@ import { LOCALE_NAMES } from '../shared/i18n/locale-names';
 import { localeOfPathname, pathnameInLocale } from '../shared/i18n/paths';
 import { getDictionary } from '../shared/i18n/ui';
 
+interface Props {
+  /**
+   * Whether the page is an error page (the same flag `BaseLayout` takes). It has no
+   * translation of itself, so each link goes to the home page of its locale.
+   */
+  errorPage?: boolean;
+}
+
+const { errorPage = false } = Astro.props;
+
 // Self-contained: `Astro.url` reflects the current request regardless of where this
-// component is rendered, so it needs no props from the page or layout.
+// component is rendered, so it needs nothing from the page or layout but that flag.
 const pathname = Astro.url.pathname;
 const locale = localeOfPathname(pathname);
 const dictionary = getDictionary(locale);
+
+// The page the links are translations of. An error page has no translated twin: the
+// address a visitor mistyped does not exist in the other locale either, and the error
+// page's own address (`/404`) is a plain asset, so the links go to each locale's home page.
+const translatedPathname = errorPage ? '/' : pathname;
 ---
 
 <nav aria-label={dictionary.languageSwitcherLabel}>
@@ -21,7 +36,7 @@ const dictionary = getDictionary(locale);
           </span>
         ) : (
           <a
-            href={pathnameInLocale(pathname, target)}
+            href={pathnameInLocale(translatedPathname, target)}
             hreflang={target}
             lang={target}
             class="inline-block min-h-6 py-1"
