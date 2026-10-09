@@ -1,0 +1,30 @@
+---
+import { localeOfPathname, pathnameInLocale } from '../../shared/i18n/paths';
+import { getDictionary } from '../../shared/i18n/ui';
+
+// Self-contained, like the other pages' components: derives its own locale from the URL.
+// The page is prerendered once per locale and served for every address without a page of
+// its own, however deep, so its links are paths from the root and work from anywhere.
+const locale = localeOfPathname(Astro.url.pathname);
+const dictionary = getDictionary(locale);
+---
+
+<div class="flex max-w-[70ch] flex-col gap-4">
+  <h1>{dictionary.notFoundPageHeading}</h1>
+  <p>{dictionary.notFoundMessage}</p>
+  <ul class="flex flex-wrap gap-x-6 gap-y-2">
+    <li>
+      <a href={pathnameInLocale('/', locale)} class="inline-block min-h-6 py-1">
+        {dictionary.notFoundHomeLabel}
+      </a>
+    </li>
+    <li>
+      <a
+        href={pathnameInLocale('/projects/', locale)}
+        class="inline-block min-h-6 py-1"
+      >
+        {dictionary.notFoundProjectsLabel}
+      </a>
+    </li>
+  </ul>
+</div>

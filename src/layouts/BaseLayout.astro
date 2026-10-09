@@ -25,9 +25,16 @@ import '../styles/global.css';
 interface Props {
   title: string;
   description: string;
+  /**
+   * Whether the page is an error page (the 404 pages). It has no translation of itself and
+   * no address of its own to describe, so it renders no hreflang alternates, and its
+   * language switcher links to the home pages instead. A canonical link, when T12 adds
+   * one, skips it too.
+   */
+  errorPage?: boolean;
 }
 
-const { title, description } = Astro.props;
+const { title, description, errorPage = false } = Astro.props;
 
 const pathname = Astro.url.pathname;
 const locale = localeOfPathname(pathname);
@@ -39,7 +46,9 @@ if (!Astro.site) {
   );
 }
 
-const alternates = hreflangAlternates(pathname, Astro.site.href);
+const alternates = errorPage
+  ? []
+  : hreflangAlternates(pathname, Astro.site.href);
 
 const profile = await getEntry('profile', 'profile');
 if (!profile) {
@@ -162,7 +171,7 @@ if (!profile) {
           </ul>
         </nav>
         <div class="flex items-center gap-3">
-          <LanguageSwitcher />
+          <LanguageSwitcher errorPage={errorPage} />
           <ThemeToggle />
         </div>
       </div>
