@@ -19,8 +19,10 @@ import {
   emailjsFailure,
   startFakeUpstreams,
   turnstileToken,
+  unexpectedCallProblems,
   upstreamClient,
   type FakeUpstreams,
+  type RecordedCall,
 } from './support/fake-upstreams';
 import { waitForRateLimitWindow } from './support/rate-limit-window';
 import { EMAILJS_PATH, TURNSTILE_PATH, UPSTREAM_ORIGIN } from './support/ports';
@@ -209,6 +211,47 @@ test.describe('the fake upstreams', () => {
     await expect(startFakeUpstreams({ port })).rejects.toThrow(
       /already in use|EADDRINUSE/,
     );
+  });
+});
+
+test.describe('unexpectedCallProblems', () => {
+  // What the global teardown makes of the fakes' record of unexpected calls (requests for a
+  // path that is neither provider endpoint): nothing, or what fails the run.
+  const stray = (method: string, path: string, body = ''): RecordedCall => ({
+    upstream: 'unexpected',
+    method,
+    path,
+    body,
+  });
+
+  test('finds no problem when nothing unexpected was recorded', () => {
+    expect(unexpectedCallProblems([])).toEqual([]);
+  });
+
+  test('names the method and the path of an unexpected call', () => {
+    expect(unexpectedCallProblems([stray('POST', '/somewhere/else')])).toEqual([
+      'POST /somewhere/else',
+    ]);
+  });
+
+  test('names each call once, with how many times when it came more than once, in the order they first came', () => {
+    expect(
+      unexpectedCallProblems([
+        stray('POST', '/a'),
+        stray('GET', '/b'),
+        stray('POST', '/a'),
+        stray('POST', '/a'),
+      ]),
+    ).toEqual(['POST /a (3 times)', 'GET /b']);
+  });
+
+  test('keeps what the request carried out of the problem', () => {
+    const problems = unexpectedCallProblems([
+      stray('POST', '/somewhere/else', 'a message with SECRET-BODY-VALUE'),
+    ]).join('\n');
+
+    expect(problems).toContain('/somewhere/else');
+    expect(problems).not.toContain('SECRET-BODY-VALUE');
   });
 });
 
