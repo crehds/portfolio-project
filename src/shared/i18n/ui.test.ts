@@ -127,6 +127,14 @@ describe('getDictionary', () => {
       contactNoJsHeading: 'The form needs JavaScript',
       contactNoJsBody:
         'The contact form runs a spam check that needs JavaScript, which is off or blocked in your browser. Please write to me by email or WhatsApp instead.',
+      notFoundPageTitle: 'Page not found — Carlos Rodríguez Huerta',
+      notFoundPageDescription:
+        'This page does not exist on the portfolio of Carlos Rodríguez Huerta.',
+      notFoundPageHeading: 'Page not found',
+      notFoundMessage:
+        'The page you are looking for does not exist or has moved.',
+      notFoundHomeLabel: 'Go to the home page',
+      notFoundProjectsLabel: 'See the projects',
     });
   });
 
@@ -234,6 +242,13 @@ describe('getDictionary', () => {
       contactNoJsHeading: 'El formulario necesita JavaScript',
       contactNoJsBody:
         'El formulario de contacto hace una verificación contra spam que necesita JavaScript, y tu navegador lo tiene desactivado o bloqueado. Por favor, escríbeme por correo electrónico o WhatsApp.',
+      notFoundPageTitle: 'Página no encontrada — Carlos Rodríguez Huerta',
+      notFoundPageDescription:
+        'Esta página no existe en el portafolio de Carlos Rodríguez Huerta.',
+      notFoundPageHeading: 'Página no encontrada',
+      notFoundMessage: 'La página que buscas no existe o fue movida.',
+      notFoundHomeLabel: 'Ir al inicio',
+      notFoundProjectsLabel: 'Ver los proyectos',
     });
   });
 });
