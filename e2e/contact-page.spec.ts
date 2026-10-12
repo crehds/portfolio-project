@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './support/csp-guard';
 
 import { SITE_URL } from '../src/shared/site/site-url';
 

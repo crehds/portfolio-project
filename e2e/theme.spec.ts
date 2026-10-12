@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './support/csp-guard';
 
 test.describe('theme', () => {
   test('loads dark when the OS prefers dark and nothing is stored', async ({

@@ -1,4 +1,5 @@
-import { expect, test } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './support/csp-guard';
 
 // `/cv/<locale>.pdf` streams the owner's CV out of the R2 bucket bound as `CV_BUCKET`.
 // These tests run against the local bucket that `pnpm e2e:seed` fills before the preview

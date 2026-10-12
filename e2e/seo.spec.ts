@@ -1,10 +1,6 @@
 import { readdirSync } from 'node:fs';
-import {
-  expect,
-  test,
-  type APIRequestContext,
-  type Page,
-} from '@playwright/test';
+import { expect, type APIRequestContext, type Page } from '@playwright/test';
+import { test } from './support/csp-guard';
 
 import { SITE_URL } from '../src/shared/site/site-url';
 import { COPY } from './support/contact-copy';

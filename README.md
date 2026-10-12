@@ -67,6 +67,40 @@ required.
   must exist before a branch that declares the binding deploys; the owner's setup is in
   [`docs/contact-setup.md`](docs/contact-setup.md).
 
+## Security headers
+
+Every response carries a Content-Security-Policy, HSTS (`max-age=31536000`, no `includeSubDomains`
+or `preload` until there is a custom domain), `X-Content-Type-Options`, `Referrer-Policy`,
+`Permissions-Policy`, `Cross-Origin-Opener-Policy: same-origin` and `X-Frame-Options: DENY`. There
+is no COEP: it would block Turnstile's frame. The single source is
+[`src/shared/security/headers.ts`](src/shared/security/headers.ts); it reaches the browser by two
+paths, because Workers static assets apply `_headers` only to the responses they serve themselves:
+
+| What                                                          | Where the headers come from                                                                                             |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Prerendered pages, the 404s, assets                           | [`public/_headers`](public/_headers), one `/*` rule (the adapter appends its immutable `Cache-Control` for `/_astro/*`) |
+| Contact pages (`/contact`, `/es/contact`) and the Action POST | [`src/middleware.ts`](src/middleware.ts), with the contact policy, which also names Turnstile                           |
+| `/cv/<locale>.pdf`                                            | the same middleware, with `default-src 'none'; frame-ancestors 'none'`; its own headers are kept                        |
+
+Pages are prerendered, so the policy trusts inline scripts by hash, not by nonce. Three `is:inline`
+scripts run: the theme script in `BaseLayout.astro`, the toggle's in `ThemeToggle.astro` and the
+widget-theme one in `ContactForm.astro`. Styles may be inline (`style-src 'unsafe-inline'`); scripts
+stay strict.
+
+**Changing an inline script.** Any edit to its text, even whitespace, changes its hash.
+`pnpm build && pnpm test:e2e e2e/csp-hashes.spec.ts` fails with the line to use
+(`add 'sha256-...'`); put that hash in the constant of the same script in `headers.ts`. If
+`public/_headers` is now stale, the unit test `pnpm test src/shared/security` fails; regenerate it
+with `node --experimental-strip-types -e "import('./src/shared/security/headers.ts').then(m => require('fs').writeFileSync('public/_headers', m.renderHeadersFile()))"`.
+A new inline script needs a new constant and an entry in the policy that serves its page. Every
+browser spec also fails if its page breaks the policy (`e2e/support/csp-guard.ts`).
+
+**Manual check on the deployed preview** (the real Turnstile cannot load in the hermetic tests):
+open `/contact/` on the preview, with the browser console open. The widget must draw and solve,
+the console must show no "Refused to ..." message, and a submission must go through. Then
+`curl -sI` the home page, the contact page and `/cv/en.pdf` and compare their headers with the
+table above.
+
 ## Roadmap
 
 The rebuild plan, decisions and progress live in

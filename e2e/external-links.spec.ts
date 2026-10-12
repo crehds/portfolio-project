@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
+import { test } from './support/csp-guard';
 
 // External links (absolute http/https) open in a new tab and say so; every other link,
 // the CV download and the mailto: links included, stays in the same tab. See `Link.astro`

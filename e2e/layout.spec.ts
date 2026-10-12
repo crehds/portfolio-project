@@ -1,4 +1,5 @@
-import { test, expect, type Page, type Locator } from '@playwright/test';
+import { expect, type Page, type Locator } from '@playwright/test';
+import { test } from './support/csp-guard';
 import AxeBuilder from '@axe-core/playwright';
 
 const PAGES: { path: string; lang: string }[] = [
