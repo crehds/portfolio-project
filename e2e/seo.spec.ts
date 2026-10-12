@@ -5,7 +5,8 @@ import { SITE_URL } from '../src/shared/site/site-url';
 import { COPY } from './support/contact-copy';
 
 // What a search engine is told about every address of the site (T12): which URL is the page's
-// own, and which pages stay out of the index. The unit tests (paths.test.ts, base-layout.test.ts)
+// own, which pages stay out of the index, and what the file crawlers read first, robots.txt,
+// says about them. The unit tests (paths.test.ts, base-layout.test.ts, robots-txt.test.ts)
 // prove the rules; this spec proves them in the built site, page by page, in both locales.
 //
 // The test server answers on localhost, and the canonical link names the production host: the
@@ -161,4 +162,22 @@ test.describe('error pages', () => {
       await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
     });
   }
+});
+
+// The file crawlers read first. It is a static file of the build, written from the endpoint
+// src/pages/robots.txt.ts.
+test.describe('robots.txt', () => {
+  test('lets every crawler in and names the sitemap index', async ({
+    request,
+  }) => {
+    const response = await request.get('/robots.txt');
+
+    expect(response.status()).toBe(200);
+    expect(response.headers()['content-type']).toBe(
+      'text/plain; charset=utf-8',
+    );
+    expect(await response.text()).toBe(
+      `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap-index.xml\n`,
+    );
+  });
 });
