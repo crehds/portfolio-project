@@ -284,7 +284,7 @@ test.describe('layout', () => {
 
 test.describe('the pages that answer a post', () => {
   for (const L of COPY) {
-    test(`point the alternates and the language switcher at the clean pages, not at the Action (${L.lang})`, async ({
+    test(`point the canonical link, the alternates and the language switcher at the clean pages, not at the Action (${L.lang})`, async ({
       page,
     }) => {
       await page.goto(L.path);
@@ -292,6 +292,10 @@ test.describe('the pages that answer a post', () => {
       await expect(page.locator('#contact-error-summary')).toBeVisible();
       expect(new URL(page.url()).search).toBe('?_action=contact');
 
+      await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+        'href',
+        `${SITE_URL}${L.path}`,
+      );
       await expect(
         page.locator('link[rel="alternate"][hreflang="en"]'),
       ).toHaveAttribute('href', `${SITE_URL}/contact/`);

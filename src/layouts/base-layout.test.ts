@@ -19,13 +19,21 @@ vi.mock('astro:content', () => ({
   }),
 }));
 
-async function render(pathname: string, errorPage?: boolean): Promise<string> {
+/**
+ * Renders the layout for an address. `origin` is where the page is reached (a preview or a
+ * local server in practice), which is not the site's own.
+ */
+async function render(
+  pathname: string,
+  errorPage?: boolean,
+  origin = 'http://localhost',
+): Promise<string> {
   const container = await AstroContainer.create({
     astroConfig: { site: SITE_URL },
   });
 
   return container.renderToString(BaseLayout, {
-    request: new Request(`http://localhost${pathname}`),
+    request: new Request(`${origin}${pathname}`),
     props: { title: 'A title', description: 'A description', errorPage },
     slots: { default: '<p>The page</p>' },
   });
@@ -79,6 +87,28 @@ async function alternates(pathname: string, errorPage?: boolean) {
   );
 }
 
+/** The `href` of every canonical link in the page. */
+async function canonicals(
+  pathname: string,
+  errorPage?: boolean,
+  origin?: string,
+) {
+  const html = await render(pathname, errorPage, origin);
+
+  return [...html.matchAll(/<link rel="canonical"([^>]*)>/g)].map(
+    ([, attributes]) => attributeOf(attributes, 'href'),
+  );
+}
+
+/** The `content` of every robots meta in the page. */
+async function robots(pathname: string, errorPage?: boolean) {
+  const html = await render(pathname, errorPage);
+
+  return [...html.matchAll(/<meta name="robots"([^>]*)>/g)].map(
+    ([, attributes]) => attributeOf(attributes, 'content'),
+  );
+}
+
 async function switcherHrefs(pathname: string, errorPage?: boolean) {
   const html = await render(pathname, errorPage);
   const { languageSwitcherLabel } = getDictionary(localeOfPathname(pathname));
@@ -108,7 +138,65 @@ describe('BaseLayout', () => {
     ]);
   });
 
+  describe('on an indexable page', () => {
+    it("declares one canonical link, the page's own hreflang alternate, in both locales", async () => {
+      for (const [pathname, locale, expected] of [
+        ['/projects/pysa/', 'en', `${SITE_URL}/projects/pysa/`],
+        ['/es/projects/pysa/', 'es', `${SITE_URL}/es/projects/pysa/`],
+      ] as const) {
+        const own = (await alternates(pathname)).find(
+          (alternate) => alternate.hreflang === locale,
+        );
+
+        expect(await canonicals(pathname), pathname).toEqual([expected]);
+        expect(own?.href, pathname).toBe(expected);
+      }
+    });
+
+    it('adds no alternate link of its own: still the three hreflang alternates', async () => {
+      for (const pathname of ['/', '/es/', '/projects/pysa/', '/es/contact/']) {
+        expect(await alternates(pathname), pathname).toHaveLength(3);
+      }
+    });
+
+    it('builds the canonical from the configured site, not from the origin the page is reached on', async () => {
+      expect(
+        await canonicals('/projects/', false, 'https://preview.example.dev'),
+      ).toEqual([`${SITE_URL}/projects/`]);
+      expect(await canonicals('/es/', false, 'http://localhost:4331')).toEqual([
+        `${SITE_URL}/es/`,
+      ]);
+    });
+
+    it('slash-terminates the address and leaves the query out', async () => {
+      expect(await canonicals('/projects')).toEqual([`${SITE_URL}/projects/`]);
+      expect(await canonicals('/contact/?sent=1')).toEqual([
+        `${SITE_URL}/contact/`,
+      ]);
+      expect(await canonicals('/es/contact/?_action=contact')).toEqual([
+        `${SITE_URL}/es/contact/`,
+      ]);
+    });
+
+    it('carries no robots meta', async () => {
+      expect(await robots('/projects/pysa/')).toEqual([]);
+      expect(await robots('/es/')).toEqual([]);
+    });
+  });
+
   describe('on an error page', () => {
+    it('asks search engines not to index it', async () => {
+      // `/404` and `/es/404/` answer 200 as plain assets, so they are reachable as pages.
+      expect(await robots('/404', true)).toEqual(['noindex']);
+      expect(await robots('/es/404', true)).toEqual(['noindex']);
+    });
+
+    it('declares no canonical link', async () => {
+      expect(await canonicals('/404', true)).toEqual([]);
+      expect(await canonicals('/es/404', true)).toEqual([]);
+      expect(await canonicals('/projects/no-such-project/', true)).toEqual([]);
+    });
+
     it('marks no nav item as current, not even the section of the address', async () => {
       // Prerendered, the page is rendered for `/404`; rendered on demand (as `astro dev`
       // does), for the address the visitor asked for, which can be under a real section.
