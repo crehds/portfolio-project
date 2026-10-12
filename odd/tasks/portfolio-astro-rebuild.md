@@ -75,14 +75,15 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~25,565 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+- Running count: ~26,504 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
   T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321 + T08 ~1,021 + T09 ~923 + T09b ~217 +
   T10 ~778 + T10b ~88 + T11a ~935 + T11b ~1,698 + T11c ~2,978 + T11c-b ~1,573 + T10c ~244 + T11d ~7,936 + T11e ~535 +
-  T11d-b ~482 + T12a ~674 + T12b ~581, with tests, excluding lockfiles and the legacy removal; the terms before T11d sum to 15,357, so the
+  T11d-b ~482 + T12a ~674 + T12b ~581 + T12c ~939, with tests, excluding lockfiles and the legacy removal; the terms before T11d sum to 15,357, so the
   earlier total of ~15,124 was an addition slip). It already passes the ~4,300 forecast, mostly from tests, the e2e
   harness and the review follow-up tasks.
-- Last reviewed boundary: `699a9de`, the T12b tip (the merge `0dc0da1` has the same tree, `5b99be5`); the T12a record
-  `d2a7f69` was reviewed with T12b. Before that, `dd9a101`, the T12a tip (the merge `bcf61fe` has the same tree,
+- Last reviewed boundary: `cddfe93`, the T12c tip (the merge `a6c6f67` has the same tree, `74caa55`); the T12b record
+  `7d1d442` was reviewed with T12c. Before that, `699a9de`, the T12b tip (the merge `0dc0da1` has the same tree,
+  `5b99be5`); the T12a record `d2a7f69` was reviewed with T12b. Before that, `dd9a101`, the T12a tip (the merge `bcf61fe` has the same tree,
   `d38821c`); the T12 plan record `889497d` before it was assessed passive. Before that, `ae71410`, the T11d-b tip (the merge `5f29f95` has the same tree, `8dbc3bd`); the T11e record
   `1d41d29` was reviewed with T11d-b. Before that, `f31d941`, the T11e tip (the merge `9c35533` has the same tree,
   `26ecc4a`), with the T11d record `5d56525`; and `1acfe20`, the T11d tip (the merge `4745fc1` has the same tree,
@@ -234,7 +235,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
     line) and `@astrojs/sitemap` 3.7.4 with the i18n alternates. No `Disallow: /cv/`: a robots.txt block would hide the
     `/cv/` routes' `X-Robots-Tag: noindex` from crawlers. The 404 pages stay out of the sitemap (from T11e) and the
     on-demand contact pages are in it. Route: delegated.
-  - [ ] **T12c** Open Graph and Twitter tags on every indexable page (`og:type`, `og:site_name`, `og:title`,
+  - [x] **T12c** (delivered in six commits, see Progress) Open Graph and Twitter tags on every indexable page (`og:type`, `og:site_name`, `og:title`,
     `og:description`, `og:url` equal to the canonical, `og:locale` `en_US`/`es_LA` plus the other one as
     `og:locale:alternate`, `twitter:card` `summary_large_image`); project pages use their cover cropped to 1200x630
     with `getImage` as `og:image`, with its size and alt. Also, from the T12b review: a unit test for the throw in
@@ -244,7 +245,12 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
     cover, drafted from the design tokens (name and role) for the owner's approval. Generated cards are deferred: the
     adapter prerenders in workerd and leaves sharp out. Route: delegated + owner approval.
   - [ ] **T12e** JSON-LD `Person` on the two home pages from `profile.yaml` only (`name`, `jobTitle`, `description`,
-    `url`, `image`, `sameAs` with LinkedIn and GitHub), serialized with `<` escaped. Route: delegated.
+    `url`, `image`, `sameAs` with LinkedIn and GitHub), serialized with `<` escaped. Also, from the T12c review:
+    (1) the e2e finds the project cover with a selector tied to the cover instead of `main img`, which a case-study
+    image in the body would break (warning); (2) the declared `og:image` size matches what `getImage` produced, or the
+    build fails when a cover is smaller than 1200x630 (the content schema can enforce the minimum); (3) the
+    `hreflangAlternates` spy in `sitemap-alternates.test.ts` is reset after each test instead of relying on
+    `mockReturnValueOnce` running last. Route: delegated.
   - [ ] **T12f** Icons and theme color: `favicon.ico` (32 and 48 px), an `icon.svg` that follows the color scheme, a
     180 px `apple-touch-icon.png` in a new `public/`, and one `theme-color` per color scheme, tied to the tokens by a
     test. The icon is drafted for the owner's approval. Route: delegated + owner approval.
@@ -253,7 +259,11 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 - [ ] **T13** Hardening: axe on every page, Lighthouse CI budgets, link check, security headers. Also, from T11c: check
   the hostname in Turnstile's answer (allow `carlos15erh.workers.dev` and its subdomains, so previews keep working).
   And from the T11d-b review: a harness test for the global teardown's wiring (a stray call to a private fake makes the
-  teardown reject with the method and path, and the fake still closes). Route: delegated. ~200.
+  teardown reject with the method and path, and the fake still closes). And from the T12c e2e diagnosis: back-to-back
+  full e2e runs on Windows exhaust the loopback ephemeral ports (TIME_WAIT), and the preview server listens on `::1`
+  only, so the IPv4 fallback is refused; the `contact-body-limit` proxy race still exhausts its retries now and then.
+  Options: connection reuse in the preview proxy or the test client, listening on `127.0.0.1` too, or spacing local
+  runs (measure first; Engram #513). Route: delegated. ~200.
 - [ ] **T14** Launch: production deploy, analytics, final README, prune stale branches (owner approval). Route: inline + owner. ~80.
 
 ### Phase 4 · Project sync (future)
@@ -313,6 +323,7 @@ the HTML reporter blocks the shell after a failure.
 | T11d-b | done (merged `5f29f95`) | `c9c1a4a` `refused` verdict, `6d2ffb0` shared `ContactCtaButton`, `546a320` 404 nav test renamed, `1ada384` rate-limit wait only in the rate-limited state, `093bdd1` only the no-JS notice's links excused, `0a65dd2` every proxy retry visible, `cdd365a` the teardown fails on unexpected fake calls, `ae71410` docs | Behavior changes test-first: (1) with a footer link hidden, the old spec passed 28/28 (blind) and the narrowed one failed 14 (one per page), then 28/28 restored; (2) retry tests 3/4 RED (no warning, 0 annotations), then 4/4; (4) `unexpectedCallProblems` RED (missing export), then 4/4, and a temporary stray-call spec turned exit 0 into exit 1 with the method and path named (no body or query). Refactors under green tests: (3) axe-matrix waits 32 → 4, 32/32 pass; (5) 96 `submit-contact` tests pass; (6) both lists' HTML byte-identical in both locales and the prerendered home pages byte-identical to the base build, and a wrong label is caught by the new button test · writer: lint · format · check 0/0/0 (172 files) · test 1290/1290 in 51 files · e2e 450/450 · build · dry run · parent re-ran: check 0/0/0 (172 files), test 1290/1290, e2e 450/450 (18.7 s), tree clean; the merge tree equals the reviewed tree (`8dbc3bd`) | Slice from `f31d941` (the T11e record + T11d-b): medium, 16 files, 542 lines, 1 lens (reliability), approved with 1 advisory suggestion (`review-7cb94fd344ff2eac`), routed to T13 |
 | T12a | done (merged `bcf61fe`) | `d770c4a` shared `SITE_URL`, `c6ebd46` `canonicalHref`, `45ecd19` canonical link + `noindex` on error pages, `fbe615b` home title and description from the profile, `5931e31` unused dictionary keys dropped, `dd9a101` `SITE_URL` in its own module (parent follow-up) | Strict TDD: `SITE_URL` 9 unit failures before the export; `canonicalHref is not a function` (8), then a naive `site + pathname` stub (4 failing) and a default-locale mutation (4); layout container 4 RED, then 3 mutations caught (canonical from `Astro.url.origin`: 3; a canonical on error pages: 1; `noindex` on every page: 1); `e2e/seo.spec.ts` with the layout change stashed: 24 failed, 1 passed (canonical "Expected 1, Received 0"; robots meta "Expected 1, Received 0"), and its table guard against `dist/client` caught a removed slug; `homeMetadata`: Cannot find module, then a naive stub 4/4; dictionary pins 2; the move to `src/shared/site/`: 3 suites with Cannot find module · writer: lint · format · check 0/0/0 (177 files) · test 1310/1310 in 53 files · e2e 477/477 · build 18 pages · dry run unchanged (at `5931e31`) · parent readback of the production diff; parent re-ran: test 1310/1310 in 53 files; the merge tree equals the reviewed tree (`d38821c`) | Slice from `889497d` (T12a): medium, 21 files, 674 lines, 1 lens (reliability), approved with 0 findings (`review-44d421d6be6f71f9`) |
 | T12b | done (merged `0dc0da1`) | `c6a6aa7` robots.txt endpoint over `buildRobotsTxt`, `a05a02c` `withXDefaultAlternate`, `699a9de` `@astrojs/sitemap` 3.7.4 with the i18n alternates and `x-default` | Strict TDD: `buildRobotsTxt` Cannot find module, then a naive stub 2/6 (a doubled slash; no throw for a site that is not absolute); e2e against the build before the change: 23 failed, 27 passed (`/robots.txt` and `/sitemap-index.xml` "Expected 200, Received 404"); `withXDefaultAlternate` module not found, then a naive stub 6/8; the sitemap with `i18n` and no `serialize`: 18 failed (no `x-default`); mutations caught (no `i18n`: 20 failures and `/es/404/` listed; `changefreq` and `priority` set: the unset-fields test; no de-duplication: 1) · writer: `pnpm install --frozen-lockfile` · lint · format · check 0/0/0 (182 files) · test 1324/1324 in 55 files · e2e 500/500 · build (`robots.txt`, `sitemap-index.xml` and `sitemap-0.xml` in `dist/client`) · dry run unchanged · parent readback of the production diff; parent re-ran: test 1324/1324 in 55 files; the merge tree equals the reviewed tree (`5b99be5`) | Slice from `d2a7f69` (the T12a record + T12b): medium, 9 files, 616 lines, 1 lens (reliability), approved with 2 advisory suggestions (`review-2d95904680bbb411`), routed to T12c |
+| T12c | done (merged `a6c6f67`) | `32c1d1d` a test for the throw in `withXDefaultAlternate`, `282a526` the robots.txt media type matched by pattern (both from the T12b review), `bf32a5d` `buildSocialMeta`, `fb11627` Open Graph and Twitter tags in `BaseLayout`, `ad97769` project covers as social images, `cddfe93` `coverAltText` (parent follow-up) | Strict TDD: the new e2e against the build before the change: 18 failed (no og tags); `buildSocialMeta` Cannot find module, then a naive stub (8 failed, 2 passed), then 11/11; layout container 7 RED, then 22/22; the cover e2e 18 RED before the pages passed a picture; the T12b throw test proved by removing the throw (1 failed); mutations caught (builder 8, layout 8, e2e 3, crop constants 4); `coverAltText` Cannot find module, then a naive stub 2/3, and `dist/client` byte-identical before and after that refactor · writer: lint · format · check 0/0/0 (188 files) · test 1351/1351 in 58 files · e2e 532/532 on clean runs (see the e2e diagnosis in the change log) · build 18 pages and four 1200x630 covers · dry run unchanged · parent readback of the production diff; parent re-ran: test 1351/1351 in 58 files; the merge tree equals the reviewed tree (`74caa55`) | Slice from `7d1d442` (the T12b record + T12c): medium, 15 files, 939 lines, 1 lens (reliability), approved with 1 advisory warning and 2 suggestions (`review-a1fdb60f738d38de`), routed to T12e |
 
 ## Change log
 
@@ -724,11 +735,40 @@ the HTML reporter blocks the shell after a failure.
   approved with 2 advisory suggestions (`review-2d95904680bbb411`: the throw in `withXDefaultAlternate` has no unit
   test; the e2e pins the exact robots.txt `Content-Type`, which the static-asset server sets) and acknowledged; both
   go to T12c. Merged `--no-ff` as `0dc0da1`, whose tree equals the reviewed and tested tree `5b99be5`.
+- 2026-10-11 and 2026-10-12: the stop hook offered its whole-branch review a twenty-seventh time after `7d1d442` (333
+  files, 53,378 lines), a twenty-eighth after `ad97769` (337 files, 54,208 lines) and a twenty-ninth after `cddfe93`
+  (339 files, 54,261 lines); all granted; each START stopped with `lens_context_budget_exceeded`; nothing was created.
+- 2026-10-12: T12c. `src/shared/seo/social-meta.ts` builds the tags as plain data: `og:type` `website`,
+  `og:site_name`, `og:title`, `og:description`, `og:url` (the canonical), `og:locale` from `OPEN_GRAPH_LOCALES`
+  (`en_US`, `es_LA`; keyed by `Locale`, so a new locale fails the typecheck) with the other locale as
+  `og:locale:alternate`, the picture with its size and alt when there is one, and `twitter:card` (`summary_large_image`
+  with a picture, `summary` without). `BaseLayout` renders them on indexable pages only and resolves the picture
+  against `Astro.site`. Project pages crop their cover with `getImage` (`SOCIAL_IMAGE_TRANSFORM` in
+  `src/shared/seo/social-image.ts`: 1200x630, `fit: 'cover'`, `position: 'top'`, JPEG; the files come out as `.jpeg`).
+  The image service never enlarges, so a cover must be at least 1200x630 (`docs/case-study-template.md` says so).
+  Pages without a cover get no picture until T12d. `coverAltText(title, locale)`
+  (`src/modules/projects/domain/cover-alt-text.ts`) is the one rule for a cover's alt text (card, detail page and
+  social image); the parent asked for it after four copies appeared. Unverified: whether X reads `og:image:alt` or
+  needs `twitter:image:alt`. Writer note: Engram #508.
+- 2026-10-12: e2e flake diagnosis (read-only, two temporary worktrees, 37 instrumented runs; Engram #513). The writer
+  saw 3 of 10 full e2e runs fail on the T12c tip, two of them with dozens of failures. The flake predates T12c:
+  back-to-back full runs on this Windows machine exhaust the loopback ephemeral ports (each run leaves about 3,700
+  sockets in TIME_WAIT for 120 s, against 15,524 usable ports; Tcpip event 4227 comes just before each burst), and the
+  preview server listens on `::1` only, so after `EADDRINUSE ::1:4331` the IPv4 fallback is refused and the browser
+  reports `ERR_CONNECTION_REFUSED` while the server is still up. T12c's 32 extra tests add about 8% more sockets, so a
+  loop reaches the ceiling one run sooner (failing runs: base 3 of 17, T12c 8 of 17; not significant, Fisher p 0.14).
+  The documented `contact-body-limit` proxy race still exhausts its retries now and then on both trees. The server
+  never crashed (workerd peaked at 351 MB). Routed to T13.
+- 2026-10-12: T12c review and merge, after the owner's "Sí, seguí con T12c". The slice from `7d1d442` was granted,
+  approved with 1 advisory warning and 2 suggestions (`review-a1fdb60f738d38de`: the cover's e2e locator `main img`
+  would break on a case-study image; the declared `og:image` size comes from constants, not from what `getImage`
+  produced; a test relies on `mockReturnValueOnce` running last) and acknowledged; all three go to T12e. Merged
+  `--no-ff` as `a6c6f67`, whose tree equals the reviewed and tested tree `74caa55`.
 
 ## Next step
 
-T12c (Open Graph and Twitter tags, with the two T12b review suggestions), then T12e; T12d and T12f once the owner
-approves the drafts of the social card and the icon; then T13 (hardening) and T14 (launch); T10d when the owner gives the color direction. Before
+T12e (JSON-LD `Person`, with the three T12c review items); T12d and T12f once the owner approves the drafts of the
+social card and the icon; then T13 (hardening) and T14 (launch); T10d when the owner gives the color direction. Before
 a writer runs e2e, stop any `astro dev` on port 4321. Owner: answer Q5 (are the rate-limit namespaces `7301` and
 `7302` unused in the Cloudflare account?) and Q7 (the Spanish copy of the contact and 404 pages, plus the home title
 and description from T12a). Before live checks of the form: create the Turnstile widget (confirm it accepts the
