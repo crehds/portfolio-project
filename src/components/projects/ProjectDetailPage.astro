@@ -2,6 +2,7 @@
 import { Picture } from 'astro:assets';
 import { getEntry, render } from 'astro:content';
 
+import { coverAltText } from '../../modules/projects/domain/cover-alt-text';
 import { formatProjectDate } from '../../modules/projects/domain/format-project-date';
 import { localeOfPathname, pathnameInLocale } from '../../shared/i18n/paths';
 import { getDictionary } from '../../shared/i18n/ui';
@@ -36,7 +37,7 @@ const backHref = pathnameInLocale('/projects/', locale);
     <Picture
       src={data.cover}
       formats={['avif', 'webp']}
-      alt={`${dictionary.projectCoverAlt} ${data.title}`}
+      alt={coverAltText(data.title, locale)}
       width={896}
       height={560}
       loading="eager"

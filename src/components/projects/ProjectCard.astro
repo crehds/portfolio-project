@@ -1,6 +1,7 @@
 ---
 import { Picture } from 'astro:assets';
 
+import { coverAltText } from '../../modules/projects/domain/cover-alt-text';
 import type { LocalizedProject } from '../../modules/projects/domain/select-for-locale';
 import type { Locale } from '../../shared/i18n/locales';
 import { pathnameInLocale } from '../../shared/i18n/paths';
@@ -32,7 +33,7 @@ const href = pathnameInLocale(`/projects/${project.slug}/`, locale);
     <Picture
       src={data.cover}
       formats={['avif', 'webp']}
-      alt={`${dictionary.projectCoverAlt} ${data.title}`}
+      alt={coverAltText(data.title, locale)}
       width={640}
       height={400}
       loading="lazy"

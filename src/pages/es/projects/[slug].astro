@@ -4,6 +4,7 @@ import { getCollection, getEntry } from 'astro:content';
 
 import ProjectDetailPage from '../../../components/projects/ProjectDetailPage.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { coverAltText } from '../../../modules/projects/domain/cover-alt-text';
 import { selectProjectsForLocale } from '../../../modules/projects/domain/select-for-locale';
 import { getDictionary } from '../../../shared/i18n/ui';
 import {
@@ -42,7 +43,7 @@ const socialImage = cover
   ? {
       src: (await getImage({ src: cover, ...SOCIAL_IMAGE_TRANSFORM })).src,
       ...SOCIAL_IMAGE_SIZE,
-      alt: `${dictionary.projectCoverAlt} ${entry.data.title}`,
+      alt: coverAltText(entry.data.title, 'es'),
     }
   : undefined;
 ---
