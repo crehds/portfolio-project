@@ -43,12 +43,22 @@
       "simple": { "limit": 3, "period": 60 },
     },
   ],
-  // Worker Previews (`wrangler preview`) do not inherit bindings from the top level, so a
-  // preview would have no CV bucket and no rate limiter without this mirror. The bucket is
-  // the same one: the CV is public, read-only content and there is no staging copy to keep
-  // apart. The rate limiter gets its own namespace, so a preview's counters never mix with
-  // production's.
+  // The real Turnstile widget's site key. It is public by design (the contact page renders it),
+  // so it is a plain variable. The secret key and the EmailJS settings are Worker secrets
+  // (docs/contact-setup.md, "Putting the secrets in place"). Local runs and the e2e tests read
+  // Cloudflare's test keys from `.dev.vars` and `.dev.vars.e2e`, which override this value.
+  "vars": {
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAFU9caEmtcEZ1OJK",
+  },
+  // Worker Previews (`wrangler preview`) do not inherit bindings or variables from the top
+  // level, so a preview would have no CV bucket, no rate limiter and no site key without this
+  // mirror. The bucket is the same one: the CV is public, read-only content and there is no
+  // staging copy to keep apart. The rate limiter gets its own namespace, so a preview's
+  // counters never mix with production's. The widget covers the preview subdomains too.
   "previews": {
+    "vars": {
+      "TURNSTILE_SITE_KEY": "0x4AAAAAAFU9caEmtcEZ1OJK",
+    },
     "r2_buckets": [
       {
         "binding": "CV_BUCKET",

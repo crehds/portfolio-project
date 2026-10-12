@@ -273,9 +273,9 @@ pnpm exec wrangler secret put EMAILJS_PRIVATE_KEY
 
 `TURNSTILE_SITE_KEY` is public, so it is a plain variable, not a secret: it belongs in
 `wrangler.jsonc` under `vars`, and under `previews.vars` too, because previews do not inherit
-variables. It is not there yet, on purpose: the code ships no site key, and the key to put there
-is the one of the real widget, which exists only after the Turnstile step above. A dummy key in
-production would make every submission fail on a token error that nothing logs.
+variables. Both hold the real widget's key since 2026-10-12. It must be the key of the real
+widget from the Turnstile step above: a dummy key in production would make every submission
+fail on a token error that nothing logs.
 
 **Local development.** Copy `.dev.vars.example` to `.dev.vars` in the repository root (git
 ignores that name) and fill in the blanks. Cloudflare's test keys, already in the template, make
