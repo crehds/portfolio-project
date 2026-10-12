@@ -106,6 +106,39 @@ test.describe('canonical link', () => {
   }
 });
 
+// The home page says who the owner is and what they do, from the profile (src/content/profile.yaml)
+// and nothing else: the name and the role in the title, the role and the headline in the
+// description. Spelled out here, not imported, so that a change to the wording is a change to the
+// tests too (src/modules/profile/domain/home-metadata.test.ts pins the rule on its own).
+test.describe('home page title and description', () => {
+  for (const { lang, path, title, description } of [
+    {
+      lang: 'en',
+      path: '/',
+      title: 'Carlos Rodríguez Huerta — Full-stack web developer',
+      description:
+        'Full-stack web developer. Building JavaScript/TypeScript front-ends and Ruby on Rails and Node.js back-ends.',
+    },
+    {
+      lang: 'es',
+      path: '/es/',
+      title: 'Carlos Rodríguez Huerta — Desarrollador web full-stack',
+      description:
+        'Desarrollador web full-stack. Creo interfaces en JavaScript/TypeScript y back-ends en Ruby on Rails y Node.js.',
+    },
+  ] as const) {
+    test(`are made of the profile (${lang})`, async ({ page }) => {
+      await page.goto(path);
+
+      await expect(page).toHaveTitle(title);
+      await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+        'content',
+        description,
+      );
+    });
+  }
+});
+
 // The 404 pages answer 200 at `/404` and `/es/404/` (plain assets), and 404 at every other
 // address: either way they are not pages to index, and they have no address of their own to
 // call canonical.

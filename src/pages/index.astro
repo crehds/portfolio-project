@@ -1,14 +1,20 @@
 ---
+import { getEntry } from 'astro:content';
+
 import HomePage from '../components/home/HomePage.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getDictionary } from '../shared/i18n/ui';
+import { homeMetadata } from '../modules/profile/domain/home-metadata';
 
-const dictionary = getDictionary('en');
+const profile = await getEntry('profile', 'profile');
+if (!profile) {
+  throw new Error(
+    'The "profile" content entry is missing; the home page needs it for its title and description.',
+  );
+}
+
+const { title, description } = homeMetadata(profile.data, 'en');
 ---
 
-<BaseLayout
-  title={dictionary.siteTitle}
-  description={dictionary.siteDescription}
->
+<BaseLayout title={title} description={description}>
   <HomePage />
 </BaseLayout>
