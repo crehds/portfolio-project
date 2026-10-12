@@ -28,6 +28,9 @@ export const SOCIAL_IMAGE_TRANSFORM = {
   format: 'jpeg',
 } as const;
 
+/** The media type of the picture that `SOCIAL_IMAGE_TRANSFORM` writes (`og:image:type`). */
+export const SOCIAL_IMAGE_TYPE = 'image/jpeg';
+
 /**
  * Throws when a cover is smaller than the picture of a link preview (`SOCIAL_IMAGE_SIZE`), in
  * either direction. Astro's image service never enlarges, so the picture made from such a
