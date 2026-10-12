@@ -75,14 +75,15 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~26,504 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+- Running count: ~26,942 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
   T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321 + T08 ~1,021 + T09 ~923 + T09b ~217 +
   T10 ~778 + T10b ~88 + T11a ~935 + T11b ~1,698 + T11c ~2,978 + T11c-b ~1,573 + T10c ~244 + T11d ~7,936 + T11e ~535 +
-  T11d-b ~482 + T12a ~674 + T12b ~581 + T12c ~939, with tests, excluding lockfiles and the legacy removal; the terms before T11d sum to 15,357, so the
+  T11d-b ~482 + T12a ~674 + T12b ~581 + T12c ~939 + T12e ~438, with tests, excluding lockfiles and the legacy removal; the terms before T11d sum to 15,357, so the
   earlier total of ~15,124 was an addition slip). It already passes the ~4,300 forecast, mostly from tests, the e2e
   harness and the review follow-up tasks.
-- Last reviewed boundary: `cddfe93`, the T12c tip (the merge `a6c6f67` has the same tree, `74caa55`); the T12b record
-  `7d1d442` was reviewed with T12c. Before that, `699a9de`, the T12b tip (the merge `0dc0da1` has the same tree,
+- Last reviewed boundary: `233881c`, the T12e tip (the merge `fa695de` has the same tree, `0f3ef44`); the T12c record
+  `811438d` was reviewed with T12e. Before that, `cddfe93`, the T12c tip (the merge `a6c6f67` has the same tree,
+  `74caa55`); the T12b record `7d1d442` was reviewed with T12c. Before that, `699a9de`, the T12b tip (the merge `0dc0da1` has the same tree,
   `5b99be5`); the T12a record `d2a7f69` was reviewed with T12b. Before that, `dd9a101`, the T12a tip (the merge `bcf61fe` has the same tree,
   `d38821c`); the T12 plan record `889497d` before it was assessed passive. Before that, `ae71410`, the T11d-b tip (the merge `5f29f95` has the same tree, `8dbc3bd`); the T11e record
   `1d41d29` was reviewed with T11d-b. Before that, `f31d941`, the T11e tip (the merge `9c35533` has the same tree,
@@ -244,7 +245,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   - [ ] **T12d** A default social card per locale (a static 1200x630 PNG in `src/assets/og/`) for every page without a
     cover, drafted from the design tokens (name and role) for the owner's approval. Generated cards are deferred: the
     adapter prerenders in workerd and leaves sharp out. Route: delegated + owner approval.
-  - [ ] **T12e** JSON-LD `Person` on the two home pages from `profile.yaml` only (`name`, `jobTitle`, `description`,
+  - [x] **T12e** (delivered in eight commits, see Progress) JSON-LD `Person` on the two home pages from `profile.yaml` only (`name`, `jobTitle`, `description`,
     `url`, `image`, `sameAs` with LinkedIn and GitHub), serialized with `<` escaped. Also, from the T12c review:
     (1) the e2e finds the project cover with a selector tied to the cover instead of `main img`, which a case-study
     image in the body would break (warning); (2) the declared `og:image` size matches what `getImage` produced, or the
@@ -324,6 +325,7 @@ the HTML reporter blocks the shell after a failure.
 | T12a | done (merged `bcf61fe`) | `d770c4a` shared `SITE_URL`, `c6ebd46` `canonicalHref`, `45ecd19` canonical link + `noindex` on error pages, `fbe615b` home title and description from the profile, `5931e31` unused dictionary keys dropped, `dd9a101` `SITE_URL` in its own module (parent follow-up) | Strict TDD: `SITE_URL` 9 unit failures before the export; `canonicalHref is not a function` (8), then a naive `site + pathname` stub (4 failing) and a default-locale mutation (4); layout container 4 RED, then 3 mutations caught (canonical from `Astro.url.origin`: 3; a canonical on error pages: 1; `noindex` on every page: 1); `e2e/seo.spec.ts` with the layout change stashed: 24 failed, 1 passed (canonical "Expected 1, Received 0"; robots meta "Expected 1, Received 0"), and its table guard against `dist/client` caught a removed slug; `homeMetadata`: Cannot find module, then a naive stub 4/4; dictionary pins 2; the move to `src/shared/site/`: 3 suites with Cannot find module · writer: lint · format · check 0/0/0 (177 files) · test 1310/1310 in 53 files · e2e 477/477 · build 18 pages · dry run unchanged (at `5931e31`) · parent readback of the production diff; parent re-ran: test 1310/1310 in 53 files; the merge tree equals the reviewed tree (`d38821c`) | Slice from `889497d` (T12a): medium, 21 files, 674 lines, 1 lens (reliability), approved with 0 findings (`review-44d421d6be6f71f9`) |
 | T12b | done (merged `0dc0da1`) | `c6a6aa7` robots.txt endpoint over `buildRobotsTxt`, `a05a02c` `withXDefaultAlternate`, `699a9de` `@astrojs/sitemap` 3.7.4 with the i18n alternates and `x-default` | Strict TDD: `buildRobotsTxt` Cannot find module, then a naive stub 2/6 (a doubled slash; no throw for a site that is not absolute); e2e against the build before the change: 23 failed, 27 passed (`/robots.txt` and `/sitemap-index.xml` "Expected 200, Received 404"); `withXDefaultAlternate` module not found, then a naive stub 6/8; the sitemap with `i18n` and no `serialize`: 18 failed (no `x-default`); mutations caught (no `i18n`: 20 failures and `/es/404/` listed; `changefreq` and `priority` set: the unset-fields test; no de-duplication: 1) · writer: `pnpm install --frozen-lockfile` · lint · format · check 0/0/0 (182 files) · test 1324/1324 in 55 files · e2e 500/500 · build (`robots.txt`, `sitemap-index.xml` and `sitemap-0.xml` in `dist/client`) · dry run unchanged · parent readback of the production diff; parent re-ran: test 1324/1324 in 55 files; the merge tree equals the reviewed tree (`5b99be5`) | Slice from `d2a7f69` (the T12a record + T12b): medium, 9 files, 616 lines, 1 lens (reliability), approved with 2 advisory suggestions (`review-2d95904680bbb411`), routed to T12c |
 | T12c | done (merged `a6c6f67`) | `32c1d1d` a test for the throw in `withXDefaultAlternate`, `282a526` the robots.txt media type matched by pattern (both from the T12b review), `bf32a5d` `buildSocialMeta`, `fb11627` Open Graph and Twitter tags in `BaseLayout`, `ad97769` project covers as social images, `cddfe93` `coverAltText` (parent follow-up) | Strict TDD: the new e2e against the build before the change: 18 failed (no og tags); `buildSocialMeta` Cannot find module, then a naive stub (8 failed, 2 passed), then 11/11; layout container 7 RED, then 22/22; the cover e2e 18 RED before the pages passed a picture; the T12b throw test proved by removing the throw (1 failed); mutations caught (builder 8, layout 8, e2e 3, crop constants 4); `coverAltText` Cannot find module, then a naive stub 2/3, and `dist/client` byte-identical before and after that refactor · writer: lint · format · check 0/0/0 (188 files) · test 1351/1351 in 58 files · e2e 532/532 on clean runs (see the e2e diagnosis in the change log) · build 18 pages and four 1200x630 covers · dry run unchanged · parent readback of the production diff; parent re-ran: test 1351/1351 in 58 files; the merge tree equals the reviewed tree (`74caa55`) | Slice from `7d1d442` (the T12b record + T12c): medium, 15 files, 939 lines, 1 lens (reliability), approved with 1 advisory warning and 2 suggestions (`review-a1fdb60f738d38de`), routed to T12e |
+| T12e | done (merged `fa695de`) | `b284de1` a cover minimum in the content schema, reverted by `ad51935` (see the change log), `cbbe787` the `hreflangAlternates` spy reset after each test, `4640eb5` `assertCoverFitsSocialImage` (the build fails for a cover under 1200x630), `accbdd9` the cover found by its place in the article, `4424db2` `buildPersonJsonLd` + `serializeJsonLd`, `1aa4045` a `jsonLd` prop on `BaseLayout`, `233881c` the `Person` on both home pages | Strict TDD: the schema refine 3 failed / 8 passed (later reverted); `assertCoverFitsSocialImage` 5 failed (not a function); `json-ld` Cannot find module, then 1 failed on the `<` escape (it caught a real single-backslash bug); the layout `jsonLd` prop 1 failed / 23 passed; the structured-data e2e against the old build 4 failed / 19 passed; the cover guard proved on the real build with the threshold raised to 1300 (the build failed naming "Bachatealo" at 1280x800); the selector proved by a reverted mutation (a body `<img>`: the old `main img` failed 10 cover tests, the new `main article > picture > img` passed 94/94); the spy reset proved by a mutation (without `mockReset`: 1 failed) · writer: lint · format · check 0/0/0 (190 files) · test 1366/1366 in 59 files · e2e 555/555 on the first run · build · parent re-ran: check 0/0/0, test 1366/1366 in 59 files; the merge tree equals the reviewed tree (`0f3ef44`) | Slice from `811438d` (the T12c record + T12e): medium, 14 files, 438 lines, 1 lens (reliability), approved with 1 advisory warning (`review-7e1cdf503b57bd14`: `mockReset` semantics before Vitest 3; the repo runs Vitest 5.0.2, where it restores the original implementation, so no action) |
 
 ## Change log
 
@@ -764,14 +766,57 @@ the HTML reporter blocks the shell after a failure.
   would break on a case-study image; the declared `og:image` size comes from constants, not from what `getImage`
   produced; a test relies on `mockReturnValueOnce` running last) and acknowledged; all three go to T12e. Merged
   `--no-ff` as `a6c6f67`, whose tree equals the reviewed and tested tree `74caa55`.
+- 2026-10-12: Q5 answered (Engram, topic `odd/portfolio-astro-rebuild/q5`). Cloudflare's docs say rate limiting
+  bindings are not visible in the dashboard, so the check was indirect. The account's Pages projects cannot hold a
+  rate limiting binding (the Pages Functions bindings list has none). `bachatealo` has none in any of its 20 local
+  refs. The code of `wa-orders-worker` and `landing-publish` is not on this machine. A clash would only share
+  counters and never fails a deploy, so `7301` and `7302` stay. Optional check: search for `.limit(` in those two
+  Workers' code in the dashboard.
+- 2026-10-12: T12e (writer note: Engram #520).
+  - `src/shared/seo/json-ld.ts`: `buildPersonJsonLd` throws if `url`, `image` or a `sameAs` entry is not absolute.
+    `serializeJsonLd` escapes every `<`.
+  - `BaseLayout` takes an optional `jsonLd` prop, rendered as an inline `application/ld+json` script.
+  - Both home pages build it from the profile only. `url` is `canonicalHref` of the page; `image` is the photo
+    through `getImage` as JPEG, made absolute with `Astro.site`. A profile without `photo` or `headline` fails the
+    build instead of getting a fallback.
+  - The e2e checks the literal values on both homes, that the photo is served as `image/jpeg`, and that the served
+    script has no raw `<`. It also checks 19 other pages, the 404s included, for no JSON-LD.
+  - Item (2) of the T12c review: a content-schema minimum cannot work. At schema time the glob loader gives `image()`
+    a placeholder string, so there is no size to check. Reading `getImage`'s options would echo the requested size.
+    So `assertCoverFitsSocialImage` (`src/shared/seo/social-image.ts`) reads the cover's real metadata in both
+    project pages and throws with the project and both sizes. The first attempt (`b284de1`) was reverted with
+    `ad51935`, not squashed, because the writer's `git reset --hard` was denied.
+  - Gotcha: `node_modules/.astro/data-store.json` caches parsed content, so a schema change does not re-run until it
+    is deleted.
+- 2026-10-12: the stop hook fired three times while the T12e writer ran (firings 30 to 32).
+  - 30: the writer's uncommitted workspace (4 files, 61 lines: the schema refine later reverted). Granted; approved
+    with 0 findings (`review-6fa52899f93c274e`) and acknowledged.
+  - 31: a later uncommitted workspace (4 files, 12 lines). Granted. `review-9947d9521ea01278` returned
+    `correction_required`, with 2 blockers and 2 warnings, all about transient debugging state: a temporary probe
+    image in the project page, a refine with unbound names and a debug log, and the selector exclusion not yet
+    proven. The parent relayed them to the writer. The writer confirmed none reached a commit, and they do not
+    appear in `233881c`. The workspace had moved on, so the lineage became unrelated and was left open, unacknowledged.
+  - 32: the whole branch from `v1-legacy` (`d583e09`; 341 files, 54,705 lines, high). Granted;
+    `lens_context_budget_exceeded`; nothing created.
+- 2026-10-12: T12e review and merge. The assessment of `811438d..233881c` was medium and due (`slice_budget_reached`,
+  438 lines). Granted; approved with 1 advisory warning (`review-7e1cdf503b57bd14`, no action: Vitest 5.0.2) and
+  acknowledged. Merged `--no-ff` as `fa695de`, whose tree equals the reviewed and tested tree `0f3ef44`.
+- 2026-10-12: T12d and T12f drafts, prepared outside the repo for the owner's approval (session scratchpad
+  `drafts/`; sources `og-card.html`, `common.css`, `icon.svg`, `render.mjs`, `build-ico.mjs`, rendered with the
+  project's Playwright and the cached Ubuntu fonts).
+  - The card: dark `#161a17`, a `>_` mark, the name in Ubuntu Bold, the role in Ubuntu Mono cyan, one per locale. The
+    lowest contrast is 10.27:1.
+  - The icon: a `>_` mark drawn as paths. The parent flagged that the light variant (white on blue) looks like the
+    PowerShell icon, and recommended the dark variant (cyan on `#161a17`) for every icon.
+  - Proposed `theme-color`: `#faf9f5` light and `#161a17` dark.
 
 ## Next step
 
-T12e (JSON-LD `Person`, with the three T12c review items); T12d and T12f once the owner approves the drafts of the
-social card and the icon; then T13 (hardening) and T14 (launch); T10d when the owner gives the color direction. Before
-a writer runs e2e, stop any `astro dev` on port 4321. Owner: answer Q5 (are the rate-limit namespaces `7301` and
-`7302` unused in the Cloudflare account?) and Q7 (the Spanish copy of the contact and 404 pages, plus the home title
-and description from T12a). Before live checks of the form: create the Turnstile widget (confirm it accepts the
+T12d and T12f, once the owner approves the drafts of the social card and the icon (the parent recommends the dark
+icon variant everywhere; see the change log). Then T13 (hardening) and T14 (launch). T10d when the owner gives the
+color direction. Before a writer runs e2e, stop any `astro dev` on port 4321. Answer the stop hook's prompt before
+launching a writer; a running writer's workspace keeps producing new review candidates. Owner: Q7 (the Spanish copy
+of the contact and 404 pages, plus the home title and description from T12a). Before live checks of the form: create the Turnstile widget (confirm it accepts the
 `carlos15erh.workers.dev` hostname), set up EmailJS (service, template, non-browser API, keys; see
 `docs/contact-setup.md`) and add the Worker secrets. Still unknown: whether `ECONNRESET` matches the e2e retry keyword
 on Linux (the first Linux CI run passed; its log was not read). Optional: the heading-spacing rhythm noted in T10b.
