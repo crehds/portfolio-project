@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-const SITE = 'https://portfolio-project.carlos15erh.workers.dev';
+import { SITE_URL } from '../src/shared/i18n/locales';
 
 const locales: {
   lang: 'en' | 'es';
@@ -83,19 +83,19 @@ for (const {
         page.locator('link[rel="alternate"][hreflang="en"]'),
       ).toHaveAttribute(
         'href',
-        `${SITE}${lang === 'en' ? detailPath : otherDetailPath}`,
+        `${SITE_URL}${lang === 'en' ? detailPath : otherDetailPath}`,
       );
       await expect(
         page.locator('link[rel="alternate"][hreflang="es"]'),
       ).toHaveAttribute(
         'href',
-        `${SITE}${lang === 'es' ? detailPath : otherDetailPath}`,
+        `${SITE_URL}${lang === 'es' ? detailPath : otherDetailPath}`,
       );
       await expect(
         page.locator('link[rel="alternate"][hreflang="x-default"]'),
       ).toHaveAttribute(
         'href',
-        `${SITE}${lang === 'en' ? detailPath : otherDetailPath}`,
+        `${SITE_URL}${lang === 'en' ? detailPath : otherDetailPath}`,
       );
     });
 

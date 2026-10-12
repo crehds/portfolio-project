@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 
+import { SITE_URL } from '../src/shared/i18n/locales';
 import { COPY, type ContactCopy } from './support/contact-copy';
 import { expect, test, useWidgetToken } from './support/contact-test';
 import { emailjsFailure, turnstileToken } from './support/fake-upstreams';
@@ -293,16 +294,10 @@ test.describe('the pages that answer a post', () => {
 
       await expect(
         page.locator('link[rel="alternate"][hreflang="en"]'),
-      ).toHaveAttribute(
-        'href',
-        'https://portfolio-project.carlos15erh.workers.dev/contact/',
-      );
+      ).toHaveAttribute('href', `${SITE_URL}/contact/`);
       await expect(
         page.locator('link[rel="alternate"][hreflang="es"]'),
-      ).toHaveAttribute(
-        'href',
-        'https://portfolio-project.carlos15erh.workers.dev/es/contact/',
-      );
+      ).toHaveAttribute('href', `${SITE_URL}/es/contact/`);
       const otherLocale = L.lang === 'en' ? 'es' : 'en';
       await expect(
         page.locator(`nav a[hreflang="${otherLocale}"]`),

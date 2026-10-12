@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-const SITE = 'https://portfolio-project.carlos15erh.workers.dev';
+import { SITE_URL } from '../src/shared/i18n/locales';
 
 interface CategoryExpectation {
   heading: string;
@@ -107,13 +107,22 @@ for (const {
       await expect(page.locator('link[rel="alternate"]')).toHaveCount(3);
       await expect(
         page.locator('link[rel="alternate"][hreflang="en"]'),
-      ).toHaveAttribute('href', `${SITE}${lang === 'en' ? path : otherPath}`);
+      ).toHaveAttribute(
+        'href',
+        `${SITE_URL}${lang === 'en' ? path : otherPath}`,
+      );
       await expect(
         page.locator('link[rel="alternate"][hreflang="es"]'),
-      ).toHaveAttribute('href', `${SITE}${lang === 'es' ? path : otherPath}`);
+      ).toHaveAttribute(
+        'href',
+        `${SITE_URL}${lang === 'es' ? path : otherPath}`,
+      );
       await expect(
         page.locator('link[rel="alternate"][hreflang="x-default"]'),
-      ).toHaveAttribute('href', `${SITE}${lang === 'en' ? path : otherPath}`);
+      ).toHaveAttribute(
+        'href',
+        `${SITE_URL}${lang === 'en' ? path : otherPath}`,
+      );
     });
 
     for (const colorScheme of ['light', 'dark'] as const) {

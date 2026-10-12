@@ -1,6 +1,7 @@
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { describe, expect, it, vi } from 'vitest';
 
+import { SITE_URL } from '../shared/i18n/locales';
 import { localeOfPathname } from '../shared/i18n/paths';
 import { getDictionary } from '../shared/i18n/ui';
 import BaseLayout from './BaseLayout.astro';
@@ -18,11 +19,9 @@ vi.mock('astro:content', () => ({
   }),
 }));
 
-const SITE = 'https://portfolio-project.carlos15erh.workers.dev';
-
 async function render(pathname: string, errorPage?: boolean): Promise<string> {
   const container = await AstroContainer.create({
-    astroConfig: { site: SITE },
+    astroConfig: { site: SITE_URL },
   });
 
   return container.renderToString(BaseLayout, {
@@ -97,9 +96,9 @@ describe('BaseLayout', () => {
 
   it('declares the hreflang alternates of the page', async () => {
     expect(await alternates('/projects/pysa/')).toEqual([
-      { hreflang: 'en', href: `${SITE}/projects/pysa/` },
-      { hreflang: 'es', href: `${SITE}/es/projects/pysa/` },
-      { hreflang: 'x-default', href: `${SITE}/projects/pysa/` },
+      { hreflang: 'en', href: `${SITE_URL}/projects/pysa/` },
+      { hreflang: 'es', href: `${SITE_URL}/es/projects/pysa/` },
+      { hreflang: 'x-default', href: `${SITE_URL}/projects/pysa/` },
     ]);
   });
 

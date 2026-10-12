@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { SITE_URL } from './locales';
 import {
   hreflangAlternates,
   localeOfPathname,
@@ -111,39 +112,19 @@ describe('pathnameIsWithinSection', () => {
 });
 
 describe('hreflangAlternates', () => {
-  const site = 'https://portfolio-project.carlos15erh.workers.dev';
-
   it('lists absolute urls for every locale plus x-default on the site origin', () => {
-    expect(hreflangAlternates('/', site)).toEqual([
-      {
-        hreflang: 'en',
-        href: 'https://portfolio-project.carlos15erh.workers.dev/',
-      },
-      {
-        hreflang: 'es',
-        href: 'https://portfolio-project.carlos15erh.workers.dev/es/',
-      },
-      {
-        hreflang: 'x-default',
-        href: 'https://portfolio-project.carlos15erh.workers.dev/',
-      },
+    expect(hreflangAlternates('/', SITE_URL)).toEqual([
+      { hreflang: 'en', href: `${SITE_URL}/` },
+      { hreflang: 'es', href: `${SITE_URL}/es/` },
+      { hreflang: 'x-default', href: `${SITE_URL}/` },
     ]);
   });
 
   it('resolves alternates from a spanish, nested pathname', () => {
-    expect(hreflangAlternates('/es/projects/x/', site)).toEqual([
-      {
-        hreflang: 'en',
-        href: 'https://portfolio-project.carlos15erh.workers.dev/projects/x/',
-      },
-      {
-        hreflang: 'es',
-        href: 'https://portfolio-project.carlos15erh.workers.dev/es/projects/x/',
-      },
-      {
-        hreflang: 'x-default',
-        href: 'https://portfolio-project.carlos15erh.workers.dev/projects/x/',
-      },
+    expect(hreflangAlternates('/es/projects/x/', SITE_URL)).toEqual([
+      { hreflang: 'en', href: `${SITE_URL}/projects/x/` },
+      { hreflang: 'es', href: `${SITE_URL}/es/projects/x/` },
+      { hreflang: 'x-default', href: `${SITE_URL}/projects/x/` },
     ]);
   });
 });

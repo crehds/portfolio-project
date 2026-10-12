@@ -2,7 +2,8 @@ import { existsSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
-const SITE = 'https://portfolio-project.carlos15erh.workers.dev';
+import { SITE_URL } from '../src/shared/i18n/locales';
+
 const DIST_CLIENT = new URL('../dist/client/', import.meta.url);
 
 // The contact page and its locale twin. Both are on demand (the form posts to the page), so
@@ -88,13 +89,13 @@ for (const {
       await expect(page.locator('link[rel="alternate"]')).toHaveCount(3);
       await expect(
         page.locator('link[rel="alternate"][hreflang="en"]'),
-      ).toHaveAttribute('href', `${SITE}/contact/`);
+      ).toHaveAttribute('href', `${SITE_URL}/contact/`);
       await expect(
         page.locator('link[rel="alternate"][hreflang="es"]'),
-      ).toHaveAttribute('href', `${SITE}/es/contact/`);
+      ).toHaveAttribute('href', `${SITE_URL}/es/contact/`);
       await expect(
         page.locator('link[rel="alternate"][hreflang="x-default"]'),
-      ).toHaveAttribute('href', `${SITE}/contact/`);
+      ).toHaveAttribute('href', `${SITE_URL}/contact/`);
     });
 
     test("the language switcher leads to the other locale's contact page", async ({
