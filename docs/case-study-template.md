@@ -58,6 +58,9 @@ at the result. Two consequences for a new cover:
 - Put what identifies the project in the top of the screenshot. A 1280x800 capture loses roughly
   its bottom sixth in the card.
 
+A project without a cover shares the site's default card for its language instead (a PNG in
+`src/assets/og/`, drawn by `scripts/social-card/`; see its README to regenerate it).
+
 ### The `date` rule
 
 `date` represents the project's last known activity, not a case study's publish date. Use,

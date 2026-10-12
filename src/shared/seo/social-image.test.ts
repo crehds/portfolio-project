@@ -4,6 +4,7 @@ import {
   assertCoverFitsSocialImage,
   SOCIAL_IMAGE_SIZE,
   SOCIAL_IMAGE_TRANSFORM,
+  SOCIAL_IMAGE_TYPE,
 } from './social-image';
 
 describe('SOCIAL_IMAGE_SIZE', () => {
@@ -27,6 +28,13 @@ describe('SOCIAL_IMAGE_TRANSFORM', () => {
 
   it('has the size that the tags of the page declare', () => {
     expect(SOCIAL_IMAGE_TRANSFORM).toMatchObject(SOCIAL_IMAGE_SIZE);
+  });
+});
+
+describe('SOCIAL_IMAGE_TYPE', () => {
+  it('is the media type of the format that a cover is written in', () => {
+    expect(SOCIAL_IMAGE_TYPE).toBe('image/jpeg');
+    expect(SOCIAL_IMAGE_TYPE).toBe(`image/${SOCIAL_IMAGE_TRANSFORM.format}`);
   });
 });
 

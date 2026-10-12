@@ -21,6 +21,18 @@ export default defineConfig([
   eslintPluginAstro.configs['jsx-a11y-strict'],
   eslintConfigPrettier,
   {
+    // Manual generator scripts (scripts/): Node programs that log what they write, and one
+    // runs in the page it drives, so `Buffer`, `console` and `document` are theirs to use.
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        Buffer: 'readonly',
+        console: 'readonly',
+        document: 'readonly',
+      },
+    },
+  },
+  {
     // Node-only config file: it branches on process.env.VITEST, unlike the browser-facing
     // site code, so it alone needs the Node `process` global.
     files: ['astro.config.mjs'],
