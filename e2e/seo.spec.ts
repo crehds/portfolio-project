@@ -174,11 +174,13 @@ const SOCIAL_KEYS = [
   'twitter:card',
 ];
 
-// A page that shares a picture has four more: the picture, its size and its alt text.
+// Every page shares a picture, which has four more: the picture, its size, its type and its alt
+// text. It is the project's cover or, for any other page, the default card of the locale.
 const SOCIAL_IMAGE_KEYS = [
   'og:image',
   'og:image:width',
   'og:image:height',
+  'og:image:type',
   'og:image:alt',
 ];
 
@@ -211,12 +213,11 @@ test.describe('Open Graph and Twitter tags', () => {
       const canonical = await page
         .locator('link[rel="canonical"]')
         .getAttribute('href');
-      const hasCover = PROJECT_PAGES.some((project) => project.path === path);
 
       // Nothing else, and nothing twice. In particular no `twitter:site` or `twitter:creator`:
       // the profile has no X handle to name.
       expect(tags.map(([key]) => key).sort()).toEqual(
-        [...SOCIAL_KEYS, ...(hasCover ? SOCIAL_IMAGE_KEYS : [])].sort(),
+        [...SOCIAL_KEYS, ...SOCIAL_IMAGE_KEYS].sort(),
       );
       expect(valuesOf(tags, 'og:type')).toEqual(['website']);
       expect(valuesOf(tags, 'og:site_name')).toEqual([SOCIAL_SITE_NAME]);
@@ -235,10 +236,8 @@ test.describe('Open Graph and Twitter tags', () => {
       expect(valuesOf(tags, 'og:locale:alternate')).toEqual([
         lang === 'en' ? 'es_LA' : 'en_US',
       ]);
-      // The large card is for a page that has a picture to show.
-      expect(valuesOf(tags, 'twitter:card')).toEqual([
-        hasCover ? 'summary_large_image' : 'summary',
-      ]);
+      // Every page has a picture to show, so every page asks for the large card.
+      expect(valuesOf(tags, 'twitter:card')).toEqual(['summary_large_image']);
     });
   }
 });
@@ -292,6 +291,7 @@ test.describe('the picture of a project page', () => {
       // The tags say what the file is, and describe it the way the page describes its cover.
       expect(valuesOf(tags, 'og:image:width')).toEqual(['1200']);
       expect(valuesOf(tags, 'og:image:height')).toEqual(['630']);
+      expect(valuesOf(tags, 'og:image:type')).toEqual(['image/jpeg']);
       expect(alt).toBeTruthy();
       expect(valuesOf(tags, 'og:image:alt')).toEqual([alt]);
     });
@@ -307,6 +307,78 @@ test.describe('the picture of a project page', () => {
       expect(valuesOf(await socialTags(page), 'og:image:alt')).toEqual([alt]);
     });
   }
+});
+
+// Every other page shares the default card of its locale: a static 1200x630 PNG (src/assets/og)
+// with the owner's name and role. Its size and type are the file's own, so they are read from
+// the file the test server sends, not from what the tags say, and the tags are checked against it.
+const DEFAULT_CARD_ALT = {
+  en: 'Carlos Rodríguez Huerta — Full-stack web developer',
+  es: 'Carlos Rodríguez Huerta — Desarrollador web full-stack',
+} as const;
+
+const PAGES_WITHOUT_COVER = PAGES.filter(
+  ({ path }) => !PROJECT_PAGES.some((project) => project.path === path),
+);
+
+/** The width and height that a PNG file declares in its IHDR chunk. */
+function pngSize(bytes: Buffer): { width: number; height: number } {
+  expect([...bytes.subarray(0, 8)]).toEqual([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+  ]);
+  return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
+}
+
+test.describe('the default card of a page without a cover', () => {
+  test('are the home, the list, the section and the contact pages, in both locales', () => {
+    expect(PAGES_WITHOUT_COVER.map(({ path }) => path).sort()).toEqual(
+      LANGS.flatMap((lang) =>
+        ['/', '/projects/', '/experience/', '/skills/', '/contact/'].map(
+          (path) => inLang(lang, path),
+        ),
+      ).sort(),
+    );
+  });
+
+  for (const { lang, path } of PAGES_WITHOUT_COVER) {
+    test(`${path} shares the card of its locale, 1200x630`, async ({
+      page,
+      request,
+    }) => {
+      await page.goto(path);
+
+      const tags = await socialTags(page);
+      // An absolute address on the site, whatever host the test reached the page on.
+      const images = valuesOf(tags, 'og:image');
+      expect(images).toHaveLength(1);
+      const url = new URL(images[0] ?? '');
+      expect(url.origin).toBe(SITE_URL);
+      expect(url.pathname).toMatch(
+        new RegExp(`^/_astro/og-card-${lang}\.[^/]+\.png$`),
+      );
+
+      // The test server has the file at the same pathname, as an image.
+      const response = await request.get(url.pathname);
+      expect(response.status()).toBe(200);
+      expect(response.headers()['content-type']).toMatch(/^image\/png\b/);
+      const size = pngSize(await response.body());
+      expect(size).toEqual({ width: 1200, height: 630 });
+
+      // The tags declare what the file is.
+      expect(valuesOf(tags, 'og:image:width')).toEqual([String(size.width)]);
+      expect(valuesOf(tags, 'og:image:height')).toEqual([String(size.height)]);
+      expect(valuesOf(tags, 'og:image:type')).toEqual(['image/png']);
+      expect(valuesOf(tags, 'og:image:alt')).toEqual([DEFAULT_CARD_ALT[lang]]);
+    });
+  }
+
+  test('a project page keeps its cover instead', async ({ page }) => {
+    await page.goto('/projects/pysa/');
+
+    const images = valuesOf(await socialTags(page), 'og:image');
+    expect(images).toHaveLength(1);
+    expect(images[0]).not.toContain('og-card');
+  });
 });
 
 // What a crawler is told about the owner: a schema.org `Person` on the two home pages, made of the
