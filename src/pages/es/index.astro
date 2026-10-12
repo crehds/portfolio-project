@@ -1,9 +1,12 @@
 ---
+import { getImage } from 'astro:assets';
 import { getEntry } from 'astro:content';
 
 import HomePage from '../../components/home/HomePage.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { homeMetadata } from '../../modules/profile/domain/home-metadata';
+import { canonicalHref } from '../../shared/i18n/paths';
+import { buildPersonJsonLd, serializeJsonLd } from '../../shared/seo/json-ld';
 
 const profile = await getEntry('profile', 'profile');
 if (!profile) {
@@ -13,8 +16,35 @@ if (!profile) {
 }
 
 const { title, description } = homeMetadata(profile.data, 'es');
+
+const { photo: profilePhoto, headline } = profile.data;
+if (!profilePhoto || !headline) {
+  throw new Error(
+    'The profile "photo" and "headline" fields are missing; the home page structured data needs them.',
+  );
+}
+if (!Astro.site) {
+  throw new Error(
+    'Astro.site is not configured; the home page structured data needs it for absolute addresses.',
+  );
+}
+
+// Everything comes from the profile, and the addresses are the site's own (`Astro.site`),
+// never the origin the request came in on. The photo goes through the image pipeline, which
+// writes the file when the site is built; its address is root-relative until made absolute.
+const photo = await getImage({ src: profilePhoto, format: 'jpeg' });
+const jsonLd = serializeJsonLd(
+  buildPersonJsonLd({
+    name: profile.data.name,
+    jobTitle: profile.data.role.es,
+    description: headline.es,
+    url: canonicalHref(Astro.url.pathname, Astro.site.href),
+    image: new URL(photo.src, Astro.site).href,
+    sameAs: [profile.data.linkedin, profile.data.github],
+  }),
+);
 ---
 
-<BaseLayout title={title} description={description}>
+<BaseLayout title={title} description={description} jsonLd={jsonLd}>
   <HomePage />
 </BaseLayout>

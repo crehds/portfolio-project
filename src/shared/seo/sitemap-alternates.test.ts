@@ -1,15 +1,22 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { hreflangAlternates } from '../i18n/paths';
 import { SITE_URL } from '../site/site-url';
 import { withXDefaultAlternate } from './sitemap-alternates';
 
-// The head's rule is the real one in every test but the last: it is wrapped, not replaced, so
-// that one test can make it answer without an `x-default`, which the real rule never does.
+// The head's rule is the real one in every test but one: it is wrapped, not replaced, so that
+// the test can make it answer without an `x-default`, which the real rule never does. The spy
+// is reset after each test (below), so that answer cannot outlive the test that set it.
 vi.mock('../i18n/paths', async (importOriginal) => {
   const paths = await importOriginal<typeof import('../i18n/paths')>();
 
   return { ...paths, hreflangAlternates: vi.fn(paths.hreflangAlternates) };
+});
+
+afterEach(() => {
+  // `mockReset` puts the wrapped rule back as the implementation and drops any answer that a
+  // test queued with `mockReturnValueOnce` and did not use.
+  vi.mocked(hreflangAlternates).mockReset();
 });
 
 const SITE = 'https://example.com';
@@ -132,8 +139,6 @@ describe('withXDefaultAlternate', () => {
     ).toEqual({ url: 'https://example.com/contact/', links: [] });
   });
 
-  // Keep this the last test: the stand-in answer below is consumed by the one call it expects,
-  // and a test that did not make that call must not leave it queued for the next.
   it('refuses an entry whose head would declare no x-default, instead of writing one that disagrees with the head', () => {
     // The real rule always ends its answer with an `x-default`; this stands in for a change
     // that breaks that. Taking the entry as it is would publish a sitemap the page head
