@@ -15,6 +15,8 @@ import {
 } from '../shared/i18n/paths';
 import { getDictionary } from '../shared/i18n/ui';
 import { NAV_ITEMS } from '../shared/nav/nav-items';
+import { buildSocialMeta } from '../shared/seo/social-meta';
+import type { SocialImage } from '../shared/seo/social-meta';
 import '../styles/global.css';
 
 // Shared layout: skip link, header (site name, primary nav, language switcher, theme
@@ -28,15 +30,23 @@ interface Props {
   description: string;
   /**
    * Whether the page is an error page (the 404 pages). It has no translation of itself and
-   * no address of its own to describe, so it renders no hreflang alternates and no
-   * canonical link, and its language switcher links to the home pages instead. It asks
-   * search engines not to index it (`noindex`): `/404` and `/es/404/` answer 200 as plain
-   * assets, so they are reachable as ordinary pages.
+   * no address of its own to describe, so it renders no hreflang alternates, no canonical
+   * link and no Open Graph or Twitter tags, and its language switcher links to the home
+   * pages instead. It asks search engines not to index it (`noindex`): `/404` and
+   * `/es/404/` answer 200 as plain assets, so they are reachable as ordinary pages.
    */
   errorPage?: boolean;
+  /**
+   * The picture that a link preview shows for the page (`og:image`), as plain data: where
+   * it is served, its size and its alt text. `src` is an address on this site, root-relative
+   * as `getImage` answers it, or absolute; the layout makes it absolute with `Astro.site`,
+   * never with the address the page was reached on. A page without one writes no picture
+   * tags and asks for the small card.
+   */
+  socialImage?: SocialImage;
 }
 
-const { title, description, errorPage = false } = Astro.props;
+const { title, description, errorPage = false, socialImage } = Astro.props;
 
 const pathname = Astro.url.pathname;
 const locale = localeOfPathname(pathname);
@@ -56,6 +66,25 @@ const canonical = errorPage
 const alternates = errorPage
   ? []
   : hreflangAlternates(pathname, Astro.site.href);
+
+// What a preview of a link to the page is drawn from. The tags name the canonical address, so
+// the page that has none, an error page, has none of them either. The picture is resolved
+// against `Astro.site` like the canonical link: a preview fetches it from the address in the
+// tag, which must not be a preview deployment's or a local server's.
+const socialMeta =
+  canonical === undefined
+    ? []
+    : buildSocialMeta({
+        locale,
+        siteName: dictionary.siteTitle,
+        title,
+        description,
+        url: canonical,
+        image: socialImage && {
+          ...socialImage,
+          src: new URL(socialImage.src, Astro.site).href,
+        },
+      });
 
 const profile = await getEntry('profile', 'profile');
 if (!profile) {
@@ -130,6 +159,9 @@ if (!profile) {
         hreflang={alternate.hreflang}
         href={alternate.href}
       />
+    ))}
+    {socialMeta.map((tag) => (
+      <meta {...tag} />
     ))}
     <Font cssVariable="--font-ubuntu" preload={[{ weight: '400' }]} />
     <Font cssVariable="--font-ubuntu-mono" />

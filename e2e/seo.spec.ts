@@ -147,9 +147,88 @@ test.describe('home page title and description', () => {
   }
 });
 
+// What a link preview is made of: the Open Graph tags that LinkedIn, Slack and Facebook read, and
+// the card type that X reads (it falls back to the Open Graph tags for the rest). Like the other
+// expectations of this file, they are spelled out here and not imported from
+// src/shared/seo/social-meta.ts, so that a change to the rule is a change to the tests too.
+const SOCIAL_SITE_NAME = 'Carlos Rodríguez Huerta';
+
+// The tags of a page, whatever it shows. A page that shares a picture has four more
+// (`og:image` and its size and alt).
+const SOCIAL_KEYS = [
+  'og:type',
+  'og:site_name',
+  'og:title',
+  'og:description',
+  'og:url',
+  'og:locale',
+  'og:locale:alternate',
+  'twitter:card',
+];
+
+/** Every Open Graph and Twitter tag of the page, as `[key, content]`, in document order. */
+async function socialTags(page: Page): Promise<[string, string][]> {
+  return page
+    .locator('meta[property^="og:"], meta[name^="twitter:"]')
+    .evaluateAll((tags) =>
+      tags.map((tag): [string, string] => [
+        tag.getAttribute('property') ?? tag.getAttribute('name') ?? '',
+        tag.getAttribute('content') ?? '',
+      ]),
+    );
+}
+
+/** The contents of the tags with this key. */
+function valuesOf(tags: [string, string][], key: string): string[] {
+  return tags.filter(([name]) => name === key).map(([, content]) => content);
+}
+
+test.describe('Open Graph and Twitter tags', () => {
+  for (const { lang, path } of PAGES) {
+    test(`${path} describes itself to a link preview`, async ({ page }) => {
+      await page.goto(path);
+
+      const tags = await socialTags(page);
+      const description = await page
+        .locator('meta[name="description"]')
+        .getAttribute('content');
+      const canonical = await page
+        .locator('link[rel="canonical"]')
+        .getAttribute('href');
+
+      // Nothing else, and nothing twice. In particular no `twitter:site` or `twitter:creator`:
+      // the profile has no X handle to name.
+      expect(tags.map(([key]) => key).sort()).toEqual([...SOCIAL_KEYS].sort());
+      expect(valuesOf(tags, 'og:type')).toEqual(['website']);
+      expect(valuesOf(tags, 'og:site_name')).toEqual([SOCIAL_SITE_NAME]);
+      // The title and the description are the page's own.
+      expect(valuesOf(tags, 'og:title')).toEqual([await page.title()]);
+      expect(description).toBeTruthy();
+      expect(valuesOf(tags, 'og:description')).toEqual([description]);
+      // The address is the canonical one, so a preview of a shared link counts for the page.
+      expect(valuesOf(tags, 'og:url')).toEqual([`${SITE_URL}${path}`]);
+      expect(valuesOf(tags, 'og:url')).toEqual([canonical]);
+      // Facebook's code for Latin American Spanish is `es_LA`, and the page names the other
+      // locale as the alternate.
+      expect(valuesOf(tags, 'og:locale')).toEqual([
+        lang === 'en' ? 'en_US' : 'es_LA',
+      ]);
+      expect(valuesOf(tags, 'og:locale:alternate')).toEqual([
+        lang === 'en' ? 'es_LA' : 'en_US',
+      ]);
+      // The large card is for a page that has a picture to show.
+      expect(valuesOf(tags, 'twitter:card')).toEqual([
+        valuesOf(tags, 'og:image').length > 0
+          ? 'summary_large_image'
+          : 'summary',
+      ]);
+    });
+  }
+});
+
 // The 404 pages answer 200 at `/404` and `/es/404/` (plain assets), and 404 at every other
 // address: either way they are not pages to index, and they have no address of their own to
-// call canonical.
+// call canonical or to share.
 test.describe('error pages', () => {
   for (const { lang, path } of [
     { lang: 'en', path: '/404' },
@@ -167,6 +246,14 @@ test.describe('error pages', () => {
       await expect(robots).toHaveCount(1);
       await expect(robots).toHaveAttribute('content', 'noindex');
       await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
+    });
+
+    test(`${path} has no Open Graph or Twitter tags`, async ({ page }) => {
+      await page.goto(path);
+
+      // The page is rendered, not blank: `lang` is the page's own.
+      await expect(page.locator('html')).toHaveAttribute('lang', lang);
+      expect(await socialTags(page)).toEqual([]);
     });
   }
 });
