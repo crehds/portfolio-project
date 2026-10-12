@@ -16,7 +16,7 @@ test.describe('the CSP guard', () => {
     await page.evaluate(() => {
       const script = document.createElement('script');
       script.textContent = 'window.__injected = true;';
-      document.head.append(script);
+      document.head.appendChild(script);
     });
 
     await expect.poll(() => cspViolations.length).toBe(1);
@@ -44,7 +44,7 @@ test.describe('the CSP guard', () => {
     await page.evaluate(() => {
       const script = document.createElement('script');
       script.src = 'https://example.com/x.js';
-      document.head.append(script);
+      document.head.appendChild(script);
     });
 
     await expect.poll(() => cspViolations.length).toBe(1);
