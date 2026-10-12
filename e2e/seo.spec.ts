@@ -1,16 +1,23 @@
 import { readdirSync } from 'node:fs';
-import { expect, test } from '@playwright/test';
+import {
+  expect,
+  test,
+  type APIRequestContext,
+  type Page,
+} from '@playwright/test';
 
 import { SITE_URL } from '../src/shared/site/site-url';
 import { COPY } from './support/contact-copy';
 
 // What a search engine is told about every address of the site (T12): which URL is the page's
-// own, which pages stay out of the index, and what the file crawlers read first, robots.txt,
-// says about them. The unit tests (paths.test.ts, base-layout.test.ts, robots-txt.test.ts)
-// prove the rules; this spec proves them in the built site, page by page, in both locales.
+// own, which pages stay out of the index, and what the two files crawlers read first, robots.txt
+// and the sitemap, say about them. The unit tests (paths.test.ts, base-layout.test.ts,
+// robots-txt.test.ts, sitemap-alternates.test.ts) prove the rules; this spec proves them in the
+// built site, page by page, in both locales.
 //
 // The test server answers on localhost, and the canonical link names the production host: the
-// link is built from the configured site, never from the address the page was reached on.
+// link is built from the configured site, never from the address the page was reached on. The
+// same goes for the sitemap, whose addresses are all production ones.
 
 type Lang = 'en' | 'es';
 
@@ -180,4 +187,250 @@ test.describe('robots.txt', () => {
       `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap-index.xml\n`,
     );
   });
+});
+
+// The sitemap is a static file of the build too: `@astrojs/sitemap` writes it from the site's
+// routes once the build is done.
+
+// The drafts have an entry but no page (see projects-detail.spec.ts).
+const DRAFT_PROJECT_SLUGS = ['hagalo-verde', 'marielis'];
+
+const SITEMAP_NAMESPACE = 'http://www.sitemaps.org/schemas/sitemap/0.9';
+const XHTML_NAMESPACE = 'http://www.w3.org/1999/xhtml';
+
+/** An XML element, flattened so that it can cross from the browser to this file. */
+interface XmlElement {
+  /** The namespace the element is in, and its name without the prefix. */
+  namespace: string | null;
+  name: string;
+  attributes: Record<string, string>;
+  /** The text of an element with no child elements; empty for the others. */
+  text: string;
+  children: XmlElement[];
+}
+
+/**
+ * Parses a document with the browser's XML parser, which refuses a document that is not
+ * well-formed. Node has no XML parser of its own, and one written over the response text
+ * would be one more thing to trust.
+ */
+async function parseXml(page: Page, xml: string): Promise<XmlElement> {
+  return page.evaluate((source) => {
+    const parsed = new DOMParser().parseFromString(source, 'application/xml');
+    const failure = parsed.getElementsByTagName('parsererror')[0];
+    if (failure) {
+      throw new Error(
+        `The document is not well-formed XML: ${failure.textContent}`,
+      );
+    }
+
+    const flatten = (element: Element): XmlElement => ({
+      namespace: element.namespaceURI,
+      name: element.localName,
+      attributes: Object.fromEntries(
+        Array.from(element.attributes, (attribute): [string, string] => [
+          attribute.name,
+          attribute.value,
+        ]),
+      ),
+      text: element.children.length === 0 ? (element.textContent ?? '') : '',
+      children: Array.from(element.children, (child) => flatten(child)),
+    });
+
+    return flatten(parsed.documentElement);
+  }, xml);
+}
+
+/** A document of the site that is served as XML, read through the test server. */
+async function getXml(
+  page: Page,
+  request: APIRequestContext,
+  pathname: string,
+): Promise<XmlElement> {
+  const response = await request.get(pathname);
+
+  expect(response.status(), pathname).toBe(200);
+  expect(response.headers()['content-type'], pathname).toMatch(
+    /^(?:application|text)\/xml\b/,
+  );
+
+  return parseXml(page, await response.text());
+}
+
+function isElement(
+  element: XmlElement,
+  namespace: string,
+  name: string,
+): boolean {
+  return element.namespace === namespace && element.name === name;
+}
+
+/** The address of every sitemap that the index names. */
+async function readSitemapIndex(
+  page: Page,
+  request: APIRequestContext,
+): Promise<string[]> {
+  const index = await getXml(page, request, '/sitemap-index.xml');
+
+  expect(index).toMatchObject({
+    namespace: SITEMAP_NAMESPACE,
+    name: 'sitemapindex',
+  });
+
+  return index.children.map((sitemap) => {
+    expect(sitemap).toMatchObject({
+      namespace: SITEMAP_NAMESPACE,
+      name: 'sitemap',
+    });
+    expect(sitemap.children.map(({ name }) => name)).toEqual(['loc']);
+
+    return sitemap.children[0]?.text ?? '';
+  });
+}
+
+interface SitemapUrl {
+  loc: string;
+  alternates: { hreflang: string; href: string }[];
+  /** The names of the children that are neither the `<loc>` nor an alternate link. */
+  otherFields: string[];
+}
+
+/** Every `<url>` of the site's sitemap, reached the way a crawler reaches it: from the index. */
+async function readSitemap(
+  page: Page,
+  request: APIRequestContext,
+): Promise<SitemapUrl[]> {
+  const [sitemap = ''] = await readSitemapIndex(page, request);
+
+  // The index names the file on the production host. The test server has it at the same
+  // pathname, so the request goes there.
+  const urlset = await getXml(page, request, new URL(sitemap).pathname);
+
+  expect(urlset).toMatchObject({
+    namespace: SITEMAP_NAMESPACE,
+    name: 'urlset',
+  });
+
+  return urlset.children.map((url) => {
+    expect(url).toMatchObject({ namespace: SITEMAP_NAMESPACE, name: 'url' });
+
+    const locs = url.children.filter((child) =>
+      isElement(child, SITEMAP_NAMESPACE, 'loc'),
+    );
+    const links = url.children.filter((child) =>
+      isElement(child, XHTML_NAMESPACE, 'link'),
+    );
+    expect(locs).toHaveLength(1);
+    for (const link of links) {
+      expect(link.attributes['rel']).toBe('alternate');
+    }
+
+    return {
+      loc: locs[0]?.text ?? '',
+      alternates: links.map(({ attributes }) => ({
+        hreflang: attributes['hreflang'] ?? '',
+        href: attributes['href'] ?? '',
+      })),
+      otherFields: url.children
+        .filter((child) => !locs.includes(child) && !links.includes(child))
+        .map(({ name }) => name),
+    };
+  });
+}
+
+function byHreflang(a: { hreflang: string }, b: { hreflang: string }): number {
+  return a.hreflang.localeCompare(b.hreflang);
+}
+
+test.describe('sitemap', () => {
+  test('is announced by an index that names it on the site', async ({
+    page,
+    request,
+  }) => {
+    expect(await readSitemapIndex(page, request)).toEqual([
+      `${SITE_URL}/sitemap-0.xml`,
+    ]);
+  });
+
+  // `PAGES` is the table that the first test of this file ties to the build, so a page that
+  // is added to or dropped from the site fails there, and the sitemap is held to the same list.
+  test('lists every indexable page of the site, once, and nothing else', async ({
+    page,
+    request,
+  }) => {
+    const urls = await readSitemap(page, request);
+
+    expect(urls.map(({ loc }) => loc).sort()).toEqual(
+      PAGES.map(({ path }) => `${SITE_URL}${path}`).sort(),
+    );
+  });
+
+  test('leaves out the 404 pages, the CV routes and the draft projects', async ({
+    page,
+    request,
+  }) => {
+    const pathnames = (await readSitemap(page, request)).map(
+      ({ loc }) => new URL(loc).pathname,
+    );
+
+    expect(
+      pathnames.filter((pathname) => /\/404(?:\.html|\/)?$/.test(pathname)),
+      'the 404 pages',
+    ).toEqual([]);
+    expect(
+      pathnames.filter((pathname) => pathname.includes('/cv/')),
+      'the CV routes',
+    ).toEqual([]);
+    expect(
+      pathnames.filter((pathname) =>
+        DRAFT_PROJECT_SLUGS.some((slug) => pathname.includes(`/${slug}/`)),
+      ),
+      'the draft projects',
+    ).toEqual([]);
+  });
+
+  // Google ignores `changefreq` and `priority`, and trusts `lastmod` only when it is accurate,
+  // which the date of a build is not.
+  test('sets no lastmod, changefreq or priority', async ({ page, request }) => {
+    const urls = await readSitemap(page, request);
+
+    expect(urls.length).toBeGreaterThan(0);
+    expect(urls.flatMap(({ otherFields }) => otherFields)).toEqual([]);
+  });
+
+  for (const { path } of PAGES) {
+    test(`${path} is listed once, at its canonical address, with the alternates of its head`, async ({
+      page,
+      request,
+    }) => {
+      const urls = await readSitemap(page, request);
+
+      await page.goto(path);
+      const canonical = await page
+        .locator('link[rel="canonical"]')
+        .getAttribute('href');
+      const headAlternates = await page
+        .locator('link[rel="alternate"]')
+        .evaluateAll((links) =>
+          links.map((link) => ({
+            hreflang: link.getAttribute('hreflang') ?? '',
+            href: link.getAttribute('href') ?? '',
+          })),
+        );
+
+      expect(canonical).toBe(`${SITE_URL}${path}`);
+      // The comparison below must not pass on an empty head.
+      expect(headAlternates.map(({ hreflang }) => hreflang).sort()).toEqual([
+        'en',
+        'es',
+        'x-default',
+      ]);
+
+      const entries = urls.filter(({ loc }) => loc === canonical);
+      expect(entries).toHaveLength(1);
+      expect([...(entries[0]?.alternates ?? [])].sort(byHreflang)).toEqual(
+        [...headAlternates].sort(byHreflang),
+      );
+    });
+  }
 });
