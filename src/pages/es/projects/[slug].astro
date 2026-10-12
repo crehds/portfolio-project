@@ -1,10 +1,15 @@
 ---
+import { getImage } from 'astro:assets';
 import { getCollection, getEntry } from 'astro:content';
 
 import ProjectDetailPage from '../../../components/projects/ProjectDetailPage.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { selectProjectsForLocale } from '../../../modules/projects/domain/select-for-locale';
 import { getDictionary } from '../../../shared/i18n/ui';
+import {
+  SOCIAL_IMAGE_SIZE,
+  SOCIAL_IMAGE_TRANSFORM,
+} from '../../../shared/seo/social-image';
 
 export async function getStaticPaths() {
   const entries = await getCollection('projects');
@@ -27,8 +32,25 @@ if (!entry) {
 
 const dictionary = getDictionary('es');
 const title = `${entry.data.title} — ${dictionary.siteTitle}`;
+
+// The cover is the picture of a link preview too, cropped to the size one takes. `getImage`
+// writes the file when the site is built; its address is root-relative, and the layout makes
+// it absolute with the site's. The alt text is the one the cover has on the page. A project
+// without a cover has no picture.
+const { cover } = entry.data;
+const socialImage = cover
+  ? {
+      src: (await getImage({ src: cover, ...SOCIAL_IMAGE_TRANSFORM })).src,
+      ...SOCIAL_IMAGE_SIZE,
+      alt: `${dictionary.projectCoverAlt} ${entry.data.title}`,
+    }
+  : undefined;
 ---
 
-<BaseLayout title={title} description={entry.data.summary}>
+<BaseLayout
+  title={title}
+  description={entry.data.summary}
+  socialImage={socialImage}
+>
   <ProjectDetailPage entryId={entryId} />
 </BaseLayout>

@@ -36,18 +36,27 @@ const PUBLISHED_PROJECT_SLUGS = [
   'bachatealo',
 ];
 
-// Home, the three section pages and one page per published project, in each locale: the pages
-// that are static files in the build. The contact pages run on demand (the form posts to them),
-// so the build has no file for them; COPY has their addresses.
-const PRERENDERED = LANGS.flatMap((lang) =>
-  [
-    '/',
-    '/projects/',
-    '/experience/',
-    '/skills/',
-    ...PUBLISHED_PROJECT_SLUGS.map((slug) => `/projects/${slug}/`),
-  ].map((path) => ({ lang, path: inLang(lang, path) })),
+// One page per published project, in each locale. They are the pages with a cover, which a link
+// preview shows as the page's picture.
+const PROJECT_PAGES = LANGS.flatMap((lang) =>
+  PUBLISHED_PROJECT_SLUGS.map((slug) => ({
+    lang,
+    path: inLang(lang, `/projects/${slug}/`),
+  })),
 );
+
+// Home, the three section pages and the project pages, in each locale: the pages that are static
+// files in the build. The contact pages run on demand (the form posts to them), so the build has
+// no file for them; COPY has their addresses.
+const PRERENDERED = [
+  ...LANGS.flatMap((lang) =>
+    ['/', '/projects/', '/experience/', '/skills/'].map((path) => ({
+      lang,
+      path: inLang(lang, path),
+    })),
+  ),
+  ...PROJECT_PAGES,
+];
 
 const ON_DEMAND = COPY.map(({ lang, path }) => ({ lang, path }));
 
@@ -153,8 +162,7 @@ test.describe('home page title and description', () => {
 // src/shared/seo/social-meta.ts, so that a change to the rule is a change to the tests too.
 const SOCIAL_SITE_NAME = 'Carlos Rodríguez Huerta';
 
-// The tags of a page, whatever it shows. A page that shares a picture has four more
-// (`og:image` and its size and alt).
+// The tags of a page, whatever it shows.
 const SOCIAL_KEYS = [
   'og:type',
   'og:site_name',
@@ -164,6 +172,14 @@ const SOCIAL_KEYS = [
   'og:locale',
   'og:locale:alternate',
   'twitter:card',
+];
+
+// A page that shares a picture has four more: the picture, its size and its alt text.
+const SOCIAL_IMAGE_KEYS = [
+  'og:image',
+  'og:image:width',
+  'og:image:height',
+  'og:image:alt',
 ];
 
 /** Every Open Graph and Twitter tag of the page, as `[key, content]`, in document order. */
@@ -195,10 +211,13 @@ test.describe('Open Graph and Twitter tags', () => {
       const canonical = await page
         .locator('link[rel="canonical"]')
         .getAttribute('href');
+      const hasCover = PROJECT_PAGES.some((project) => project.path === path);
 
       // Nothing else, and nothing twice. In particular no `twitter:site` or `twitter:creator`:
       // the profile has no X handle to name.
-      expect(tags.map(([key]) => key).sort()).toEqual([...SOCIAL_KEYS].sort());
+      expect(tags.map(([key]) => key).sort()).toEqual(
+        [...SOCIAL_KEYS, ...(hasCover ? SOCIAL_IMAGE_KEYS : [])].sort(),
+      );
       expect(valuesOf(tags, 'og:type')).toEqual(['website']);
       expect(valuesOf(tags, 'og:site_name')).toEqual([SOCIAL_SITE_NAME]);
       // The title and the description are the page's own.
@@ -218,10 +237,69 @@ test.describe('Open Graph and Twitter tags', () => {
       ]);
       // The large card is for a page that has a picture to show.
       expect(valuesOf(tags, 'twitter:card')).toEqual([
-        valuesOf(tags, 'og:image').length > 0
-          ? 'summary_large_image'
-          : 'summary',
+        hasCover ? 'summary_large_image' : 'summary',
       ]);
+    });
+  }
+});
+
+// A project page shares its cover. The file is cropped when the site is built, so it is checked
+// for what it is: a JPEG of exactly the size a preview takes, which the site serves itself.
+test.describe('the picture of a project page', () => {
+  for (const { path } of PROJECT_PAGES) {
+    test(`${path} shares its cover, cropped to 1200x630`, async ({
+      page,
+      request,
+    }) => {
+      await page.goto(path);
+
+      const tags = await socialTags(page);
+      const cover = page.locator('main img');
+      await expect(cover).toHaveCount(1);
+      const alt = await cover.getAttribute('alt');
+
+      // An absolute address on the site, whatever host the test reached the page on.
+      const images = valuesOf(tags, 'og:image');
+      expect(images).toHaveLength(1);
+      const url = new URL(images[0] ?? '');
+      expect(url.origin).toBe(SITE_URL);
+      // Astro names the file after the format it was asked for (`jpeg`); what the file is
+      // gets checked below.
+      expect(url.pathname).toMatch(/^\/_astro\/[^/]+\.jpe?g$/);
+
+      // The browser here resolves no host but the local ones, so the file is fetched from the
+      // test server, which has it at the same pathname.
+      const response = await request.get(url.pathname);
+      expect(response.status()).toBe(200);
+      expect(response.headers()['content-type']).toMatch(/^image\/jpeg\b/);
+      const bytes = await response.body();
+      expect([...bytes.subarray(0, 3)]).toEqual([0xff, 0xd8, 0xff]);
+
+      // The browser decodes it, so the size is the picture's own and not what a header claims.
+      const decoded = await page.evaluate(async (src) => {
+        const picture = new Image();
+        picture.src = src;
+        await picture.decode();
+        return { width: picture.naturalWidth, height: picture.naturalHeight };
+      }, url.pathname);
+      expect(decoded).toEqual({ width: 1200, height: 630 });
+
+      // The tags say what the file is, and describe it the way the page describes its cover.
+      expect(valuesOf(tags, 'og:image:width')).toEqual(['1200']);
+      expect(valuesOf(tags, 'og:image:height')).toEqual(['630']);
+      expect(alt).toBeTruthy();
+      expect(valuesOf(tags, 'og:image:alt')).toEqual([alt]);
+    });
+  }
+
+  for (const { path, alt } of [
+    { path: '/projects/pysa/', alt: 'Screenshot of Pysa' },
+    { path: '/es/projects/pysa/', alt: 'Captura de pantalla de Pysa Gaming' },
+  ]) {
+    test(`${path} describes its picture as "${alt}"`, async ({ page }) => {
+      await page.goto(path);
+
+      expect(valuesOf(await socialTags(page), 'og:image:alt')).toEqual([alt]);
     });
   }
 });
