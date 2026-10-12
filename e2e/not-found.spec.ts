@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { test } from './support/csp-guard';
 import AxeBuilder from '@axe-core/playwright';
 
 // An address the site has no page for answers 404 with the error page of its locale: an

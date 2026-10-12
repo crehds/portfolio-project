@@ -17,13 +17,9 @@
 // (`launchOptions` in playwright.config.ts), and Turnstile's script is answered by the stub
 // before the network is asked.
 import { randomBytes } from 'node:crypto';
-import {
-  expect,
-  test as base,
-  type APIResponse,
-  type Page,
-} from '@playwright/test';
+import { expect, type APIResponse, type Page } from '@playwright/test';
 
+import { test as base } from './csp-guard';
 import { turnstileToken, upstreamClient } from './fake-upstreams';
 import { APP_ORIGIN, UPSTREAM_ORIGIN } from './ports';
 import { TURNSTILE_API_URL, TURNSTILE_STUB } from './turnstile-stub';
