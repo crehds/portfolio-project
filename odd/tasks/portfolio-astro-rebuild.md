@@ -279,7 +279,51 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
     it, or the gap stays accepted (owner's call).
   - The T12d writer's open items: whether X needs `twitter:image:alt` (unverified), and `scripts/` is linted but not
     type-checked.
-  Route: delegated. ~200.
+  Planned on 2026-10-12 by a read-only planning pass, which split it into six sub-tasks. Each gets its own branch,
+  `feat/astro-rebuild-13<x>-<slug>`. The total is ~1,250 lines with tests; the first estimate was ~200. Order: 13a,
+  13b, 13c, 13d, then 13e and 13f. Lighthouse runs after 13a so that its Best Practices score sees the final CSP.
+  Launch gates: 13a, 13b, the internal part of 13c, 13d and 13f1. 13e and 13f2 can follow the launch. Parent
+  defaults, open to the owner's veto: `style-src 'unsafe-inline'` (scripts stay strict); HSTS `max-age=31536000` with
+  no `includeSubDomains` or `preload` until a custom domain exists; Lighthouse performance starts as a warning and
+  becomes an error once CI numbers exist; the `theme-color` gap is accepted for launch; `twitter:image:alt` is added.
+  - [ ] **T13a** Security headers (launch gate, ~330).
+    - A pure `src/shared/security/headers.ts` is the one source for both delivery paths.
+    - Static pages get `public/_headers`. Workers static assets honor it for asset responses only (Cloudflare docs),
+      and the adapter appends its own Cache-Control rule. A unit test ties the file to the module.
+    - On-demand routes get a new `src/middleware.ts`, with the contact policy on `/contact` and `/es/contact`, and a
+      minimal policy on `/cv/*.pdf`.
+    - CSP: `default-src 'self'`; the theme script by hash (pages are prerendered, so no nonce); JSON-LD needs
+      nothing (a data block); the contact pages add `https://challenges.cloudflare.com` to `script-src`, `frame-src`
+      and `connect-src`, plus the hash of the contact inline script; `frame-ancestors 'none'`, `base-uri 'none'`,
+      `object-src 'none'` and `form-action 'self'`.
+    - Also `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` and COOP `same-origin`. No COEP: it
+      would break Turnstile.
+    - Tests: every executable inline script in `dist/client` must have its hash in the page's policy; a
+      `securitypolicyviolation` guard runs across the e2e suite, with a negative control.
+    - Spikes: does `pnpm preview` serve `_headers`? Confirm the Turnstile CSP list. The real widget cannot load in
+      the hermetic e2e, so a manual check of the contact page on the preview goes to T14.
+  - [ ] **T13b** An axe matrix over every route in the sitemap plus the 404s (both locales, both schemes) and a
+    keyboard spec: tab order, skip link, toggle, form, focus ring, no trap (launch gate, ~260).
+  - [ ] **T13c** Link check (~220). The internal part is a launch gate: same-origin links resolve, fragments match an
+    `id`, `mailto:` and `tel:` are well formed. External hosts must be https and on an allowlist. An online check of
+    external links (weekly or manual) can follow the launch.
+  - [ ] **T13d** Lighthouse CI (launch gate, ~120).
+    - `@lhci/cli` in a new CI job on the built preview, on its own port (4341), 3 runs per URL, mobile preset,
+      ubuntu only.
+    - Covers 8-9 URLs, with the acceptance budgets. Turnstile's host is blocked during the run.
+    - A unit test keeps the URL list inside the sitemap.
+  - [ ] **T13e** e2e infra (~110, can follow the launch).
+    - The teardown harness test (extract `makeTeardown`).
+    - #513: serve the e2e on `127.0.0.1` instead of `localhost`/`::1` (measure the sockets before and after), and
+      document spacing between full runs.
+    - Read the Linux CI `proxy-retry` causes to settle the `ECONNRESET` keyword. The regex already includes it
+      (`e2e/support/contact-test.ts:166`).
+  - [ ] **T13f** In two groups.
+    - f1, the Turnstile hostname check (launch gate, ~90): accept `carlos15erh.workers.dev` and its subdomains, plus
+      an optional `TURNSTILE_ALLOWED_HOSTNAMES` setting for a future custom domain. The fake returns the hostname.
+      Look-alike hosts are rejected.
+    - f2, the T12d/T12f advisories above (~120, can follow the launch): `mediaTypeOf(format)`, the font subset
+      choice, the touch icon's RGB color type, the `blockAt` guard, `twitter:image:alt`, and type-checking `scripts/`.
 - [ ] **T14** Launch: production deploy, analytics, final README, prune stale branches (owner approval). Route: inline + owner. ~80.
 
 ### Phase 4 · Project sync (future)
@@ -849,13 +893,29 @@ the HTML reporter blocks the shell after a failure.
   approved with 3 suggestions (`review-646b6dd779a45a8a`). Both were acknowledged, and all advisory items went to
   T13. Merged `--no-ff` as `1704b16` (tree `74b7812`) and `73530dd` (tree `c434060`), each equal to its reviewed
   tree. T12 is complete.
+- 2026-10-12: the stop hook offered the whole branch from `v1-legacy` a 33rd time, after `f2f8254` (358 files, 55,841
+  lines, high). It was granted and hit `lens_context_budget_exceeded`; nothing was created.
+- 2026-10-12: Q7 closed. The owner's words: "Revisé los contenidos y están bien" ("I checked the content and it's
+  fine"). The Spanish copy of the contact and 404 pages, and the home title and description, stay as they are. The
+  owner asked why the form says it is not available. No contact setting exists anywhere yet: no `.dev.vars`, no Worker
+  secrets. All six required settings are missing, so the pages show the designed fallback (email and WhatsApp).
+- 2026-10-12: T13 planning pass (read-only, Plan agent). See the T13 entry. Verified facts:
+  - Workers static assets apply `_headers` to asset responses only, never to Worker responses
+    (developers.cloudflare.com/workers/static-assets/headers/).
+  - The adapter already reads and rewrites `dist/client/_headers` (`node_modules/@astrojs/cloudflare/dist/index.js`).
+  - There is no `src/middleware.*`.
+  - Astro's `security.csp` emits only a meta tag, which cannot carry `frame-ancestors`, so it was not chosen.
+  - The e2e blocks every non-local host, so the real Turnstile script never loads there.
+  - The Turnstile verifier ignores the answer's `hostname`.
+  - CI has no Lighthouse or link check.
 
 ## Next step
 
-T13 (hardening, with the follow-ups listed there), then T14 (launch). T10d when the owner gives the color
-direction; the social card and the icons regenerate from the tokens with `scripts/social-card/` and `scripts/icons/`. Before a writer runs e2e, stop any `astro dev` on port 4321. Answer the stop hook's prompt before
-launching a writer; a running writer's workspace keeps producing new review candidates. Owner: Q7 (the Spanish copy
-of the contact and 404 pages, plus the home title and description from T12a). Before live checks of the form: create the Turnstile widget (confirm it accepts the
+T13a (security headers), then T13b, T13c, T13d, T13e and T13f, in the order the T13 entry gives. Then T14 (launch).
+T10d when the owner gives the color direction; the social card and the icons regenerate from the tokens with
+`scripts/social-card/` and `scripts/icons/`. Before a writer runs e2e, stop any `astro dev` on port 4321. Run writers
+in the foreground: a background writer's workspace keeps producing new review candidates for the stop hook. Before
+live checks of the form: create the Turnstile widget (confirm it accepts the
 `carlos15erh.workers.dev` hostname), set up EmailJS (service, template, non-browser API, keys; see
 `docs/contact-setup.md`) and add the Worker secrets. Still unknown: whether `ECONNRESET` matches the e2e retry keyword
 on Linux (the first Linux CI run passed; its log was not read). Optional: the heading-spacing rhythm noted in T10b.
