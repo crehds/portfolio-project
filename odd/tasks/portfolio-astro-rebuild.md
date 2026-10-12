@@ -75,13 +75,14 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~24,310 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+- Running count: ~24,984 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
   T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321 + T08 ~1,021 + T09 ~923 + T09b ~217 +
   T10 ~778 + T10b ~88 + T11a ~935 + T11b ~1,698 + T11c ~2,978 + T11c-b ~1,573 + T10c ~244 + T11d ~7,936 + T11e ~535 +
-  T11d-b ~482, with tests, excluding lockfiles and the legacy removal; the terms before T11d sum to 15,357, so the
+  T11d-b ~482 + T12a ~674, with tests, excluding lockfiles and the legacy removal; the terms before T11d sum to 15,357, so the
   earlier total of ~15,124 was an addition slip). It already passes the ~4,300 forecast, mostly from tests, the e2e
   harness and the review follow-up tasks.
-- Last reviewed boundary: `ae71410`, the T11d-b tip (the merge `5f29f95` has the same tree, `8dbc3bd`); the T11e record
+- Last reviewed boundary: `dd9a101`, the T12a tip (the merge `bcf61fe` has the same tree, `d38821c`); the T12 plan
+  record `889497d` before it was assessed passive. Before that, `ae71410`, the T11d-b tip (the merge `5f29f95` has the same tree, `8dbc3bd`); the T11e record
   `1d41d29` was reviewed with T11d-b. Before that, `f31d941`, the T11e tip (the merge `9c35533` has the same tree,
   `26ecc4a`), with the T11d record `5d56525`; and `1acfe20`, the T11d tip (the merge `4745fc1` has the same tree,
   `c10d368`): the open slice from `62f10ae` (the T11c-b and T11d-decision records, the T10c plan, T10c and its record)
@@ -221,7 +222,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   owner's veto: the home title and description derive from the profile (no new facts), JSON-LD stays a minimal
   `Person`, no `twitter:site` (the profile has no X handle), no web manifest (only an installable app needs one), and
   robots.txt allows every crawler.
-  - [ ] **T12a** Canonical and error pages: one shared `SITE_URL` that `astro.config.mjs` and the tests import; a pure
+  - [x] **T12a** (delivered in six commits, see Progress) Canonical and error pages: one shared `SITE_URL` that `astro.config.mjs` and the tests import; a pure
     `canonicalHref(pathname, site)` beside `hreflangAlternates` (absolute, built from `site` and the pathname only,
     slash-terminated, so a query such as `?sent=1` drops out and previews point at production); `BaseLayout` renders it
     on every indexable page, and on an `errorPage` renders `<meta name="robots" content="noindex">` and no canonical
@@ -307,6 +308,7 @@ the HTML reporter blocks the shell after a failure.
 | T11d | done (merged `4745fc1`) | `ba08701` `unavailable` outcome, `00d272b` page shell + hermetic e2e harness, `23beec4` pure page-state core, `d43c37e` Action + form + Turnstile widget, `b854657` honeypot + every failure state, `a41099a` no-JS notice + the guard's runtime half + axe + layout, `1acfe20` Action body limit 64 KiB (parent follow-up) | Writer, final verification on `1acfe20`: lint · format · `pnpm check` 0 errors · `pnpm test` 1255/1255 in 48 files · `pnpm test:e2e` 383/383 three times · plain build · dry run: `CV_BUCKET`, `CONTACT_RATE_LIMIT` (3 per 60 s), `ASSETS`. The body limit test-first: unit RED (missing module), e2e RED against 32 KiB (8 failed, 1 passed), then GREEN 9/9, 25 repeats 225/225, 4 unit mutations caught; RED evidence for the first six commits is not in this record or in Engram · parent re-ran on `1acfe20` (2026-10-08): lint, format, check 0/0/0 (164 files), test 1255/1255 in 48 files, e2e 383/383 in 39.9 s, tree clean; the merge tree equals the reviewed and tested tree (`c10d368`) | The open slice from `62f10ae` plus T11d (72 files, 7,946 lines, ~361 KB of diff, high) was about three times the largest slice that has passed (T11c, ~125 KB), so it was reviewed in three slices of that size: A `62f10ae..00d272b` (records, T10c, `unavailable`, harness; high: CI shell; 41 files, 2,276 lines; 4 lenses; approved, `review-38f3aaca5c3c29e4`, 6 advisory findings), B `00d272b..d43c37e` (medium; 24 files, 3,239 lines; 1 lens, reliability; approved, `review-a045570c6bf420f1`, 3 advisory findings), C `d43c37e..1acfe20` (medium; 29 files, 2,709 lines; 1 lens, reliability; approved, `review-e737fc673b43fc0e`, 3 advisory findings). 0 blocking findings; all three granted by the owner and acknowledged. 6 of the 12 findings were already fixed by later commits (A: the 32 KiB body limit, 2 warnings, and a dangling spec reference; B: the alert and the fallback notice not rendered, 2 warnings, and their render tests); the 6 still true at the tip became T11d-b |
 | T11e | done (merged `9c35533`) | `378ff97` 404 copy EN/ES, `530347d` switcher `errorPage` prop (links to the home pages), `fc7eae3` the two 404 pages + e2e, `f31d941` no current nav item on an error page (dev-mode fix) | Strict TDD: dictionary pin RED (83 vs 89 keys in both locales); switcher container tests 2/5 RED (`/es/404/` instead of `/es/`); with Astro's built-in 404, `not-found.spec` 49/49 RED; with the pages but without the flag, 18 RED (3 hreflang alternates instead of 0; the switcher at `/es/404/`) while status, `lang`, title and `h1` already passed (the `/es/404` proof); then GREEN 107/107 in the three specs; layout container test 1/6 RED (`Projects=true` when rendered for `/projects/x`), then 6/6; a mutation (a 400 px-wide block and an `img` without alt) failed 8 tests, then reverted · writer: lint · format · check 0/0/0 (170 files) · test 1266/1266 in 50 files · e2e 442/442 · build 18 pages + Worker · dry run unchanged · parent re-ran: check 0/0/0 (170 files), test 1266/1266, e2e 442/442 (21.2 s), tree clean; the merge tree equals the reviewed tree (`26ecc4a`) | Slice from `1acfe20` (the T11d record + T11e): medium, 13 files, 628 lines, 1 lens (reliability), approved with 1 advisory suggestion (`review-e4fdf0b15a6bcdd2`), routed to T11d-b |
 | T11d-b | done (merged `5f29f95`) | `c9c1a4a` `refused` verdict, `6d2ffb0` shared `ContactCtaButton`, `546a320` 404 nav test renamed, `1ada384` rate-limit wait only in the rate-limited state, `093bdd1` only the no-JS notice's links excused, `0a65dd2` every proxy retry visible, `cdd365a` the teardown fails on unexpected fake calls, `ae71410` docs | Behavior changes test-first: (1) with a footer link hidden, the old spec passed 28/28 (blind) and the narrowed one failed 14 (one per page), then 28/28 restored; (2) retry tests 3/4 RED (no warning, 0 annotations), then 4/4; (4) `unexpectedCallProblems` RED (missing export), then 4/4, and a temporary stray-call spec turned exit 0 into exit 1 with the method and path named (no body or query). Refactors under green tests: (3) axe-matrix waits 32 → 4, 32/32 pass; (5) 96 `submit-contact` tests pass; (6) both lists' HTML byte-identical in both locales and the prerendered home pages byte-identical to the base build, and a wrong label is caught by the new button test · writer: lint · format · check 0/0/0 (172 files) · test 1290/1290 in 51 files · e2e 450/450 · build · dry run · parent re-ran: check 0/0/0 (172 files), test 1290/1290, e2e 450/450 (18.7 s), tree clean; the merge tree equals the reviewed tree (`8dbc3bd`) | Slice from `f31d941` (the T11e record + T11d-b): medium, 16 files, 542 lines, 1 lens (reliability), approved with 1 advisory suggestion (`review-7cb94fd344ff2eac`), routed to T13 |
+| T12a | done (merged `bcf61fe`) | `d770c4a` shared `SITE_URL`, `c6ebd46` `canonicalHref`, `45ecd19` canonical link + `noindex` on error pages, `fbe615b` home title and description from the profile, `5931e31` unused dictionary keys dropped, `dd9a101` `SITE_URL` in its own module (parent follow-up) | Strict TDD: `SITE_URL` 9 unit failures before the export; `canonicalHref is not a function` (8), then a naive `site + pathname` stub (4 failing) and a default-locale mutation (4); layout container 4 RED, then 3 mutations caught (canonical from `Astro.url.origin`: 3; a canonical on error pages: 1; `noindex` on every page: 1); `e2e/seo.spec.ts` with the layout change stashed: 24 failed, 1 passed (canonical "Expected 1, Received 0"; robots meta "Expected 1, Received 0"), and its table guard against `dist/client` caught a removed slug; `homeMetadata`: Cannot find module, then a naive stub 4/4; dictionary pins 2; the move to `src/shared/site/`: 3 suites with Cannot find module · writer: lint · format · check 0/0/0 (177 files) · test 1310/1310 in 53 files · e2e 477/477 · build 18 pages · dry run unchanged (at `5931e31`) · parent readback of the production diff; parent re-ran: test 1310/1310 in 53 files; the merge tree equals the reviewed tree (`d38821c`) | Slice from `889497d` (T12a): medium, 21 files, 674 lines, 1 lens (reliability), approved with 0 findings (`review-44d421d6be6f71f9`) |
 
 ## Change log
 
@@ -680,11 +682,33 @@ the HTML reporter blocks the shell after a failure.
   deferred. Google's `ProfilePage` markup is not used: its recommended dates cannot be sourced without inventing them.
   A JSON-LD block needs no CSP hash in T13, because a data block never runs. Six e2e specs assert exactly three
   `link[rel="alternate"]`, so T12 adds no other alternate link (no `alternate icon`).
+- 2026-10-11: the stop hook offered its whole-branch review a twenty-fourth time after `889497d` (323 files, 52,250
+  lines); granted; START stopped with `lens_context_budget_exceeded`; nothing was created. A twenty-fifth time after
+  `5931e31` (326 files, 52,732 lines); granted, but START refused it with `invalid_request` ("untracked files require
+  an explicit declaration": the writer's follow-up had new files in the tree while the question was open); nothing was
+  created.
+- 2026-10-11: T12a. `src/shared/site/site-url.ts` holds `SITE_URL`, the one place that names the host, and
+  `astro.config.mjs` and the tests import it. The writer first put it in `src/shared/i18n/locales.ts`, following the
+  parent's brief; the parent had it moved, because the site's origin is not an i18n concept. `canonicalHref(pathname,
+  site)` in `src/shared/i18n/paths.ts` keeps the pathname up to the first `?` or `#`, normalizes the trailing slash
+  through `pathnameInLocale` and prefixes the origin of `site`, so it equals the page's own hreflang alternate.
+  `BaseLayout` renders it on every indexable page from `Astro.site`, never from the request's origin (a container test
+  renders from a preview and a localhost origin), and gives an error page `<meta name="robots" content="noindex">` and
+  no canonical. The home title and description come from `homeMetadata`
+  (`src/modules/profile/domain/home-metadata.ts`): "Carlos Rodríguez Huerta — <role>" and "<role>. <headline>", or the
+  role alone when the profile has no headline. `siteDescription` and `rebuildNotice` left both dictionaries (the home
+  pages were their only readers); `siteTitle` stays for the header and the other titles. `e2e/seo.spec.ts` compares
+  its table of 18 indexable pages with the `index.html` files of the build, so a page cannot drop out unchecked. The
+  README's "rebuild in progress" refers to the repo and stays until T14. Q7 now also covers the Spanish home title and
+  description. Writer note: Engram #501.
+- 2026-10-11: T12a review and merge, after the owner's "Sí. Arranquemos T12". The slice from `889497d` was granted,
+  approved with 0 findings (`review-44d421d6be6f71f9`) and acknowledged; merged `--no-ff` as `bcf61fe`, whose tree
+  equals the reviewed and tested tree `d38821c`.
 
 ## Next step
 
-T12a (canonical and error pages), then T12b, T12c and T12e; T12d and T12f once the owner approves the drafts of the
-social card and the icon; then T13 (hardening) and T14 (launch); T10d when the owner gives the color direction. Before
+T12b (robots.txt and the sitemap), then T12c and T12e; T12d and T12f once the owner approves the drafts of the social
+card and the icon; then T13 (hardening) and T14 (launch); T10d when the owner gives the color direction. Before
 a writer runs e2e, stop any `astro dev` on port 4321. Owner: answer Q5 (are the rate-limit namespaces `7301` and
 `7302` unused in the Cloudflare account?) and Q7 (the Spanish copy of the contact and 404 pages, plus the home title
 and description from T12a). Before live checks of the form: create the Turnstile widget (confirm it accepts the
