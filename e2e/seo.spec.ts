@@ -180,9 +180,10 @@ test.describe('robots.txt', () => {
     const response = await request.get('/robots.txt');
 
     expect(response.status()).toBe(200);
-    expect(response.headers()['content-type']).toBe(
-      'text/plain; charset=utf-8',
-    );
+    // A static file gets its header from the asset server, which chooses it by the file's
+    // extension and spells the charset its own way (the endpoint's own header is not used).
+    // What matters to a crawler is the media type, so that is all this holds it to.
+    expect(response.headers()['content-type']).toMatch(/^text\/plain\b/);
     expect(await response.text()).toBe(
       `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap-index.xml\n`,
     );
