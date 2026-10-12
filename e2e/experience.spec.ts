@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-import { SITE_URL } from '../src/shared/i18n/locales';
+import { SITE_URL } from '../src/shared/site/site-url';
 
 const DASH = '–'; // en dash, exact separator `formatPeriod` joins labels with.
 

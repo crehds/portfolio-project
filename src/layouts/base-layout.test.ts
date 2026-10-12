@@ -1,9 +1,9 @@
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { describe, expect, it, vi } from 'vitest';
 
-import { SITE_URL } from '../shared/i18n/locales';
 import { localeOfPathname } from '../shared/i18n/paths';
 import { getDictionary } from '../shared/i18n/ui';
+import { SITE_URL } from '../shared/site/site-url';
 import BaseLayout from './BaseLayout.astro';
 
 // The layout reads the profile for its footer from the content layer, which a unit run has

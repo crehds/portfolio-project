@@ -8,15 +8,6 @@ export const LOCALES: readonly Locale[] = ['en', 'es'];
 
 export const DEFAULT_LOCALE: Locale = 'en';
 
-/**
- * The site's public origin: https, no path and no trailing slash. `astro.config.mjs` hands
- * it to Astro as `site`, which `BaseLayout` reads (`Astro.site`) to build the absolute
- * canonical link and hreflang alternates, so a preview or a local server still points
- * search engines at the production address. Tests import it instead of spelling out the
- * host. It is the `workers.dev` address until the site has a domain (T14).
- */
-export const SITE_URL = 'https://portfolio-project.carlos15erh.workers.dev';
-
 /** Narrows an arbitrary string (e.g. a parsed content id segment) to a supported `Locale`. */
 export function isLocale(value: string): value is Locale {
   return (LOCALES as readonly string[]).includes(value);

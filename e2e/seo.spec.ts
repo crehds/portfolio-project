@@ -1,7 +1,7 @@
 import { readdirSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 
-import { SITE_URL } from '../src/shared/i18n/locales';
+import { SITE_URL } from '../src/shared/site/site-url';
 import { COPY } from './support/contact-copy';
 
 // What a search engine is told about every address of the site (T12): which URL is the page's

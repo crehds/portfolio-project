@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { SITE_URL } from './locales';
+import { SITE_URL } from '../site/site-url';
 import {
   canonicalHref,
   hreflangAlternates,

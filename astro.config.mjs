@@ -5,11 +5,8 @@ import tailwindcss from '@tailwindcss/vite';
 import cloudflare from '@astrojs/cloudflare';
 
 import { ACTION_BODY_LIMIT_BYTES } from './src/modules/contact/form-body-limit.ts';
-import {
-  DEFAULT_LOCALE,
-  LOCALES,
-  SITE_URL,
-} from './src/shared/i18n/locales.ts';
+import { DEFAULT_LOCALE, LOCALES } from './src/shared/i18n/locales.ts';
+import { SITE_URL } from './src/shared/site/site-url.ts';
 
 // https://astro.build/config
 export default defineConfig({

@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
-import { SITE_URL } from '../src/shared/i18n/locales';
+import { SITE_URL } from '../src/shared/site/site-url';
 
 const DIST_CLIENT = new URL('../dist/client/', import.meta.url);
 

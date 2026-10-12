@@ -1,12 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  DEFAULT_LOCALE,
-  INTL_LOCALE_TAGS,
-  LOCALES,
-  SITE_URL,
-  isLocale,
-} from './locales';
+import { DEFAULT_LOCALE, INTL_LOCALE_TAGS, LOCALES, isLocale } from './locales';
 
 describe('locales', () => {
   it('lists the supported locales with English first', () => {
@@ -34,15 +28,5 @@ describe('locales', () => {
     // odd/tasks/portfolio-astro-rebuild.md). Every date/number formatter in the
     // codebase must import this one map instead of pinning its own tag.
     expect(INTL_LOCALE_TAGS).toEqual({ en: 'en-US', es: 'es-419' });
-  });
-});
-
-describe('SITE_URL', () => {
-  it('is an https origin: no path and no trailing slash', () => {
-    // Pathnames start with a slash and are appended to it (`canonicalHref`,
-    // `hreflangAlternates`), and Astro takes it as `site`, so a path or a trailing slash
-    // would corrupt every absolute URL built from it.
-    expect(new URL(SITE_URL).protocol).toBe('https:');
-    expect(SITE_URL).toBe(new URL(SITE_URL).origin);
   });
 });

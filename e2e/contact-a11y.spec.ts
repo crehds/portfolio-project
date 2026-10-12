@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 
-import { SITE_URL } from '../src/shared/i18n/locales';
+import { SITE_URL } from '../src/shared/site/site-url';
 import { COPY, type ContactCopy } from './support/contact-copy';
 import { expect, test, useWidgetToken } from './support/contact-test';
 import { emailjsFailure, turnstileToken } from './support/fake-upstreams';
