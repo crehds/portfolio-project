@@ -309,6 +309,98 @@ test.describe('the picture of a project page', () => {
   }
 });
 
+// What a crawler is told about the owner: a schema.org `Person` on the two home pages, made of the
+// profile (src/content/profile.yaml) and nothing else. Spelled out here, not imported, like the
+// other expectations of this file.
+const JSON_LD_SCRIPT = 'script[type="application/ld+json"]';
+
+const HOME_PERSONS = [
+  {
+    path: '/',
+    jobTitle: 'Full-stack web developer',
+    description:
+      'Building JavaScript/TypeScript front-ends and Ruby on Rails and Node.js back-ends.',
+  },
+  {
+    path: '/es/',
+    jobTitle: 'Desarrollador web full-stack',
+    description:
+      'Creo interfaces en JavaScript/TypeScript y back-ends en Ruby on Rails y Node.js.',
+  },
+] as const;
+
+test.describe('structured data', () => {
+  for (const { path, jobTitle, description } of HOME_PERSONS) {
+    test(`${path} has exactly one valid Person, made of the profile`, async ({
+      page,
+      request,
+    }) => {
+      await page.goto(path);
+
+      const scripts = page.locator(JSON_LD_SCRIPT);
+      await expect(scripts).toHaveCount(1);
+      const person = JSON.parse((await scripts.textContent()) ?? '');
+
+      // The photo is an address on the site, whatever host the test reached the page on.
+      const image = new URL(person.image);
+      expect(image.origin).toBe(SITE_URL);
+      expect(image.pathname).toMatch(/^\/_astro\/[^/]+\.jpe?g$/);
+
+      expect(person).toEqual({
+        '@context': 'https://schema.org',
+        '@type': 'Person',
+        name: 'Carlos Rodríguez Huerta',
+        jobTitle,
+        description,
+        url: `${SITE_URL}${path}`,
+        image: person.image,
+        sameAs: [
+          'https://www.linkedin.com/in/carlos-rodriguez-huerta-362ab716a/',
+          'https://github.com/crehds',
+        ],
+      });
+      // Its URL is the page's canonical one.
+      await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+        'href',
+        person.url,
+      );
+
+      // The photo is a real file of the site, served by the test server at the same pathname.
+      const response = await request.get(image.pathname);
+      expect(response.status()).toBe(200);
+      expect(response.headers()['content-type']).toMatch(/^image\/jpeg\b/);
+    });
+
+    test(`${path} writes no "<" inside the script`, async ({ request }) => {
+      // The markup as served, not as parsed: a `<` in the script's text could close it.
+      const html = await (await request.get(path)).text();
+      const match = html.match(
+        /<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/,
+      );
+
+      expect(match?.[1]).toBeTruthy();
+      expect(match?.[1]).not.toContain('<');
+    });
+  }
+
+  const OTHER_PAGES = [
+    ...PAGES.map(({ path }) => path).filter(
+      (path) => !HOME_PERSONS.some((home) => home.path === path),
+    ),
+    '/404',
+    '/es/404/',
+    '/no-such-page',
+  ];
+
+  for (const path of OTHER_PAGES) {
+    test(`${path} has none`, async ({ page }) => {
+      await page.goto(path);
+
+      await expect(page.locator(JSON_LD_SCRIPT)).toHaveCount(0);
+    });
+  }
+});
+
 // The 404 pages answer 200 at `/404` and `/es/404/` (plain assets), and 404 at every other
 // address: either way they are not pages to index, and they have no address of their own to
 // call canonical or to share.
