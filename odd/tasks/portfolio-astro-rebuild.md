@@ -215,7 +215,37 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 
 ### Phase 3 · Launch
 
-- [ ] **T12** SEO: meta, Open Graph/Twitter, OG images, JSON-LD Person, sitemap + robots, canonical, favicons/manifest. Also, from T11e: `noindex` on the 404 pages (`/404` and `/es/404/` answer 200 as plain assets, `/404/` and `/es/404` a 307), no canonical there (the `errorPage` flag), and keep them out of the sitemap. Route: delegated. ~300.
+- [ ] **T12** SEO: meta, Open Graph/Twitter, OG images, JSON-LD Person, sitemap + robots, canonical, favicons. Planned on
+  2026-10-11 by a read-only planning pass (see the change log) as six sub-tasks, each on its own branch
+  `feat/astro-rebuild-12<x>-<slug>`. ~1,300 with tests (the first estimate was ~300). Parent defaults, open to the
+  owner's veto: the home title and description derive from the profile (no new facts), JSON-LD stays a minimal
+  `Person`, no `twitter:site` (the profile has no X handle), no web manifest (only an installable app needs one), and
+  robots.txt allows every crawler.
+  - [ ] **T12a** Canonical and error pages: one shared `SITE_URL` that `astro.config.mjs` and the tests import; a pure
+    `canonicalHref(pathname, site)` beside `hreflangAlternates` (absolute, built from `site` and the pathname only,
+    slash-terminated, so a query such as `?sent=1` drops out and previews point at production); `BaseLayout` renders it
+    on every indexable page, and on an `errorPage` renders `<meta name="robots" content="noindex">` and no canonical
+    (from T11e: `/404` and `/es/404/` answer 200 as plain assets). The home title becomes `Carlos Rodríguez Huerta —
+    <role>` and its description `<role>. <headline>` in both locales, replacing "Rebuild in progress"; the unused
+    `rebuildNotice` key goes. Route: delegated.
+  - [ ] **T12b** `robots.txt` as a prerendered endpoint built from `site` (`User-agent: *`, `Allow: /`, the sitemap
+    line) and `@astrojs/sitemap` 3.7.4 with the i18n alternates. No `Disallow: /cv/`: a robots.txt block would hide the
+    `/cv/` routes' `X-Robots-Tag: noindex` from crawlers. The 404 pages stay out of the sitemap (from T11e) and the
+    on-demand contact pages are in it. Route: delegated.
+  - [ ] **T12c** Open Graph and Twitter tags on every indexable page (`og:type`, `og:site_name`, `og:title`,
+    `og:description`, `og:url` equal to the canonical, `og:locale` `en_US`/`es_LA` plus the other one as
+    `og:locale:alternate`, `twitter:card` `summary_large_image`); project pages use their cover cropped to 1200x630
+    with `getImage` as `og:image`, with its size and alt. Route: delegated.
+  - [ ] **T12d** A default social card per locale (a static 1200x630 PNG in `src/assets/og/`) for every page without a
+    cover, drafted from the design tokens (name and role) for the owner's approval. Generated cards are deferred: the
+    adapter prerenders in workerd and leaves sharp out. Route: delegated + owner approval.
+  - [ ] **T12e** JSON-LD `Person` on the two home pages from `profile.yaml` only (`name`, `jobTitle`, `description`,
+    `url`, `image`, `sameAs` with LinkedIn and GitHub), serialized with `<` escaped. Route: delegated.
+  - [ ] **T12f** Icons and theme color: `favicon.ico` (32 and 48 px), an `icon.svg` that follows the color scheme, a
+    180 px `apple-touch-icon.png` in a new `public/`, and one `theme-color` per color scheme, tied to the tokens by a
+    test. The icon is drafted for the owner's approval. Route: delegated + owner approval.
+  - Order: T12a, T12b, T12c, T12e; T12d and T12f once the owner approves the drafts (after T10d if the owner changes
+    the accent color first).
 - [ ] **T13** Hardening: axe on every page, Lighthouse CI budgets, link check, security headers. Also, from T11c: check
   the hostname in Turnstile's answer (allow `carlos15erh.workers.dev` and its subdomains, so previews keep working).
   And from the T11d-b review: a harness test for the global teardown's wiring (a stray call to a private fake makes the
@@ -625,14 +655,39 @@ the HTML reporter blocks the shell after a failure.
   acknowledged; merged `--no-ff` as `5f29f95`, whose tree equals the reviewed and tested tree `8dbc3bd`. T11 is
   complete. The owner created the R2 bucket `portfolio-cv` with `en.pdf` and `es.pdf`, so the credential rotation is
   the last gate before the branch push.
+- 2026-10-09: the stop hook offered its whole-branch review a twenty-second time after `422625a` (323 files, 52,195
+  lines, high); granted; START stopped with `lens_context_budget_exceeded`; nothing was created.
+- 2026-10-11: the owner pushed `feat/astro-rebuild` (132 commits on top of `52fe1a3`). Before the push the parent
+  checked the outgoing commits locally: no AI attribution and no secrets (the committed `.dev.vars.e2e` and
+  `.dev.vars.example` hold only Cloudflare's published Turnstile test keys and fake or blank values; the CV fixtures are
+  597-byte PDFs). GitHub CI passed on ubuntu in 3 minutes (lint, format, check, unit, build, e2e), and Workers Builds
+  built the branch as a Worker Preview (dashboard: the Worker's Previews section, and Deployments > View build
+  history; Version History and Active Deployment show production only). On the preview, `/cv/en.pdf` and `/cv/es.pdf`
+  answer 200 as named attachments with `X-Robots-Tag: noindex`, `/no-such-page` and `/es/no-such-page` answer 404
+  with the English and Spanish pages, and both contact pages show the "form unavailable" notice (no Turnstile key or
+  secrets yet). The upload with the rate-limit binding went through. Every preview response carries `X-Robots-Tag:
+  noindex`, which Cloudflare adds to Worker Preview URLs. The Vercel project also built the branch.
+- 2026-10-11: the stop hook offered its whole-branch review a twenty-third time (the same candidate as the 22nd);
+  granted; START stopped with `lens_context_budget_exceeded`; nothing was created.
+- 2026-10-11: T12 planning pass (read-only; the Astro, Cloudflare, Google Search Central, Open Graph and LinkedIn docs,
+  plus the installed sources). Today's head has the title, the description and the hreflang alternates only, and there
+  is no `public/`. `@astrojs/sitemap` 3.7.4 (no peer range, old enough for pnpm's release-age rule) uses hooks that
+  exist in Astro 7.3.5, lists static on-demand pages (contact) and drops the 404 pages when its `i18n` option is set;
+  T12b's e2e proves it at runtime. Google ignores a `noindex` it is not allowed to crawl, so robots.txt does not block
+  `/cv/` (this drops the T11 planning note). The canonical comes from `site`, never from the request's origin. Social
+  images: project covers cropped at build time with `getImage`, and a static default card per locale; generated cards
+  (satori and similar) would need Node prerendering (`prerenderEnvironment: 'node'`) for the whole site, so they are
+  deferred. Google's `ProfilePage` markup is not used: its recommended dates cannot be sourced without inventing them.
+  A JSON-LD block needs no CSP hash in T13, because a data block never runs. Six e2e specs assert exactly three
+  `link[rel="alternate"]`, so T12 adds no other alternate link (no `alternate icon`).
 
 ## Next step
 
-T12 (SEO, including `noindex` on the 404 pages), then T13 (hardening) and T14 (launch); T10d when the owner gives the
-color direction. Before a writer runs e2e, stop any `astro dev` on port 4321. Owner, before `feat/astro-rebuild` is
-pushed: rotate the credentials (planned for the weekend of 2026-10-10); the R2 bucket is ready. Answer Q5 (are the
-rate-limit namespaces `7301` and `7302` unused in the Cloudflare account?) and Q7 (the Spanish copy of the contact and
-404 pages). After the push, check `/cv/en.pdf`, `/cv/es.pdf`, `/no-such-page` and `/es/no-such-page` on the branch
-preview, and the first Linux CI run. Before live checks of the form: create the Turnstile
-widget (confirm it accepts the `carlos15erh.workers.dev` hostname), set up EmailJS (service, template, non-browser API,
-keys; see `docs/contact-setup.md`) and add the Worker secrets. Optional: the heading-spacing rhythm noted in T10b.
+T12a (canonical and error pages), then T12b, T12c and T12e; T12d and T12f once the owner approves the drafts of the
+social card and the icon; then T13 (hardening) and T14 (launch); T10d when the owner gives the color direction. Before
+a writer runs e2e, stop any `astro dev` on port 4321. Owner: answer Q5 (are the rate-limit namespaces `7301` and
+`7302` unused in the Cloudflare account?) and Q7 (the Spanish copy of the contact and 404 pages, plus the home title
+and description from T12a). Before live checks of the form: create the Turnstile widget (confirm it accepts the
+`carlos15erh.workers.dev` hostname), set up EmailJS (service, template, non-browser API, keys; see
+`docs/contact-setup.md`) and add the Worker secrets. Still unknown: whether `ECONNRESET` matches the e2e retry keyword
+on Linux (the first Linux CI run passed; its log was not read). Optional: the heading-spacing rhythm noted in T10b.
