@@ -9,9 +9,6 @@ import type { Locale } from './locales';
  */
 const en = {
   siteTitle: 'Carlos Rodríguez Huerta',
-  siteDescription:
-    'Portfolio of Carlos Rodríguez Huerta, full-stack web developer. Rebuild in progress.',
-  rebuildNotice: 'Portfolio rebuild in progress.',
   languageSwitcherLabel: 'Language switcher',
   themeToggleLabel: 'Toggle color theme',
   skipLinkLabel: 'Skip to main content',
@@ -121,9 +118,6 @@ export type UiDictionary = typeof en;
 
 const es: UiDictionary = {
   siteTitle: 'Carlos Rodríguez Huerta',
-  siteDescription:
-    'Portafolio de Carlos Rodríguez Huerta, desarrollador web full-stack. Reconstrucción en curso.',
-  rebuildNotice: 'Portafolio en reconstrucción.',
   languageSwitcherLabel: 'Selector de idioma',
   themeToggleLabel: 'Cambiar tema de color',
   skipLinkLabel: 'Saltar al contenido principal',
