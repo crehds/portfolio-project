@@ -3,9 +3,11 @@ import { defineConfig, fontProviders } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 
 import cloudflare from '@astrojs/cloudflare';
+import sitemap from '@astrojs/sitemap';
 
 import { ACTION_BODY_LIMIT_BYTES } from './src/modules/contact/form-body-limit.ts';
 import { DEFAULT_LOCALE, LOCALES } from './src/shared/i18n/locales.ts';
+import { withXDefaultAlternate } from './src/shared/seo/sitemap-alternates.ts';
 import { SITE_URL } from './src/shared/site/site-url.ts';
 
 // https://astro.build/config
@@ -18,6 +20,26 @@ export default defineConfig({
       prefixDefaultLocale: false,
     },
   },
+  integrations: [
+    // `sitemap-index.xml` and `sitemap-0.xml`, written next to the pages once the build is
+    // done (`robots.txt` names the index). It lists the pages the build wrote and the static
+    // routes that render on demand (the contact pages), and not the endpoints (the CV PDFs).
+    // `lastmod`, `changefreq` and `priority` stay unset on purpose: Google ignores the last
+    // two and trusts `lastmod` only when it is accurate, which the date of a build is not.
+    sitemap({
+      // Each page lists its alternates, from the locale in its address (`/es/...`; the
+      // default locale has no prefix). The integration takes the language tag of each
+      // alternate from the value: the locale codes are the tags the page head declares.
+      // Setting it also leaves the 404 pages of every locale out; without it `/es/404/`
+      // would be listed.
+      i18n: {
+        defaultLocale: DEFAULT_LOCALE,
+        locales: Object.fromEntries(LOCALES.map((locale) => [locale, locale])),
+      },
+      // The head also declares `x-default`, which the integration does not write.
+      serialize: (item) => withXDefaultAlternate(item, SITE_URL),
+    }),
+  ],
   vite: {
     plugins: [tailwindcss()],
   },
