@@ -8,6 +8,7 @@ import { coverAltText } from '../../modules/projects/domain/cover-alt-text';
 import { selectProjectsForLocale } from '../../modules/projects/domain/select-for-locale';
 import { getDictionary } from '../../shared/i18n/ui';
 import {
+  assertCoverFitsSocialImage,
   SOCIAL_IMAGE_SIZE,
   SOCIAL_IMAGE_TRANSFORM,
 } from '../../shared/seo/social-image';
@@ -37,8 +38,12 @@ const title = `${entry.data.title} — ${dictionary.siteTitle}`;
 // The cover is the picture of a link preview too, cropped to the size one takes. `getImage`
 // writes the file when the site is built; its address is root-relative, and the layout makes
 // it absolute with the site's. The alt text is the one the cover has on the page. A project
-// without a cover has no picture.
+// without a cover has no picture, and a cover smaller than the picture fails the build: the
+// tags declare the size of the picture, which the image service cannot make from less.
 const { cover } = entry.data;
+if (cover) {
+  assertCoverFitsSocialImage(cover, entry.data.title);
+}
 const socialImage = cover
   ? {
       src: (await getImage({ src: cover, ...SOCIAL_IMAGE_TRANSFORM })).src,
