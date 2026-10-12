@@ -18,6 +18,7 @@ import {
 } from '../shared/i18n/paths';
 import { getDictionary } from '../shared/i18n/ui';
 import { NAV_ITEMS } from '../shared/nav/nav-items';
+import { THEME_COLORS } from '../shared/theme/theme-color';
 import { homeMetadata } from '../modules/profile/domain/home-metadata';
 import type { Locale } from '../shared/i18n/locales';
 import { buildSocialMeta } from '../shared/seo/social-meta';
@@ -133,6 +134,21 @@ if (canonical !== undefined) {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
+    <meta
+      name="theme-color"
+      content={THEME_COLORS.light}
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content={THEME_COLORS.dark}
+      media="(prefers-color-scheme: dark)"
+    />
+    {/* Icons (public/, scripts/icons). The .ico names its size so that Chrome, which would take an
+      unsized .ico over the SVG, uses the SVG; the SVG is one picture for both color schemes. */}
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <script is:inline>
       // Static, literal script (no server-interpolated values, so a future CSP hash for it
       // stays stable - T13): applies the theme before first paint so there is no flash of
