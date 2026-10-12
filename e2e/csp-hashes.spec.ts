@@ -58,7 +58,7 @@ function expectEveryInlineScriptHashed(html: string, policy: string): void {
   for (const hash of scriptsOf(html).inline) {
     expect(
       policy,
-      `an inline script has no hash in the policy; add '${hash}' (docs/security-headers.md)`,
+      `an inline script has no hash in the policy; add '${hash}' (README.md#security-headers)`,
     ).toContain(`'${hash}'`);
   }
 }

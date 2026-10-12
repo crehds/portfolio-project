@@ -13,7 +13,7 @@
 // literally (`is:inline`, no interpolated value) so that its hash is stable. Astro-processed
 // scripts would be inlined by Vite when small; there are none today, and the post-build
 // check (`e2e/csp-hashes.spec.ts`) fails when one appears or an inline script changes.
-// docs/security-headers.md says how to update a hash.
+// README.md#security-headers says how to update a hash.
 
 /** `<script is:inline>` in `src/layouts/BaseLayout.astro`: applies the theme before first paint. */
 export const THEME_SCRIPT_HASH =
