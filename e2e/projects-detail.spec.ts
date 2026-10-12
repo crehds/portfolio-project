@@ -54,7 +54,7 @@ for (const {
         detailTitle,
       );
 
-      const cover = page.locator('main img');
+      const cover = page.locator('main article > picture > img');
       await expect(cover).toHaveCount(1);
       const alt = await cover.getAttribute('alt');
       expect(alt).toContain(detailTitle);

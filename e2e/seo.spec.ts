@@ -243,6 +243,11 @@ test.describe('Open Graph and Twitter tags', () => {
   }
 });
 
+// The cover is the picture that opens the project's article, as a direct child of it. A picture
+// inside the case study's text (the body is Markdown) is deeper in the article, so it is not
+// taken for the cover, and the test does not break when one is added.
+const PROJECT_COVER = 'main article > picture > img';
+
 // A project page shares its cover. The file is cropped when the site is built, so it is checked
 // for what it is: a JPEG of exactly the size a preview takes, which the site serves itself.
 test.describe('the picture of a project page', () => {
@@ -254,7 +259,7 @@ test.describe('the picture of a project page', () => {
       await page.goto(path);
 
       const tags = await socialTags(page);
-      const cover = page.locator('main img');
+      const cover = page.locator(PROJECT_COVER);
       await expect(cover).toHaveCount(1);
       const alt = await cover.getAttribute('alt');
 
