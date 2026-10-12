@@ -70,38 +70,4 @@ describe('projectsSchema', () => {
       schema.parse({ ...validProject, links: { live: 'not-a-url' } }),
     ).toThrow();
   });
-
-  describe('cover', () => {
-    const cover = (width: number, height: number) => ({
-      src: '/cover.png',
-      width,
-      height,
-      format: 'png',
-    });
-
-    it('accepts a cover exactly as big as a link preview picture', () => {
-      expect(() =>
-        schema.parse({ ...validProject, cover: cover(1200, 630) }),
-      ).not.toThrow();
-    });
-
-    it('accepts a cover bigger than a link preview picture', () => {
-      expect(() =>
-        schema.parse({ ...validProject, cover: cover(1280, 800) }),
-      ).not.toThrow();
-    });
-
-    // The image service never enlarges, so a smaller cover would make a smaller card than
-    // the size its page declares; the build fails instead.
-    it.each([
-      ['narrower', cover(1199, 800)],
-      ['shorter', cover(1280, 629)],
-      ['smaller both ways', cover(600, 400)],
-    ])('rejects a cover %s than a link preview picture', (_label, small) => {
-      const result = schema.safeParse({ ...validProject, cover: small });
-
-      expect(result.success).toBe(false);
-      expect(result.error?.issues[0]?.message).toContain('1200x630');
-    });
-  });
 });

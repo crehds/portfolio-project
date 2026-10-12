@@ -15,9 +15,8 @@ export const SOCIAL_IMAGE_SIZE = { width: 1200, height: 630 } as const;
  *
  * Astro's image service never enlarges a picture, so a cover narrower than the card or
  * shorter than it comes out smaller than the size the tags declare (a 1000x800 cover gives
- * 1000x630). The `projects` schema (src/modules/projects/schema.ts) therefore fails the build
- * for a cover under this size, so the size the tags declare is the size of the file; and
- * e2e/seo.spec.ts decodes the file the build writes for every project page.
+ * 1000x630). Keep covers at least this big; e2e/seo.spec.ts decodes the file the build
+ * writes for every project page.
  */
 export const SOCIAL_IMAGE_TRANSFORM = {
   ...SOCIAL_IMAGE_SIZE,

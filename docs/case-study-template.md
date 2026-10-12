@@ -52,9 +52,8 @@ A project page shares its cover when someone posts a link to it: the build crops
 at the result. Two consequences for a new cover:
 
 - It must be at least 1200 pixels wide and 630 tall. The image service never enlarges a picture, so
-  a smaller cover would give a smaller card than the size the tags declare, so the content schema
-  fails the build for it (`src/modules/projects/schema.ts`), and `e2e/seo.spec.ts` decodes the card
-  of every project page and fails on any other size.
+  a smaller cover gives a smaller card than the size the tags declare (`e2e/seo.spec.ts` decodes the
+  card of every project page and fails on any other size).
 - Put what identifies the project in the top of the screenshot. A 1280x800 capture loses roughly
   its bottom sixth in the card.
 
