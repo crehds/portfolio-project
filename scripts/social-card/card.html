@@ -1,0 +1,78 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Social card</title>
+    <!--
+      The template of the default social card. render.mjs injects, before it takes the
+      screenshot, the colors (--bg, --text, --accent: the dark tokens of src/styles/tokens.css)
+      and the @font-face rules of Ubuntu and Ubuntu Mono (from Astro's font cache), and sets
+      the name and the role from src/content/profile.yaml.
+    -->
+    <style>
+      * {
+        margin: 0;
+        box-sizing: border-box;
+      }
+      body {
+        width: 1200px;
+        height: 630px;
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Ubuntu', sans-serif;
+        position: relative;
+        overflow: hidden;
+      }
+      /* Link previews crop the card differently; the text stays inside the left 120px margin. */
+      .safe {
+        position: absolute;
+        left: 120px;
+        top: 0;
+        height: 630px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      svg {
+        width: 88px;
+        height: 88px;
+        margin-bottom: 44px;
+      }
+      svg path {
+        fill: none;
+        stroke: var(--accent);
+        stroke-width: 7;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      h1 {
+        font-size: 80px;
+        font-weight: 700;
+        line-height: 1.05;
+        letter-spacing: -1px;
+      }
+      .rule {
+        width: 96px;
+        height: 6px;
+        background: var(--accent);
+        margin: 36px 0 32px;
+        border-radius: 3px;
+      }
+      p {
+        font-family: 'Ubuntu Mono', monospace;
+        font-size: 50px;
+        color: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="safe">
+      <svg viewBox="8 8 48 48" aria-hidden="true">
+        <path d="M17 20 31 32 17 44M36 46H49" />
+      </svg>
+      <h1 id="name"></h1>
+      <div class="rule"></div>
+      <p id="role"></p>
+    </div>
+  </body>
+</html>
