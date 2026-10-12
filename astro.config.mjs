@@ -6,10 +6,11 @@ import cloudflare from '@astrojs/cloudflare';
 
 import { ACTION_BODY_LIMIT_BYTES } from './src/modules/contact/form-body-limit.ts';
 import { DEFAULT_LOCALE, LOCALES } from './src/shared/i18n/locales.ts';
+import { SITE_URL } from './src/shared/site/site-url.ts';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://portfolio-project.carlos15erh.workers.dev',
+  site: SITE_URL,
   i18n: {
     locales: [...LOCALES],
     defaultLocale: DEFAULT_LOCALE,

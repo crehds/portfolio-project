@@ -28,9 +28,6 @@ describe('getDictionary', () => {
   it('returns the expected english strings', () => {
     expect(getDictionary('en')).toEqual({
       siteTitle: 'Carlos Rodríguez Huerta',
-      siteDescription:
-        'Portfolio of Carlos Rodríguez Huerta, full-stack web developer. Rebuild in progress.',
-      rebuildNotice: 'Portfolio rebuild in progress.',
       languageSwitcherLabel: 'Language switcher',
       themeToggleLabel: 'Toggle color theme',
       skipLinkLabel: 'Skip to main content',
@@ -141,9 +138,6 @@ describe('getDictionary', () => {
   it('returns the expected spanish strings', () => {
     expect(getDictionary('es')).toEqual({
       siteTitle: 'Carlos Rodríguez Huerta',
-      siteDescription:
-        'Portafolio de Carlos Rodríguez Huerta, desarrollador web full-stack. Reconstrucción en curso.',
-      rebuildNotice: 'Portafolio en reconstrucción.',
       languageSwitcherLabel: 'Selector de idioma',
       themeToggleLabel: 'Cambiar tema de color',
       skipLinkLabel: 'Saltar al contenido principal',

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import { SITE_URL } from '../site/site-url';
 import {
+  canonicalHref,
   hreflangAlternates,
   localeOfPathname,
   pathnameInLocale,
@@ -111,39 +113,94 @@ describe('pathnameIsWithinSection', () => {
 });
 
 describe('hreflangAlternates', () => {
-  const site = 'https://portfolio-project.carlos15erh.workers.dev';
-
   it('lists absolute urls for every locale plus x-default on the site origin', () => {
-    expect(hreflangAlternates('/', site)).toEqual([
-      {
-        hreflang: 'en',
-        href: 'https://portfolio-project.carlos15erh.workers.dev/',
-      },
-      {
-        hreflang: 'es',
-        href: 'https://portfolio-project.carlos15erh.workers.dev/es/',
-      },
-      {
-        hreflang: 'x-default',
-        href: 'https://portfolio-project.carlos15erh.workers.dev/',
-      },
+    expect(hreflangAlternates('/', SITE_URL)).toEqual([
+      { hreflang: 'en', href: `${SITE_URL}/` },
+      { hreflang: 'es', href: `${SITE_URL}/es/` },
+      { hreflang: 'x-default', href: `${SITE_URL}/` },
     ]);
   });
 
   it('resolves alternates from a spanish, nested pathname', () => {
-    expect(hreflangAlternates('/es/projects/x/', site)).toEqual([
-      {
-        hreflang: 'en',
-        href: 'https://portfolio-project.carlos15erh.workers.dev/projects/x/',
-      },
-      {
-        hreflang: 'es',
-        href: 'https://portfolio-project.carlos15erh.workers.dev/es/projects/x/',
-      },
-      {
-        hreflang: 'x-default',
-        href: 'https://portfolio-project.carlos15erh.workers.dev/projects/x/',
-      },
+    expect(hreflangAlternates('/es/projects/x/', SITE_URL)).toEqual([
+      { hreflang: 'en', href: `${SITE_URL}/projects/x/` },
+      { hreflang: 'es', href: `${SITE_URL}/es/projects/x/` },
+      { hreflang: 'x-default', href: `${SITE_URL}/projects/x/` },
     ]);
+  });
+});
+
+describe('canonicalHref', () => {
+  it('points the root at the site origin', () => {
+    expect(canonicalHref('/', SITE_URL)).toBe(`${SITE_URL}/`);
+  });
+
+  it('points a nested page at its own slash-terminated address', () => {
+    expect(canonicalHref('/projects/pysa/', SITE_URL)).toBe(
+      `${SITE_URL}/projects/pysa/`,
+    );
+  });
+
+  it('adds the trailing slash a folder index is served with', () => {
+    // Cloudflare serves `/projects/pysa/` and answers `/projects/pysa` with a 307, so the
+    // canonical is the slash-terminated form whichever one was asked for.
+    expect(canonicalHref('/projects/pysa', SITE_URL)).toBe(
+      `${SITE_URL}/projects/pysa/`,
+    );
+    expect(canonicalHref('/es', SITE_URL)).toBe(`${SITE_URL}/es/`);
+  });
+
+  it('leaves a query string and a hash out', () => {
+    expect(canonicalHref('/contact/?sent=1', SITE_URL)).toBe(
+      `${SITE_URL}/contact/`,
+    );
+    expect(canonicalHref('/contact?_action=contact', SITE_URL)).toBe(
+      `${SITE_URL}/contact/`,
+    );
+    expect(canonicalHref('/projects/pysa/#features', SITE_URL)).toBe(
+      `${SITE_URL}/projects/pysa/`,
+    );
+    expect(canonicalHref('/es/projects/?page=2#top', SITE_URL)).toBe(
+      `${SITE_URL}/es/projects/`,
+    );
+  });
+
+  it('keeps the spanish prefix', () => {
+    expect(canonicalHref('/es/', SITE_URL)).toBe(`${SITE_URL}/es/`);
+    expect(canonicalHref('/es/projects/pysa/', SITE_URL)).toBe(
+      `${SITE_URL}/es/projects/pysa/`,
+    );
+  });
+
+  it('does not mistake a path that merely starts with a locale code for that locale', () => {
+    expect(canonicalHref('/escape/', SITE_URL)).toBe(`${SITE_URL}/escape/`);
+  });
+
+  it('is built from the site it is given, with or without a trailing slash', () => {
+    // `Astro.site.href` ends with a slash; the constant does not.
+    expect(canonicalHref('/projects/', 'https://example.com')).toBe(
+      'https://example.com/projects/',
+    );
+    expect(canonicalHref('/projects/', 'https://example.com/')).toBe(
+      'https://example.com/projects/',
+    );
+  });
+
+  it("equals the page's own hreflang alternate", () => {
+    for (const pathname of [
+      '/',
+      '/es/',
+      '/projects/',
+      '/es/projects/pysa/',
+      '/contact',
+      '/es/skills',
+    ]) {
+      const own = hreflangAlternates(pathname, SITE_URL).find(
+        (alternate) => alternate.hreflang === localeOfPathname(pathname),
+      );
+
+      expect(own, pathname).toBeDefined();
+      expect(canonicalHref(pathname, SITE_URL), pathname).toBe(own?.href);
+    }
   });
 });

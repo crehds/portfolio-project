@@ -102,6 +102,14 @@ export function pathnameIsWithinSection(
   );
 }
 
+/**
+ * `site` without its trailing slash, so a pathname (which starts with one) can follow it:
+ * `Astro.site.href` ends with a slash, and the `SITE_URL` constant does not.
+ */
+function originOf(site: string): string {
+  return site.endsWith('/') ? site.slice(0, -1) : site;
+}
+
 export interface HreflangAlternate {
   hreflang: Locale | 'x-default';
   href: string;
@@ -116,7 +124,7 @@ export function hreflangAlternates(
   pathname: string,
   site: string,
 ): HreflangAlternate[] {
-  const origin = site.endsWith('/') ? site.slice(0, -1) : site;
+  const origin = originOf(site);
 
   const alternates: HreflangAlternate[] = LOCALES.map((locale) => ({
     hreflang: locale,
@@ -129,4 +137,18 @@ export function hreflangAlternates(
   });
 
   return alternates;
+}
+
+/**
+ * The canonical URL of a page: absolute, built from `site` and the pathname alone, in the
+ * slash-terminated form Cloudflare serves a folder index with (it answers the other form
+ * with a 307). Anything from a `?` or `#` on is not part of the pathname, so a query such
+ * as `?sent=1` drops out, and the host is always `site`'s, never the one a visitor, a
+ * preview or a local server was reached on. For every indexable page it is that page's own
+ * hreflang alternate (see `hreflangAlternates`), so the two never disagree.
+ */
+export function canonicalHref(pathname: string, site: string): string {
+  const [path = ''] = pathname.split(/[?#]/, 1);
+
+  return `${originOf(site)}${pathnameInLocale(path, localeOfPathname(path))}`;
 }

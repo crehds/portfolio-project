@@ -6,6 +6,7 @@ import LanguageSwitcher from '../components/LanguageSwitcher.astro';
 import Link from '../components/Link.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
 import {
+  canonicalHref,
   hreflangAlternates,
   localeOfPathname,
   pathnameInLocale,
@@ -27,9 +28,10 @@ interface Props {
   description: string;
   /**
    * Whether the page is an error page (the 404 pages). It has no translation of itself and
-   * no address of its own to describe, so it renders no hreflang alternates, and its
-   * language switcher links to the home pages instead. A canonical link, when T12 adds
-   * one, skips it too.
+   * no address of its own to describe, so it renders no hreflang alternates and no
+   * canonical link, and its language switcher links to the home pages instead. It asks
+   * search engines not to index it (`noindex`): `/404` and `/es/404/` answer 200 as plain
+   * assets, so they are reachable as ordinary pages.
    */
   errorPage?: boolean;
 }
@@ -42,10 +44,15 @@ const dictionary = getDictionary(locale);
 
 if (!Astro.site) {
   throw new Error(
-    'astro.config.mjs must set "site" so hreflang alternates can be absolute URLs.',
+    'astro.config.mjs must set "site" so the canonical link and the hreflang alternates can be absolute URLs.',
   );
 }
 
+// Both come from `Astro.site`, never from the origin the request came in on, so a preview
+// or a local server still points search engines at the production address.
+const canonical = errorPage
+  ? undefined
+  : canonicalHref(pathname, Astro.site.href);
 const alternates = errorPage
   ? []
   : hreflangAlternates(pathname, Astro.site.href);
@@ -115,6 +122,8 @@ if (!profile) {
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
     <meta name="description" content={description} />
+    {errorPage && <meta name="robots" content="noindex" />}
+    {canonical && <link rel="canonical" href={canonical} />}
     {alternates.map((alternate) => (
       <link
         rel="alternate"

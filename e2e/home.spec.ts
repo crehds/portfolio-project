@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-const SITE = 'https://portfolio-project.carlos15erh.workers.dev';
+import { SITE_URL } from '../src/shared/site/site-url';
 
 const homePages: { path: string; lang: string }[] = [
   { path: '/', lang: 'en' },
@@ -41,13 +41,13 @@ for (const { path, lang } of homePages) {
       await expect(page.locator('link[rel="alternate"]')).toHaveCount(3);
       await expect(
         page.locator('link[rel="alternate"][hreflang="en"]'),
-      ).toHaveAttribute('href', `${SITE}/`);
+      ).toHaveAttribute('href', `${SITE_URL}/`);
       await expect(
         page.locator('link[rel="alternate"][hreflang="es"]'),
-      ).toHaveAttribute('href', `${SITE}/es/`);
+      ).toHaveAttribute('href', `${SITE_URL}/es/`);
       await expect(
         page.locator('link[rel="alternate"][hreflang="x-default"]'),
-      ).toHaveAttribute('href', `${SITE}/`);
+      ).toHaveAttribute('href', `${SITE_URL}/`);
     });
 
     test('has no detectable accessibility violations', async ({ page }) => {
