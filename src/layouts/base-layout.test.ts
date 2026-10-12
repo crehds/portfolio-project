@@ -26,6 +26,7 @@ interface PageProps {
   description?: string;
   errorPage?: boolean;
   socialImage?: SocialImage;
+  jsonLd?: string;
 }
 
 /**
@@ -414,6 +415,29 @@ describe('BaseLayout', () => {
     it("links the language switcher to the other locale's home page", async () => {
       expect(await switcherHrefs('/404', true)).toEqual(['/es/']);
       expect(await switcherHrefs('/es/404', true)).toEqual(['/']);
+    });
+  });
+
+  describe('structured data', () => {
+    /** The content of every JSON-LD script in the page, exactly as written. */
+    function jsonLdScripts(html: string): string[] {
+      return [
+        ...html.matchAll(
+          /<script type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g,
+        ),
+      ].map(([, content]) => content ?? '');
+    }
+
+    it('writes no script when the page has none', async () => {
+      expect(jsonLdScripts(await renderPage('/'))).toEqual([]);
+    });
+
+    it("writes the page's structured data into one JSON-LD script, as it is", async () => {
+      const jsonLd = '{"@type":"Person","name":"A \\u003c/script> B & C"}';
+
+      expect(jsonLdScripts(await renderPage('/', { jsonLd }))).toEqual([
+        jsonLd,
+      ]);
     });
   });
 });

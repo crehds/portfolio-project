@@ -44,9 +44,21 @@ interface Props {
    * tags and asks for the small card.
    */
   socialImage?: SocialImage;
+  /**
+   * The page's structured data, already serialized for a script (`serializeJsonLd`, which
+   * escapes every `<`), written as it is into a `<script type="application/ld+json">`. A page
+   * without any writes no script.
+   */
+  jsonLd?: string;
 }
 
-const { title, description, errorPage = false, socialImage } = Astro.props;
+const {
+  title,
+  description,
+  errorPage = false,
+  socialImage,
+  jsonLd,
+} = Astro.props;
 
 const pathname = Astro.url.pathname;
 const locale = localeOfPathname(pathname);
@@ -163,6 +175,9 @@ if (!profile) {
     {socialMeta.map((tag) => (
       <meta {...tag} />
     ))}
+    {jsonLd && (
+      <script is:inline type="application/ld+json" set:html={jsonLd} />
+    )}
     <Font cssVariable="--font-ubuntu" preload={[{ weight: '400' }]} />
     <Font cssVariable="--font-ubuntu-mono" />
   </head>
