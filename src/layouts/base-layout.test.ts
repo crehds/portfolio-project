@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { localeOfPathname } from '../shared/i18n/paths';
 import { getDictionary } from '../shared/i18n/ui';
+import type { SocialImage } from '../shared/seo/social-meta';
 import { SITE_URL } from '../shared/site/site-url';
 import BaseLayout from './BaseLayout.astro';
 
@@ -19,13 +20,21 @@ vi.mock('astro:content', () => ({
   }),
 }));
 
+/** What a page hands to the layout (the title and the description have defaults here). */
+interface PageProps {
+  title?: string;
+  description?: string;
+  errorPage?: boolean;
+  socialImage?: SocialImage;
+}
+
 /**
  * Renders the layout for an address. `origin` is where the page is reached (a preview or a
  * local server in practice), which is not the site's own.
  */
-async function render(
+async function renderPage(
   pathname: string,
-  errorPage?: boolean,
+  props: PageProps = {},
   origin = 'http://localhost',
 ): Promise<string> {
   const container = await AstroContainer.create({
@@ -34,9 +43,17 @@ async function render(
 
   return container.renderToString(BaseLayout, {
     request: new Request(`${origin}${pathname}`),
-    props: { title: 'A title', description: 'A description', errorPage },
+    props: { title: 'A title', description: 'A description', ...props },
     slots: { default: '<p>The page</p>' },
   });
+}
+
+async function render(
+  pathname: string,
+  errorPage?: boolean,
+  origin?: string,
+): Promise<string> {
+  return renderPage(pathname, { errorPage }, origin);
 }
 
 /** The raw value of an attribute in a string of attributes. */
@@ -108,6 +125,43 @@ async function robots(pathname: string, errorPage?: boolean) {
     ([, attributes]) => attributeOf(attributes, 'content'),
   );
 }
+
+/**
+ * A `<meta>` start tag. The match is quote-aware: Astro leaves `<` and `>` as they are inside
+ * a quoted attribute value (it escapes `&` and `"` there), and a title may have either.
+ */
+const META_TAG = /<meta\b((?:[^>"']|"[^"]*"|'[^']*')*)>/g;
+
+/** The text of an attribute value, as a browser reads it: Astro escapes `"` and `&` in one. */
+function decodeAttribute(value: string): string {
+  return value.replace(/&quot;/g, '"').replace(/&amp;/g, '&');
+}
+
+/** Every Open Graph and Twitter tag of the page, as `key=content`, in document order. */
+async function socialTags(
+  pathname: string,
+  props?: PageProps,
+  origin?: string,
+): Promise<string[]> {
+  const html = await renderPage(pathname, props, origin);
+
+  return [...html.matchAll(META_TAG)].flatMap(([, attributes = '']) => {
+    const key =
+      attributeOf(attributes, 'property') ?? attributeOf(attributes, 'name');
+
+    return key && /^(?:og|twitter):/.test(key)
+      ? [`${key}=${decodeAttribute(attributeOf(attributes, 'content') ?? '')}`]
+      : [];
+  });
+}
+
+/** A cover as the project pages hand it over: `getImage` answers with a root-relative address. */
+const COVER: SocialImage = {
+  src: '/_astro/cover.abc123_Z1x2y3.jpg',
+  width: 1200,
+  height: 630,
+  alt: 'Screenshot of Pysa',
+};
 
 async function switcherHrefs(pathname: string, errorPage?: boolean) {
   const html = await render(pathname, errorPage);
@@ -182,6 +236,133 @@ describe('BaseLayout', () => {
       expect(await robots('/projects/pysa/')).toEqual([]);
       expect(await robots('/es/')).toEqual([]);
     });
+
+    it("declares the Open Graph and Twitter tags of the page: the page's own text, the site's name and the locale", async () => {
+      const page = {
+        title: 'Pysa — Carlos Rodríguez Huerta',
+        description: 'A summary of Pysa.',
+      };
+
+      for (const [pathname, own, other] of [
+        ['/projects/pysa/', 'en_US', 'es_LA'],
+        ['/es/projects/pysa/', 'es_LA', 'en_US'],
+      ] as const) {
+        const { siteTitle } = getDictionary(localeOfPathname(pathname));
+
+        expect(await socialTags(pathname, page), pathname).toEqual([
+          'og:type=website',
+          `og:site_name=${siteTitle}`,
+          'og:title=Pysa — Carlos Rodríguez Huerta',
+          'og:description=A summary of Pysa.',
+          `og:url=${SITE_URL}${pathname}`,
+          `og:locale=${own}`,
+          `og:locale:alternate=${other}`,
+          'twitter:card=summary',
+        ]);
+      }
+    });
+
+    it('names the canonical address as og:url, however the page was reached', async () => {
+      for (const pathname of [
+        '/',
+        '/projects',
+        '/projects/pysa/',
+        '/contact/?sent=1',
+        '/es/',
+        '/es/contact/?_action=contact',
+      ]) {
+        const [canonical] = await canonicals(pathname);
+        const url = (await socialTags(pathname)).filter((tag) =>
+          tag.startsWith('og:url='),
+        );
+
+        expect(canonical, pathname).toBeDefined();
+        expect(url, pathname).toEqual([`og:url=${canonical}`]);
+      }
+    });
+
+    it('builds og:url from the configured site, not from the origin the page is reached on', async () => {
+      expect(
+        await socialTags('/projects/', {}, 'https://preview.example.dev'),
+      ).toContain(`og:url=${SITE_URL}/projects/`);
+      expect(await socialTags('/es/', {}, 'http://localhost:4331')).toContain(
+        `og:url=${SITE_URL}/es/`,
+      );
+    });
+
+    it('writes no picture tag and asks for the small card when the page has no picture', async () => {
+      for (const pathname of [
+        '/',
+        '/projects/pysa/',
+        '/es/projects/pysa/',
+        '/es/contact/',
+      ]) {
+        const tags = await socialTags(pathname);
+
+        expect(
+          tags.filter((tag) => tag.startsWith('og:image')),
+          pathname,
+        ).toEqual([]);
+        expect(
+          tags.filter((tag) => tag.startsWith('twitter:')),
+          pathname,
+        ).toEqual(['twitter:card=summary']);
+      }
+    });
+
+    it('puts the picture on the configured site, even when the page is reached on a preview or a local server', async () => {
+      for (const [pathname, origin] of [
+        ['/projects/pysa/', 'https://preview.example.dev'],
+        ['/es/projects/pysa/', 'http://localhost:4331'],
+      ] as const) {
+        const tags = await socialTags(pathname, { socialImage: COVER }, origin);
+
+        expect(
+          tags.filter((tag) => /^(?:og:image|twitter:)/.test(tag)),
+          pathname,
+        ).toEqual([
+          `og:image=${SITE_URL}/_astro/cover.abc123_Z1x2y3.jpg`,
+          'og:image:width=1200',
+          'og:image:height=630',
+          'og:image:alt=Screenshot of Pysa',
+          'twitter:card=summary_large_image',
+        ]);
+      }
+    });
+
+    it('leaves a picture that is already at an absolute address where it is', async () => {
+      const tags = await socialTags('/projects/pysa/', {
+        socialImage: {
+          ...COVER,
+          src: 'https://cdn.example.com/cards/pysa.jpg',
+        },
+      });
+
+      expect(tags).toContain('og:image=https://cdn.example.com/cards/pysa.jpg');
+    });
+
+    it('adds no alternate link for the picture: still the three hreflang alternates', async () => {
+      const html = await renderPage('/projects/pysa/', { socialImage: COVER });
+
+      expect([...html.matchAll(/<link rel="alternate"/g)]).toHaveLength(3);
+    });
+
+    it('escapes what it writes into the tags, so a page cannot add tags of its own', async () => {
+      const hostile = `x" /><meta property="og:image" content="https://evil.example/x.jpg`;
+
+      const tags = await socialTags('/projects/pysa/', {
+        title: 'Fish & "chips" <b>',
+        description: hostile,
+        socialImage: { ...COVER, alt: 'A "quoted" & <b>bold</b> alt' },
+      });
+
+      expect(tags).toContain('og:title=Fish & "chips" <b>');
+      expect(tags).toContain(`og:description=${hostile}`);
+      expect(tags).toContain('og:image:alt=A "quoted" & <b>bold</b> alt');
+      expect(tags.filter((tag) => tag.startsWith('og:image='))).toEqual([
+        `og:image=${SITE_URL}/_astro/cover.abc123_Z1x2y3.jpg`,
+      ]);
+    });
   });
 
   describe('on an error page', () => {
@@ -210,6 +391,24 @@ describe('BaseLayout', () => {
     it('declares no hreflang alternates', async () => {
       expect(await alternates('/404', true)).toEqual([]);
       expect(await alternates('/es/404', true)).toEqual([]);
+    });
+
+    it('declares no Open Graph or Twitter tags, even when it is given a picture', async () => {
+      // It has no address of its own to share, so a link to it is not previewed as a page.
+      for (const pathname of [
+        '/404',
+        '/es/404',
+        '/projects/no-such-project/',
+      ]) {
+        expect(
+          await socialTags(pathname, { errorPage: true }),
+          pathname,
+        ).toEqual([]);
+        expect(
+          await socialTags(pathname, { errorPage: true, socialImage: COVER }),
+          pathname,
+        ).toEqual([]);
+      }
     });
 
     it("links the language switcher to the other locale's home page", async () => {

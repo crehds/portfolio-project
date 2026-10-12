@@ -36,18 +36,27 @@ const PUBLISHED_PROJECT_SLUGS = [
   'bachatealo',
 ];
 
-// Home, the three section pages and one page per published project, in each locale: the pages
-// that are static files in the build. The contact pages run on demand (the form posts to them),
-// so the build has no file for them; COPY has their addresses.
-const PRERENDERED = LANGS.flatMap((lang) =>
-  [
-    '/',
-    '/projects/',
-    '/experience/',
-    '/skills/',
-    ...PUBLISHED_PROJECT_SLUGS.map((slug) => `/projects/${slug}/`),
-  ].map((path) => ({ lang, path: inLang(lang, path) })),
+// One page per published project, in each locale. They are the pages with a cover, which a link
+// preview shows as the page's picture.
+const PROJECT_PAGES = LANGS.flatMap((lang) =>
+  PUBLISHED_PROJECT_SLUGS.map((slug) => ({
+    lang,
+    path: inLang(lang, `/projects/${slug}/`),
+  })),
 );
+
+// Home, the three section pages and the project pages, in each locale: the pages that are static
+// files in the build. The contact pages run on demand (the form posts to them), so the build has
+// no file for them; COPY has their addresses.
+const PRERENDERED = [
+  ...LANGS.flatMap((lang) =>
+    ['/', '/projects/', '/experience/', '/skills/'].map((path) => ({
+      lang,
+      path: inLang(lang, path),
+    })),
+  ),
+  ...PROJECT_PAGES,
+];
 
 const ON_DEMAND = COPY.map(({ lang, path }) => ({ lang, path }));
 
@@ -147,9 +156,157 @@ test.describe('home page title and description', () => {
   }
 });
 
+// What a link preview is made of: the Open Graph tags that LinkedIn, Slack and Facebook read, and
+// the card type that X reads (it falls back to the Open Graph tags for the rest). Like the other
+// expectations of this file, they are spelled out here and not imported from
+// src/shared/seo/social-meta.ts, so that a change to the rule is a change to the tests too.
+const SOCIAL_SITE_NAME = 'Carlos Rodríguez Huerta';
+
+// The tags of a page, whatever it shows.
+const SOCIAL_KEYS = [
+  'og:type',
+  'og:site_name',
+  'og:title',
+  'og:description',
+  'og:url',
+  'og:locale',
+  'og:locale:alternate',
+  'twitter:card',
+];
+
+// A page that shares a picture has four more: the picture, its size and its alt text.
+const SOCIAL_IMAGE_KEYS = [
+  'og:image',
+  'og:image:width',
+  'og:image:height',
+  'og:image:alt',
+];
+
+/** Every Open Graph and Twitter tag of the page, as `[key, content]`, in document order. */
+async function socialTags(page: Page): Promise<[string, string][]> {
+  return page
+    .locator('meta[property^="og:"], meta[name^="twitter:"]')
+    .evaluateAll((tags) =>
+      tags.map((tag): [string, string] => [
+        tag.getAttribute('property') ?? tag.getAttribute('name') ?? '',
+        tag.getAttribute('content') ?? '',
+      ]),
+    );
+}
+
+/** The contents of the tags with this key. */
+function valuesOf(tags: [string, string][], key: string): string[] {
+  return tags.filter(([name]) => name === key).map(([, content]) => content);
+}
+
+test.describe('Open Graph and Twitter tags', () => {
+  for (const { lang, path } of PAGES) {
+    test(`${path} describes itself to a link preview`, async ({ page }) => {
+      await page.goto(path);
+
+      const tags = await socialTags(page);
+      const description = await page
+        .locator('meta[name="description"]')
+        .getAttribute('content');
+      const canonical = await page
+        .locator('link[rel="canonical"]')
+        .getAttribute('href');
+      const hasCover = PROJECT_PAGES.some((project) => project.path === path);
+
+      // Nothing else, and nothing twice. In particular no `twitter:site` or `twitter:creator`:
+      // the profile has no X handle to name.
+      expect(tags.map(([key]) => key).sort()).toEqual(
+        [...SOCIAL_KEYS, ...(hasCover ? SOCIAL_IMAGE_KEYS : [])].sort(),
+      );
+      expect(valuesOf(tags, 'og:type')).toEqual(['website']);
+      expect(valuesOf(tags, 'og:site_name')).toEqual([SOCIAL_SITE_NAME]);
+      // The title and the description are the page's own.
+      expect(valuesOf(tags, 'og:title')).toEqual([await page.title()]);
+      expect(description).toBeTruthy();
+      expect(valuesOf(tags, 'og:description')).toEqual([description]);
+      // The address is the canonical one, so a preview of a shared link counts for the page.
+      expect(valuesOf(tags, 'og:url')).toEqual([`${SITE_URL}${path}`]);
+      expect(valuesOf(tags, 'og:url')).toEqual([canonical]);
+      // Facebook's code for Latin American Spanish is `es_LA`, and the page names the other
+      // locale as the alternate.
+      expect(valuesOf(tags, 'og:locale')).toEqual([
+        lang === 'en' ? 'en_US' : 'es_LA',
+      ]);
+      expect(valuesOf(tags, 'og:locale:alternate')).toEqual([
+        lang === 'en' ? 'es_LA' : 'en_US',
+      ]);
+      // The large card is for a page that has a picture to show.
+      expect(valuesOf(tags, 'twitter:card')).toEqual([
+        hasCover ? 'summary_large_image' : 'summary',
+      ]);
+    });
+  }
+});
+
+// A project page shares its cover. The file is cropped when the site is built, so it is checked
+// for what it is: a JPEG of exactly the size a preview takes, which the site serves itself.
+test.describe('the picture of a project page', () => {
+  for (const { path } of PROJECT_PAGES) {
+    test(`${path} shares its cover, cropped to 1200x630`, async ({
+      page,
+      request,
+    }) => {
+      await page.goto(path);
+
+      const tags = await socialTags(page);
+      const cover = page.locator('main img');
+      await expect(cover).toHaveCount(1);
+      const alt = await cover.getAttribute('alt');
+
+      // An absolute address on the site, whatever host the test reached the page on.
+      const images = valuesOf(tags, 'og:image');
+      expect(images).toHaveLength(1);
+      const url = new URL(images[0] ?? '');
+      expect(url.origin).toBe(SITE_URL);
+      // Astro names the file after the format it was asked for (`jpeg`); what the file is
+      // gets checked below.
+      expect(url.pathname).toMatch(/^\/_astro\/[^/]+\.jpe?g$/);
+
+      // The browser here resolves no host but the local ones, so the file is fetched from the
+      // test server, which has it at the same pathname.
+      const response = await request.get(url.pathname);
+      expect(response.status()).toBe(200);
+      expect(response.headers()['content-type']).toMatch(/^image\/jpeg\b/);
+      const bytes = await response.body();
+      expect([...bytes.subarray(0, 3)]).toEqual([0xff, 0xd8, 0xff]);
+
+      // The browser decodes it, so the size is the picture's own and not what a header claims.
+      const decoded = await page.evaluate(async (src) => {
+        const picture = new Image();
+        picture.src = src;
+        await picture.decode();
+        return { width: picture.naturalWidth, height: picture.naturalHeight };
+      }, url.pathname);
+      expect(decoded).toEqual({ width: 1200, height: 630 });
+
+      // The tags say what the file is, and describe it the way the page describes its cover.
+      expect(valuesOf(tags, 'og:image:width')).toEqual(['1200']);
+      expect(valuesOf(tags, 'og:image:height')).toEqual(['630']);
+      expect(alt).toBeTruthy();
+      expect(valuesOf(tags, 'og:image:alt')).toEqual([alt]);
+    });
+  }
+
+  for (const { path, alt } of [
+    { path: '/projects/pysa/', alt: 'Screenshot of Pysa' },
+    { path: '/es/projects/pysa/', alt: 'Captura de pantalla de Pysa Gaming' },
+  ]) {
+    test(`${path} describes its picture as "${alt}"`, async ({ page }) => {
+      await page.goto(path);
+
+      expect(valuesOf(await socialTags(page), 'og:image:alt')).toEqual([alt]);
+    });
+  }
+});
+
 // The 404 pages answer 200 at `/404` and `/es/404/` (plain assets), and 404 at every other
 // address: either way they are not pages to index, and they have no address of their own to
-// call canonical.
+// call canonical or to share.
 test.describe('error pages', () => {
   for (const { lang, path } of [
     { lang: 'en', path: '/404' },
@@ -168,6 +325,14 @@ test.describe('error pages', () => {
       await expect(robots).toHaveAttribute('content', 'noindex');
       await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
     });
+
+    test(`${path} has no Open Graph or Twitter tags`, async ({ page }) => {
+      await page.goto(path);
+
+      // The page is rendered, not blank: `lang` is the page's own.
+      await expect(page.locator('html')).toHaveAttribute('lang', lang);
+      expect(await socialTags(page)).toEqual([]);
+    });
   }
 });
 
@@ -180,9 +345,10 @@ test.describe('robots.txt', () => {
     const response = await request.get('/robots.txt');
 
     expect(response.status()).toBe(200);
-    expect(response.headers()['content-type']).toBe(
-      'text/plain; charset=utf-8',
-    );
+    // A static file gets its header from the asset server, which chooses it by the file's
+    // extension and spells the charset its own way (the endpoint's own header is not used).
+    // What matters to a crawler is the media type, so that is all this holds it to.
+    expect(response.headers()['content-type']).toMatch(/^text\/plain\b/);
     expect(await response.text()).toBe(
       `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap-index.xml\n`,
     );

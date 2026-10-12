@@ -45,6 +45,18 @@ src/content/projects/<slug>/es.md
 | `status`     | `"draft"` \| `"published"` | no (default `"published"`) | Use `draft` for a project with no verifiable summary/links yet, or one you are not ready to show — it is excluded from listings unless a caller explicitly opts into drafts. Switch it to `published` once the entry has a real `summary` (and ideally a case-study body).                                                 |
 | `date`       | date (`YYYY-MM-DD`)        | yes                        | See "The `date` rule" below.                                                                                                                                                                                                                                                                                               |
 
+### The `cover` is also the social card
+
+A project page shares its cover when someone posts a link to it: the build crops the cover to
+1200x630, keeping the top (`src/shared/seo/social-image.ts`), and the page's `og:image` tags point
+at the result. Two consequences for a new cover:
+
+- It must be at least 1200 pixels wide and 630 tall. The image service never enlarges a picture, so
+  a smaller cover gives a smaller card than the size the tags declare (`e2e/seo.spec.ts` decodes the
+  card of every project page and fails on any other size).
+- Put what identifies the project in the top of the screenshot. A 1280x800 capture loses roughly
+  its bottom sixth in the card.
+
 ### The `date` rule
 
 `date` represents the project's last known activity, not a case study's publish date. Use,
