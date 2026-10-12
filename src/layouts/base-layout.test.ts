@@ -5,6 +5,7 @@ import { localeOfPathname } from '../shared/i18n/paths';
 import { getDictionary } from '../shared/i18n/ui';
 import type { SocialImage } from '../shared/seo/social-meta';
 import { SITE_URL } from '../shared/site/site-url';
+import { THEME_COLORS } from '../shared/theme/theme-color';
 import BaseLayout from './BaseLayout.astro';
 
 // The layout reads the profile for its footer from the content layer, which a unit run has
@@ -403,6 +404,84 @@ describe('BaseLayout', () => {
       expect(tags.filter((tag) => tag.startsWith('og:image='))).toEqual([
         `og:image=${SITE_URL}/_astro/cover.abc123_Z1x2y3.jpg`,
       ]);
+    });
+  });
+
+  describe('icons and theme color', () => {
+    // Every page has them, the error pages too: a visitor who lands on a 404 still gets the tab icon.
+    const PAGES: [string, boolean | undefined][] = [
+      ['/', undefined],
+      ['/es/projects/pysa/', undefined],
+      ['/es/contact/', undefined],
+      ['/404', true],
+      ['/es/404', true],
+    ];
+
+    /** The attributes of every `<link>` with this `rel`, as written. */
+    async function linksWithRel(
+      pathname: string,
+      errorPage: boolean | undefined,
+    ) {
+      const html = await render(pathname, errorPage);
+
+      return [...html.matchAll(/<link rel="([^"]*)"([^>]*)>/g)]
+        .filter(([, rel]) => rel === 'icon' || rel === 'apple-touch-icon')
+        .map(([, rel, attributes = '']) => ({
+          rel,
+          href: attributeOf(attributes, 'href'),
+          sizes: attributeOf(attributes, 'sizes'),
+          type: attributeOf(attributes, 'type'),
+        }));
+    }
+
+    it('links the .ico for the browsers that read no SVG, the SVG, and the touch icon', async () => {
+      for (const [pathname, errorPage] of PAGES) {
+        expect(await linksWithRel(pathname, errorPage), pathname).toEqual([
+          {
+            rel: 'icon',
+            href: '/favicon.ico',
+            sizes: '32x32',
+            type: undefined,
+          },
+          {
+            rel: 'icon',
+            href: '/icon.svg',
+            sizes: undefined,
+            type: 'image/svg+xml',
+          },
+          {
+            rel: 'apple-touch-icon',
+            href: '/apple-touch-icon.png',
+            sizes: undefined,
+            type: undefined,
+          },
+        ]);
+      }
+    });
+
+    it('tints the browser with the background of each color scheme, one tag per scheme', async () => {
+      for (const [pathname, errorPage] of PAGES) {
+        const html = await render(pathname, errorPage);
+        const tags = [...html.matchAll(META_TAG)].flatMap(
+          ([, attributes = '']) =>
+            attributeOf(attributes, 'name') === 'theme-color'
+              ? [
+                  {
+                    content: attributeOf(attributes, 'content'),
+                    media: attributeOf(attributes, 'media'),
+                  },
+                ]
+              : [],
+        );
+
+        expect(tags, pathname).toEqual([
+          {
+            content: THEME_COLORS.light,
+            media: '(prefers-color-scheme: light)',
+          },
+          { content: THEME_COLORS.dark, media: '(prefers-color-scheme: dark)' },
+        ]);
+      }
     });
   });
 
