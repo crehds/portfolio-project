@@ -22,10 +22,14 @@ export default defineConfig([
   eslintConfigPrettier,
   {
     // Manual generator scripts (scripts/): Node programs that log what they write, and one
-    // runs in the page it drives, so `console` and `document` are theirs to use.
+    // runs in the page it drives, so `Buffer`, `console` and `document` are theirs to use.
     files: ['scripts/**/*.mjs'],
     languageOptions: {
-      globals: { console: 'readonly', document: 'readonly' },
+      globals: {
+        Buffer: 'readonly',
+        console: 'readonly',
+        document: 'readonly',
+      },
     },
   },
   {
