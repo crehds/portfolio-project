@@ -75,13 +75,15 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~26,942 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+- Running count: ~28,092 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
   T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321 + T08 ~1,021 + T09 ~923 + T09b ~217 +
   T10 ~778 + T10b ~88 + T11a ~935 + T11b ~1,698 + T11c ~2,978 + T11c-b ~1,573 + T10c ~244 + T11d ~7,936 + T11e ~535 +
-  T11d-b ~482 + T12a ~674 + T12b ~581 + T12c ~939 + T12e ~438, with tests, excluding lockfiles and the legacy removal; the terms before T11d sum to 15,357, so the
+  T11d-b ~482 + T12a ~674 + T12b ~581 + T12c ~939 + T12e ~438 + T12d ~672 + T12f ~478, with tests (binaries excluded), excluding lockfiles and the legacy removal; the terms before T11d sum to 15,357, so the
   earlier total of ~15,124 was an addition slip). It already passes the ~4,300 forecast, mostly from tests, the e2e
   harness and the review follow-up tasks.
-- Last reviewed boundary: `233881c`, the T12e tip (the merge `fa695de` has the same tree, `0f3ef44`); the T12c record
+- Last reviewed boundary: `34ae18d`, the T12f tip (the merge `73530dd` has the same tree, `c434060`). Before that,
+  `3173e96`, the T12d tip (the merge `1704b16` has the same tree, `74b7812`); the T12e record `fff13be` (passive) was
+  reviewed with T12d. Before that, `233881c`, the T12e tip (the merge `fa695de` has the same tree, `0f3ef44`); the T12c record
   `811438d` was reviewed with T12e. Before that, `cddfe93`, the T12c tip (the merge `a6c6f67` has the same tree,
   `74caa55`); the T12b record `7d1d442` was reviewed with T12c. Before that, `699a9de`, the T12b tip (the merge `0dc0da1` has the same tree,
   `5b99be5`); the T12a record `d2a7f69` was reviewed with T12b. Before that, `dd9a101`, the T12a tip (the merge `bcf61fe` has the same tree,
@@ -219,7 +221,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
 
 ### Phase 3 · Launch
 
-- [ ] **T12** SEO: meta, Open Graph/Twitter, OG images, JSON-LD Person, sitemap + robots, canonical, favicons. Planned on
+- [x] **T12** SEO: meta, Open Graph/Twitter, OG images, JSON-LD Person, sitemap + robots, canonical, favicons. Planned on
   2026-10-11 by a read-only planning pass (see the change log) as six sub-tasks, each on its own branch
   `feat/astro-rebuild-12<x>-<slug>`. ~1,300 with tests (the first estimate was ~300). Parent defaults, open to the
   owner's veto: the home title and description derive from the profile (no new facts), JSON-LD stays a minimal
@@ -242,7 +244,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
     with `getImage` as `og:image`, with its size and alt. Also, from the T12b review: a unit test for the throw in
     `withXDefaultAlternate` (an entry with locale links and no `x-default`), and the e2e robots.txt check matches the
     media type with a pattern instead of the exact header the static-asset server sets. Route: delegated.
-  - [ ] **T12d** A default social card per locale (a static 1200x630 PNG in `src/assets/og/`) for every page without a
+  - [x] **T12d** (delivered in eight commits, see Progress) A default social card per locale (a static 1200x630 PNG in `src/assets/og/`) for every page without a
     cover, drafted from the design tokens (name and role) for the owner's approval. Generated cards are deferred: the
     adapter prerenders in workerd and leaves sharp out. Route: delegated + owner approval.
   - [x] **T12e** (delivered in eight commits, see Progress) JSON-LD `Person` on the two home pages from `profile.yaml` only (`name`, `jobTitle`, `description`,
@@ -252,7 +254,8 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
     build fails when a cover is smaller than 1200x630 (the content schema can enforce the minimum); (3) the
     `hreflangAlternates` spy in `sitemap-alternates.test.ts` is reset after each test instead of relying on
     `mockReturnValueOnce` running last. Route: delegated.
-  - [ ] **T12f** Icons and theme color: `favicon.ico` (32 and 48 px), an `icon.svg` that follows the color scheme, a
+  - [x] **T12f** (delivered in three commits, see Progress; owner, 2026-10-12: the dark variant everywhere, so
+    `icon.svg` does not switch with the color scheme) Icons and theme color: `favicon.ico` (32 and 48 px), an `icon.svg` that follows the color scheme, a
     180 px `apple-touch-icon.png` in a new `public/`, and one `theme-color` per color scheme, tied to the tokens by a
     test. The icon is drafted for the owner's approval. Route: delegated + owner approval.
   - Order: T12a, T12b, T12c, T12e; T12d and T12f once the owner approves the drafts (after T10d if the owner changes
@@ -264,7 +267,19 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   full e2e runs on Windows exhaust the loopback ephemeral ports (TIME_WAIT), and the preview server listens on `::1`
   only, so the IPv4 fallback is refused; the `contact-body-limit` proxy race still exhausts its retries now and then.
   Options: connection reuse in the preview proxy or the test client, listening on `127.0.0.1` too, or spacing local
-  runs (measure first; Engram #513). Route: delegated. ~200.
+  runs (measure first; Engram #513). And from the T12d and T12f reviews, all advisory:
+  - `scripts/social-card/fonts.mjs` keys the cached fonts by full name only, so with several subset files per family
+    the directory order picks the subset. Choose the subset that covers the card's text, or fail.
+  - `og:image:type` is built as `image/` plus the asset format, and a `jpg` asset would give `image/jpg`. Map the
+    format to its media type.
+  - `scripts/icons/render.mjs` relies on Chromium's encoder for an RGB (no alpha) `apple-touch-icon.png`. Make it
+    deterministic, or document it.
+  - `blockAt` in `src/styles/read-tokens.ts` does not guard a missing closing brace.
+  - `theme-color` follows the OS scheme, not the site's stored theme toggle. Either the inline theme script updates
+    it, or the gap stays accepted (owner's call).
+  - The T12d writer's open items: whether X needs `twitter:image:alt` (unverified), and `scripts/` is linted but not
+    type-checked.
+  Route: delegated. ~200.
 - [ ] **T14** Launch: production deploy, analytics, final README, prune stale branches (owner approval). Route: inline + owner. ~80.
 
 ### Phase 4 · Project sync (future)
@@ -326,6 +341,8 @@ the HTML reporter blocks the shell after a failure.
 | T12b | done (merged `0dc0da1`) | `c6a6aa7` robots.txt endpoint over `buildRobotsTxt`, `a05a02c` `withXDefaultAlternate`, `699a9de` `@astrojs/sitemap` 3.7.4 with the i18n alternates and `x-default` | Strict TDD: `buildRobotsTxt` Cannot find module, then a naive stub 2/6 (a doubled slash; no throw for a site that is not absolute); e2e against the build before the change: 23 failed, 27 passed (`/robots.txt` and `/sitemap-index.xml` "Expected 200, Received 404"); `withXDefaultAlternate` module not found, then a naive stub 6/8; the sitemap with `i18n` and no `serialize`: 18 failed (no `x-default`); mutations caught (no `i18n`: 20 failures and `/es/404/` listed; `changefreq` and `priority` set: the unset-fields test; no de-duplication: 1) · writer: `pnpm install --frozen-lockfile` · lint · format · check 0/0/0 (182 files) · test 1324/1324 in 55 files · e2e 500/500 · build (`robots.txt`, `sitemap-index.xml` and `sitemap-0.xml` in `dist/client`) · dry run unchanged · parent readback of the production diff; parent re-ran: test 1324/1324 in 55 files; the merge tree equals the reviewed tree (`5b99be5`) | Slice from `d2a7f69` (the T12a record + T12b): medium, 9 files, 616 lines, 1 lens (reliability), approved with 2 advisory suggestions (`review-2d95904680bbb411`), routed to T12c |
 | T12c | done (merged `a6c6f67`) | `32c1d1d` a test for the throw in `withXDefaultAlternate`, `282a526` the robots.txt media type matched by pattern (both from the T12b review), `bf32a5d` `buildSocialMeta`, `fb11627` Open Graph and Twitter tags in `BaseLayout`, `ad97769` project covers as social images, `cddfe93` `coverAltText` (parent follow-up) | Strict TDD: the new e2e against the build before the change: 18 failed (no og tags); `buildSocialMeta` Cannot find module, then a naive stub (8 failed, 2 passed), then 11/11; layout container 7 RED, then 22/22; the cover e2e 18 RED before the pages passed a picture; the T12b throw test proved by removing the throw (1 failed); mutations caught (builder 8, layout 8, e2e 3, crop constants 4); `coverAltText` Cannot find module, then a naive stub 2/3, and `dist/client` byte-identical before and after that refactor · writer: lint · format · check 0/0/0 (188 files) · test 1351/1351 in 58 files · e2e 532/532 on clean runs (see the e2e diagnosis in the change log) · build 18 pages and four 1200x630 covers · dry run unchanged · parent readback of the production diff; parent re-ran: test 1351/1351 in 58 files; the merge tree equals the reviewed tree (`74caa55`) | Slice from `7d1d442` (the T12b record + T12c): medium, 15 files, 939 lines, 1 lens (reliability), approved with 1 advisory warning and 2 suggestions (`review-a1fdb60f738d38de`), routed to T12e |
 | T12e | done (merged `fa695de`) | `b284de1` a cover minimum in the content schema, reverted by `ad51935` (see the change log), `cbbe787` the `hreflangAlternates` spy reset after each test, `4640eb5` `assertCoverFitsSocialImage` (the build fails for a cover under 1200x630), `accbdd9` the cover found by its place in the article, `4424db2` `buildPersonJsonLd` + `serializeJsonLd`, `1aa4045` a `jsonLd` prop on `BaseLayout`, `233881c` the `Person` on both home pages | Strict TDD: the schema refine 3 failed / 8 passed (later reverted); `assertCoverFitsSocialImage` 5 failed (not a function); `json-ld` Cannot find module, then 1 failed on the `<` escape (it caught a real single-backslash bug); the layout `jsonLd` prop 1 failed / 23 passed; the structured-data e2e against the old build 4 failed / 19 passed; the cover guard proved on the real build with the threshold raised to 1300 (the build failed naming "Bachatealo" at 1280x800); the selector proved by a reverted mutation (a body `<img>`: the old `main img` failed 10 cover tests, the new `main article > picture > img` passed 94/94); the spy reset proved by a mutation (without `mockReset`: 1 failed) · writer: lint · format · check 0/0/0 (190 files) · test 1366/1366 in 59 files · e2e 555/555 on the first run · build · parent re-ran: check 0/0/0, test 1366/1366 in 59 files; the merge tree equals the reviewed tree (`0f3ef44`) | Slice from `811438d` (the T12c record + T12e): medium, 14 files, 438 lines, 1 lens (reliability), approved with 1 advisory warning (`review-7e1cdf503b57bd14`: `mockReset` semantics before Vitest 3; the repo runs Vitest 5.0.2, where it restores the original implementation, so no action) |
+| T12d | done (merged `1704b16`) | `6359bed` the card generator in `scripts/social-card/` (tokens and profile in, PNGs byte-identical to the approved drafts), `a63b66d` lint globals for the generator scripts, `0491db2` `buildSocialMeta` falls back to a default picture and declares its media type, `8694722` the locale's card on every indexable page without a cover, `3754351` `og:image:type` for covers too, `cf32e17` e2e: every indexable page shares a 1200x630 picture, `2b0129b` docs for a project without a cover, `3173e96` the card URL patterns escaped with `String.raw` and the card metadata typed | Strict TDD: builder 2 failed / 14 passed; layout 2 failed / 24 passed; `seo.spec.ts` against the old layout 36 failed / 81 passed; a mutation (the Spanish locale pointed at the English card) failed 5 e2e and 1 unit test, then reverted; `SOCIAL_IMAGE_TYPE` written with its constant (no RED) · writer: lint · format · check 0/0/0 (194 files) · test 1374/1374 in 59 files · e2e 567/567 · build · the merge tree equals the reviewed tree (`74b7812`) | Slice from `fff13be` (the T12e record + T12d): medium, 19 files, 672 lines, 1 lens (reliability), approved with 1 advisory warning and 1 suggestion (`review-ca9cbbcd007cf026`: the font subset choice in the generator; `image/` plus the format), routed to T13 |
+| T12f | done (merged `73530dd`) | `1239a35` the dark icon set generated from the tokens (`scripts/icons/`, `public/icon.svg`, `favicon.ico` 32 + 48, `apple-touch-icon.png` 180) with a test that ties it to the tokens, `4cb6afe` the icon links and one `theme-color` per color scheme on every page, `34ae18d` e2e: the icons are linked from every page and served with their media types | Strict TDD: `icons.test.ts` module not found, then 4 failed / 1 passed; layout 2 failed / 26 passed; `icons.spec.ts` against the old layout 16 failed / 4 passed; a token mutation (`#161a17` -> `#171a17`) failed 3 unit tests, then reverted · writer: lint · format · check 0/0/0 (199 files) · test 1381/1381 in 60 files · e2e 587/587 · build (`dist/client` holds the three icons) · parent re-ran on the T12f tip: check 0 errors, test 1381/1381 in 60 files, and viewed the touch icon (cyan on dark); the merge tree equals the reviewed tree (`c434060`) | Slice from `3173e96` (T12f): medium, 11 files, 478 lines, 1 lens (reliability), approved with 3 suggestions (`review-646b6dd779a45a8a`: touch-icon alpha left to Chromium; `blockAt` without a closing-brace guard; `theme-color` ignores the stored toggle), routed to T13 |
 
 ## Change log
 
@@ -809,12 +826,34 @@ the HTML reporter blocks the shell after a failure.
   - The icon: a `>_` mark drawn as paths. The parent flagged that the light variant (white on blue) looks like the
     PowerShell icon, and recommended the dark variant (cyan on `#161a17`) for every icon.
   - Proposed `theme-color`: `#faf9f5` light and `#161a17` dark.
+- 2026-10-12: the owner approved both drafts ("Si. Vamos"): the card as drafted, and the dark icon everywhere. One
+  writer ran in the foreground, so the stop hook could not fire on its workspace. It built T12d and then T12f on a
+  branch stacked on the T12d tip (both touch the layout head). Writer notes: Engram #521 (T12d) and #522 (T12f).
+  - T12d: `buildSocialMeta` takes an optional `defaultImage`; the page's own picture always wins. `BaseLayout`
+    passes `DEFAULT_CARDS[locale]`, the imported PNG's own `src`, `width`, `height` and format. `getImage` is not
+    used, because in dev and Vitest it turns the card into WebP and the declared type would be wrong. The alt text is
+    the home title ("Name — Role"). `twitter:card` is `summary_large_image` on every indexable page.
+    `og:image:type` is declared for covers too (`image/jpeg`); the parent keeps it, so every page has the same
+    picture tags.
+  - T12d: the e2e fetches each built picture and checks the served media type and the PNG IHDR size against the
+    declared tags. `scripts/social-card/` regenerates the cards from the tokens and the profile with the project's
+    Playwright and the Astro font cache (no font binaries committed): `node scripts/social-card/render.mjs` after
+    `pnpm build`.
+  - T12f: `public/` holds `favicon.ico`, `icon.svg` and `apple-touch-icon.png`. `BaseLayout` links them on every
+    page, error pages included. The ICO link carries `sizes="32x32"`, so SVG-capable browsers pick `icon.svg`.
+    `THEME_COLORS` (`src/shared/theme/theme-color.ts`) feeds two `theme-color` metas with `media` queries.
+    `src/styles/icons.test.ts` ties `THEME_COLORS` and the SVG fills to `tokens.css`, so a token change fails until
+    the icons are regenerated (`scripts/icons/render.mjs`).
+- 2026-10-12: T12d and T12f reviews and merges. T12d (the slice from `fff13be`, medium, 672 lines) was approved with
+  1 warning and 1 suggestion (`review-ca9cbbcd007cf026`). T12f (the slice from `3173e96`, medium, 478 lines) was
+  approved with 3 suggestions (`review-646b6dd779a45a8a`). Both were acknowledged, and all advisory items went to
+  T13. Merged `--no-ff` as `1704b16` (tree `74b7812`) and `73530dd` (tree `c434060`), each equal to its reviewed
+  tree. T12 is complete.
 
 ## Next step
 
-T12d and T12f, once the owner approves the drafts of the social card and the icon (the parent recommends the dark
-icon variant everywhere; see the change log). Then T13 (hardening) and T14 (launch). T10d when the owner gives the
-color direction. Before a writer runs e2e, stop any `astro dev` on port 4321. Answer the stop hook's prompt before
+T13 (hardening, with the follow-ups listed there), then T14 (launch). T10d when the owner gives the color
+direction; the social card and the icons regenerate from the tokens with `scripts/social-card/` and `scripts/icons/`. Before a writer runs e2e, stop any `astro dev` on port 4321. Answer the stop hook's prompt before
 launching a writer; a running writer's workspace keeps producing new review candidates. Owner: Q7 (the Spanish copy
 of the contact and 404 pages, plus the home title and description from T12a). Before live checks of the form: create the Turnstile widget (confirm it accepts the
 `carlos15erh.workers.dev` hostname), set up EmailJS (service, template, non-browser API, keys; see
