@@ -171,6 +171,78 @@ describe('buildSocialMeta', () => {
   });
 });
 
+const DEFAULT_IMAGE = {
+  src: 'https://example.com/_astro/og-card-en.abc123.png',
+  width: 1200,
+  height: 630,
+  type: 'image/png',
+  alt: 'Carlos Rodríguez Huerta — Full-stack web developer',
+};
+
+const imageTags = (tags: ReturnType<typeof buildSocialMeta>) =>
+  tags.filter(
+    (tag) =>
+      ('property' in tag && tag.property.startsWith('og:image')) ||
+      ('name' in tag && tag.name === 'twitter:card'),
+  );
+
+describe('buildSocialMeta default picture', () => {
+  it('shows the default picture, with its type, on a page without a picture of its own', () => {
+    expect(
+      imageTags(
+        buildSocialMeta({ ...PAGE, locale: 'en', defaultImage: DEFAULT_IMAGE }),
+      ),
+    ).toEqual([
+      { property: 'og:image', content: DEFAULT_IMAGE.src },
+      { property: 'og:image:width', content: '1200' },
+      { property: 'og:image:height', content: '630' },
+      { property: 'og:image:type', content: 'image/png' },
+      { property: 'og:image:alt', content: DEFAULT_IMAGE.alt },
+      { name: 'twitter:card', content: 'summary_large_image' },
+    ]);
+  });
+
+  it("keeps the page's own picture and ignores the default", () => {
+    const tags = buildSocialMeta({
+      ...PAGE,
+      locale: 'en',
+      image: IMAGE,
+      defaultImage: DEFAULT_IMAGE,
+    });
+
+    expect(imageTags(tags)).toEqual(
+      imageTags(buildSocialMeta({ ...PAGE, locale: 'en', image: IMAGE })),
+    );
+    expect(JSON.stringify(tags)).not.toContain('og-card');
+  });
+
+  it('writes no type for a picture that does not declare one', () => {
+    const keys = buildSocialMeta({ ...PAGE, locale: 'en', image: IMAGE }).map(
+      (tag) => ('property' in tag ? tag.property : tag.name),
+    );
+
+    expect(keys).not.toContain('og:image:type');
+  });
+
+  it('asks for the small card when there is neither a picture nor a default', () => {
+    expect(imageTags(buildSocialMeta({ ...PAGE, locale: 'es' }))).toEqual([
+      { name: 'twitter:card', content: 'summary' },
+    ]);
+  });
+
+  it('refuses a default picture whose address is not absolute', () => {
+    expect(() =>
+      buildSocialMeta({
+        ...PAGE,
+        locale: 'en',
+        defaultImage: { ...DEFAULT_IMAGE, src: '/_astro/og-card-en.png' },
+      }),
+    ).toThrow(
+      'The social image must have an absolute address, and "/_astro/og-card-en.png" is not one.',
+    );
+  });
+});
+
 describe('OPEN_GRAPH_LOCALES', () => {
   it("is Facebook's code for each locale: es_LA for the Latin American Spanish the site uses", () => {
     // `es_LA` is Open Graph's name for Latin American Spanish, which `es-419` (the tag of every

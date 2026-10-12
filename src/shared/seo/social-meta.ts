@@ -30,6 +30,8 @@ export interface SocialImage {
   /** Its size in pixels, as the file has it. */
   width: number;
   height: number;
+  /** Its media type (`image/png`), as the file has it; left out when the page does not know. */
+  type?: string;
   /** What it shows, for those who cannot see it. */
   alt: string;
 }
@@ -45,8 +47,13 @@ export interface SocialMetaInput {
   description: string;
   /** The page's canonical URL, absolute: `og:url`. */
   url: string;
-  /** The picture to show. A page without one gets no picture tags and the small card. */
+  /** The page's own picture, such as a project's cover. It always wins over `defaultImage`. */
   image?: SocialImage;
+  /**
+   * The picture of the site for the page that has none of its own: its locale's default card.
+   * Without both, a page gets no picture tags and the small card.
+   */
+  defaultImage?: SocialImage;
 }
 
 /**
@@ -58,9 +65,9 @@ export interface SocialMetaInput {
  * counts for the page that search engines index. The page's locale comes first, and each
  * other locale of the site follows as an alternate.
  *
- * The picture, when there is one, comes with its size and its alt text, and the card is the
- * large one; without a picture it is the small one, and no picture tag is written at all.
- * That is the only tag Twitter's own namespace needs here: X falls back to the Open Graph
+ * The picture is the page's own, or else the default one, and comes with its size, its media
+ * type when it has one and its alt text, and the card is the large one; without a picture it
+ * is the small one, and no picture tag is written at all. That is the only tag Twitter's own namespace needs here: X falls back to the Open Graph
  * tags above for the title, the description and the picture. `twitter:site` and
  * `twitter:creator` name an account, and the profile has no X handle to name.
  *
@@ -73,8 +80,10 @@ export function buildSocialMeta({
   title,
   description,
   url,
-  image,
+  image: pageImage,
+  defaultImage,
 }: SocialMetaInput): SocialMetaTag[] {
+  const image = pageImage ?? defaultImage;
   if (image && !URL.canParse(image.src)) {
     throw new Error(
       `The social image must have an absolute address, and "${image.src}" is not one.`,
@@ -97,6 +106,9 @@ export function buildSocialMeta({
           { property: 'og:image', content: image.src },
           { property: 'og:image:width', content: String(image.width) },
           { property: 'og:image:height', content: String(image.height) },
+          ...(image.type
+            ? [{ property: 'og:image:type', content: image.type }]
+            : []),
           { property: 'og:image:alt', content: image.alt },
         ]
       : []),
