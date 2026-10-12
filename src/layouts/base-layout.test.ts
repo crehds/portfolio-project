@@ -13,6 +13,7 @@ vi.mock('astro:content', () => ({
   getEntry: async () => ({
     data: {
       name: 'Test Name',
+      role: { en: 'Test role', es: 'Rol de prueba' },
       github: 'https://github.com/test',
       linkedin: 'https://www.linkedin.com/in/test/',
       email: 'test@example.com',
@@ -250,7 +251,12 @@ describe('BaseLayout', () => {
       ] as const) {
         const { siteTitle } = getDictionary(localeOfPathname(pathname));
 
-        expect(await socialTags(pathname, page), pathname).toEqual([
+        // The picture tags have their own tests; here the text and the locale.
+        const tags = (await socialTags(pathname, page)).filter(
+          (tag) => !tag.startsWith('og:image'),
+        );
+
+        expect(tags, pathname).toEqual([
           'og:type=website',
           `og:site_name=${siteTitle}`,
           'og:title=Pysa — Carlos Rodríguez Huerta',
@@ -258,7 +264,7 @@ describe('BaseLayout', () => {
           `og:url=${SITE_URL}${pathname}`,
           `og:locale=${own}`,
           `og:locale:alternate=${other}`,
-          'twitter:card=summary',
+          'twitter:card=summary_large_image',
         ]);
       }
     });
@@ -291,24 +297,58 @@ describe('BaseLayout', () => {
       );
     });
 
-    it('writes no picture tag and asks for the small card when the page has no picture', async () => {
-      for (const pathname of [
-        '/',
-        '/projects/pysa/',
-        '/es/projects/pysa/',
-        '/es/contact/',
-      ]) {
+    it("shows the locale's default card, with its real size and type, on a page without a picture", async () => {
+      // The card is a static asset (src/assets/og): the size and the type come from the file,
+      // and the alt text is the profile's name and role in the page's language.
+      for (const [pathname, locale, alt] of [
+        ['/', 'en', 'Test Name — Test role'],
+        ['/projects/pysa/', 'en', 'Test Name — Test role'],
+        ['/es/projects/pysa/', 'es', 'Test Name — Rol de prueba'],
+        ['/es/contact/', 'es', 'Test Name — Rol de prueba'],
+      ] as const) {
         const tags = await socialTags(pathname);
+        const image = tags.filter((tag) => tag.startsWith('og:image='));
 
+        expect(image, pathname).toHaveLength(1);
+        // Built, the file is /_astro/og-card-xx.<hash>.png; a unit run serves it from the dev
+        // server's path, so only the name is pinned here (e2e/seo.spec.ts fetches the built one).
+        expect(image[0], pathname).toMatch(
+          new RegExp(
+            `^og:image=${SITE_URL}/.*og-card-${locale}\.(?:\w+\.)?png`,
+          ),
+        );
         expect(
-          tags.filter((tag) => tag.startsWith('og:image')),
+          tags.filter((tag) => /^(?:og:image:|twitter:)/.test(tag)),
           pathname,
-        ).toEqual([]);
-        expect(
-          tags.filter((tag) => tag.startsWith('twitter:')),
-          pathname,
-        ).toEqual(['twitter:card=summary']);
+        ).toEqual([
+          'og:image:width=1200',
+          'og:image:height=630',
+          'og:image:type=image/png',
+          `og:image:alt=${alt}`,
+          'twitter:card=summary_large_image',
+        ]);
       }
+    });
+
+    it("keeps the page's own picture instead of the default card", async () => {
+      const tags = await socialTags('/projects/pysa/', { socialImage: COVER });
+
+      expect(tags.filter((tag) => tag.startsWith('og:image='))).toEqual([
+        `og:image=${SITE_URL}/_astro/cover.abc123_Z1x2y3.jpg`,
+      ]);
+      expect(tags).not.toContain('og:image:type=image/png');
+    });
+
+    it('puts the default card on the configured site, even when the page is reached on a preview', async () => {
+      const tags = await socialTags(
+        '/',
+        undefined,
+        'https://preview.example.dev',
+      );
+
+      expect(tags.find((tag) => tag.startsWith('og:image='))).toMatch(
+        new RegExp(`^og:image=${SITE_URL}/.*og-card-en\.`),
+      );
     });
 
     it('puts the picture on the configured site, even when the page is reached on a preview or a local server', async () => {

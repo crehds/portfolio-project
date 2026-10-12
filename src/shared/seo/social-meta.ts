@@ -67,9 +67,10 @@ export interface SocialMetaInput {
  *
  * The picture is the page's own, or else the default one, and comes with its size, its media
  * type when it has one and its alt text, and the card is the large one; without a picture it
- * is the small one, and no picture tag is written at all. That is the only tag Twitter's own namespace needs here: X falls back to the Open Graph
- * tags above for the title, the description and the picture. `twitter:site` and
- * `twitter:creator` name an account, and the profile has no X handle to name.
+ * is the small one, and no picture tag is written at all. That is the only tag Twitter's own
+ * namespace needs here: X falls back to the Open Graph tags above for the title, the
+ * description and the picture. `twitter:site` and `twitter:creator` name an account, and the
+ * profile has no X handle to name.
  *
  * The text is returned as it is. Writing it into attributes, and so escaping it, is the
  * markup's job; escaping it here too would show twice in a preview.

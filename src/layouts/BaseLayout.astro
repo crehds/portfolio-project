@@ -2,6 +2,8 @@
 import { getEntry } from 'astro:content';
 import { Font } from 'astro:assets';
 
+import ogCardEn from '../assets/og/og-card-en.png';
+import ogCardEs from '../assets/og/og-card-es.png';
 import LanguageSwitcher from '../components/LanguageSwitcher.astro';
 import Link from '../components/Link.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
@@ -15,6 +17,8 @@ import {
 } from '../shared/i18n/paths';
 import { getDictionary } from '../shared/i18n/ui';
 import { NAV_ITEMS } from '../shared/nav/nav-items';
+import { homeMetadata } from '../modules/profile/domain/home-metadata';
+import type { Locale } from '../shared/i18n/locales';
 import { buildSocialMeta } from '../shared/seo/social-meta';
 import type { SocialImage } from '../shared/seo/social-meta';
 import '../styles/global.css';
@@ -79,30 +83,47 @@ const alternates = errorPage
   ? []
   : hreflangAlternates(pathname, Astro.site.href);
 
-// What a preview of a link to the page is drawn from. The tags name the canonical address, so
-// the page that has none, an error page, has none of them either. The picture is resolved
-// against `Astro.site` like the canonical link: a preview fetches it from the address in the
-// tag, which must not be a preview deployment's or a local server's.
-const socialMeta =
-  canonical === undefined
-    ? []
-    : buildSocialMeta({
-        locale,
-        siteName: dictionary.siteTitle,
-        title,
-        description,
-        url: canonical,
-        image: socialImage && {
-          ...socialImage,
-          src: new URL(socialImage.src, Astro.site).href,
-        },
-      });
-
 const profile = await getEntry('profile', 'profile');
 if (!profile) {
   throw new Error(
     'The "profile" content entry is missing; the footer needs it for the name and contact links.',
   );
+}
+
+// The default card of each locale (src/assets/og, drawn by scripts/social-card): the picture of
+// a preview for every page without a picture of its own, such as a project's cover.
+const DEFAULT_CARDS: Record<Locale, ImageMetadata> = {
+  en: ogCardEn,
+  es: ogCardEs,
+};
+
+// What a preview of a link to the page is drawn from. The tags name the canonical address, so
+// the page that has none, an error page, has none of them either. The pictures are resolved
+// against `Astro.site` like the canonical link: a preview fetches them from the address in the
+// tag, which must not be a preview deployment's or a local server's. The default card is the
+// file as it is (its `src`, not a converted copy), so the size and the type that it declares are
+// the ones its metadata has; its alt text is the profile's name and role, which is what it shows.
+let socialMeta: ReturnType<typeof buildSocialMeta> = [];
+if (canonical !== undefined) {
+  const card = DEFAULT_CARDS[locale];
+  socialMeta = buildSocialMeta({
+    locale,
+    siteName: dictionary.siteTitle,
+    title,
+    description,
+    url: canonical,
+    image: socialImage && {
+      ...socialImage,
+      src: new URL(socialImage.src, Astro.site).href,
+    },
+    defaultImage: {
+      src: new URL(card.src, Astro.site).href,
+      width: card.width,
+      height: card.height,
+      type: `image/${card.format}`,
+      alt: homeMetadata(profile.data, locale).title,
+    },
+  });
 }
 ---
 
