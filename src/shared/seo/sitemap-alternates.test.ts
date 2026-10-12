@@ -1,8 +1,16 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { hreflangAlternates } from '../i18n/paths';
 import { SITE_URL } from '../site/site-url';
 import { withXDefaultAlternate } from './sitemap-alternates';
+
+// The head's rule is the real one in every test but the last: it is wrapped, not replaced, so
+// that one test can make it answer without an `x-default`, which the real rule never does.
+vi.mock('../i18n/paths', async (importOriginal) => {
+  const paths = await importOriginal<typeof import('../i18n/paths')>();
+
+  return { ...paths, hreflangAlternates: vi.fn(paths.hreflangAlternates) };
+});
 
 const SITE = 'https://example.com';
 
@@ -122,5 +130,23 @@ describe('withXDefaultAlternate', () => {
         SITE,
       ),
     ).toEqual({ url: 'https://example.com/contact/', links: [] });
+  });
+
+  // Keep this the last test: the stand-in answer below is consumed by the one call it expects,
+  // and a test that did not make that call must not leave it queued for the next.
+  it('refuses an entry whose head would declare no x-default, instead of writing one that disagrees with the head', () => {
+    // The real rule always ends its answer with an `x-default`; this stands in for a change
+    // that breaks that. Taking the entry as it is would publish a sitemap the page head
+    // contradicts, so the build fails and names the page.
+    vi.mocked(hreflangAlternates).mockReturnValueOnce([
+      { hreflang: 'en', href: 'https://example.com/projects/' },
+      { hreflang: 'es', href: 'https://example.com/es/projects/' },
+    ]);
+
+    expect(() =>
+      withXDefaultAlternate(entry('/projects/', '/es/projects/'), SITE),
+    ).toThrow(
+      'The page head has no x-default alternate for https://example.com/projects/.',
+    );
   });
 });
