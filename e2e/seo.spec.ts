@@ -354,7 +354,7 @@ test.describe('the default card of a page without a cover', () => {
       const url = new URL(images[0] ?? '');
       expect(url.origin).toBe(SITE_URL);
       expect(url.pathname).toMatch(
-        new RegExp(`^/_astro/og-card-${lang}\.[^/]+\.png$`),
+        new RegExp(String.raw`^/_astro/og-card-${lang}\.[^/]+\.png$`),
       );
 
       // The test server has the file at the same pathname, as an image.

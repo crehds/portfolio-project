@@ -314,7 +314,7 @@ describe('BaseLayout', () => {
         // server's path, so only the name is pinned here (e2e/seo.spec.ts fetches the built one).
         expect(image[0], pathname).toMatch(
           new RegExp(
-            `^og:image=${SITE_URL}/.*og-card-${locale}\.(?:\w+\.)?png`,
+            String.raw`^og:image=${SITE_URL}/.*og-card-${locale}\.(?:\w+\.)?png`,
           ),
         );
         expect(
@@ -347,7 +347,7 @@ describe('BaseLayout', () => {
       );
 
       expect(tags.find((tag) => tag.startsWith('og:image='))).toMatch(
-        new RegExp(`^og:image=${SITE_URL}/.*og-card-en\.`),
+        new RegExp(String.raw`^og:image=${SITE_URL}/.*og-card-en\.`),
       );
     });
 
