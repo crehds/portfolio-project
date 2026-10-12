@@ -75,13 +75,15 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~28,092 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+- Running count: ~29,068 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
   T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321 + T08 ~1,021 + T09 ~923 + T09b ~217 +
   T10 ~778 + T10b ~88 + T11a ~935 + T11b ~1,698 + T11c ~2,978 + T11c-b ~1,573 + T10c ~244 + T11d ~7,936 + T11e ~535 +
-  T11d-b ~482 + T12a ~674 + T12b ~581 + T12c ~939 + T12e ~438 + T12d ~672 + T12f ~478, with tests (binaries excluded), excluding lockfiles and the legacy removal; the terms before T11d sum to 15,357, so the
+  T11d-b ~482 + T12a ~674 + T12b ~581 + T12c ~939 + T12e ~438 + T12d ~672 + T12f ~478 + T13a ~976, with tests (binaries excluded), excluding lockfiles and the legacy removal; the terms before T11d sum to 15,357, so the
   earlier total of ~15,124 was an addition slip). It already passes the ~4,300 forecast, mostly from tests, the e2e
   harness and the review follow-up tasks.
-- Last reviewed boundary: `34ae18d`, the T12f tip (the merge `73530dd` has the same tree, `c434060`). Before that,
+- Last reviewed boundary: `ecdf819`, the T13a tip (the merge `f7e0a1d` has the same tree, `8bcf604`). The records
+  `f2f8254` and `007277f` were assessed passive. `b82ad27` (the Turnstile site key, medium, 26 lines) is under budget,
+  so it waits in the next slice. Before that, `34ae18d`, the T12f tip (the merge `73530dd` has the same tree, `c434060`). Before that,
   `3173e96`, the T12d tip (the merge `1704b16` has the same tree, `74b7812`); the T12e record `fff13be` (passive) was
   reviewed with T12d. Before that, `233881c`, the T12e tip (the merge `fa695de` has the same tree, `0f3ef44`); the T12c record
   `811438d` was reviewed with T12e. Before that, `cddfe93`, the T12c tip (the merge `a6c6f67` has the same tree,
@@ -286,7 +288,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   defaults, open to the owner's veto: `style-src 'unsafe-inline'` (scripts stay strict); HSTS `max-age=31536000` with
   no `includeSubDomains` or `preload` until a custom domain exists; Lighthouse performance starts as a warning and
   becomes an error once CI numbers exist; the `theme-color` gap is accepted for launch; `twitter:image:alt` is added.
-  - [ ] **T13a** Security headers (launch gate, ~330).
+  - [x] **T13a** (delivered in five commits, see Progress) Security headers (launch gate, ~330).
     - A pure `src/shared/security/headers.ts` is the one source for both delivery paths.
     - Static pages get `public/_headers`. Workers static assets honor it for asset responses only (Cloudflare docs),
       and the adapter appends its own Cache-Control rule. A unit test ties the file to the module.
@@ -303,7 +305,10 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
     - Spikes: does `pnpm preview` serve `_headers`? Confirm the Turnstile CSP list. The real widget cannot load in
       the hermetic e2e, so a manual check of the contact page on the preview goes to T14.
   - [ ] **T13b** An axe matrix over every route in the sitemap plus the 404s (both locales, both schemes) and a
-    keyboard spec: tab order, skip link, toggle, form, focus ring, no trap (launch gate, ~260).
+    keyboard spec: tab order, skip link, toggle, form, focus ring, no trap (launch gate, ~260). Also, from the T13a
+    review (warning): the CSP guard (`e2e/support/csp-guard.ts`) checks its violations right after `use()`, and a
+    violation still in flight through `exposeBinding` can miss the check. Add a settle step before the assertion, so
+    a late violation fails the test.
   - [ ] **T13c** Link check (~220). The internal part is a launch gate: same-origin links resolve, fragments match an
     `id`, `mailto:` and `tel:` are well formed. External hosts must be https and on an allowlist. An online check of
     external links (weekly or manual) can follow the launch.
@@ -324,7 +329,16 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
       Look-alike hosts are rejected.
     - f2, the T12d/T12f advisories above (~120, can follow the launch): `mediaTypeOf(format)`, the font subset
       choice, the touch icon's RGB color type, the `blockAt` guard, `twitter:image:alt`, and type-checking `scripts/`.
+      Also the T13a review's suggestions: a package script or generator file for `public/_headers` instead of the
+      README one-liner; name the missing-asset case in `e2e/security-headers.spec.ts` (it is not a locale 404);
+      scope the auto CSP-guard fixture to tests that use `page` (API-only tests pay for a browser context); and match
+      inline `on*=` handlers only inside start tags in `e2e/csp-hashes.spec.ts`.
 - [ ] **T14** Launch: production deploy, analytics, final README, prune stale branches (owner approval). Route: inline + owner. ~80.
+  Manual checks that automation cannot prove (from T13a), on the deployed preview and again in production:
+  - The real Turnstile widget loads, renders and solves under the contact CSP, with no "Refused to ..." in the console.
+  - A real submission works: the Action POST, the 303, and the `?sent=1` page, with the email in the inbox.
+  - `curl -sI` the home page, a 404, an `/_astro/` asset (the `_headers` rule merged with the adapter's immutable
+    Cache-Control), `/contact/` (from the middleware) and `/cv/en.pdf`.
 
 ### Phase 4 · Project sync (future)
 
@@ -387,6 +401,7 @@ the HTML reporter blocks the shell after a failure.
 | T12e | done (merged `fa695de`) | `b284de1` a cover minimum in the content schema, reverted by `ad51935` (see the change log), `cbbe787` the `hreflangAlternates` spy reset after each test, `4640eb5` `assertCoverFitsSocialImage` (the build fails for a cover under 1200x630), `accbdd9` the cover found by its place in the article, `4424db2` `buildPersonJsonLd` + `serializeJsonLd`, `1aa4045` a `jsonLd` prop on `BaseLayout`, `233881c` the `Person` on both home pages | Strict TDD: the schema refine 3 failed / 8 passed (later reverted); `assertCoverFitsSocialImage` 5 failed (not a function); `json-ld` Cannot find module, then 1 failed on the `<` escape (it caught a real single-backslash bug); the layout `jsonLd` prop 1 failed / 23 passed; the structured-data e2e against the old build 4 failed / 19 passed; the cover guard proved on the real build with the threshold raised to 1300 (the build failed naming "Bachatealo" at 1280x800); the selector proved by a reverted mutation (a body `<img>`: the old `main img` failed 10 cover tests, the new `main article > picture > img` passed 94/94); the spy reset proved by a mutation (without `mockReset`: 1 failed) · writer: lint · format · check 0/0/0 (190 files) · test 1366/1366 in 59 files · e2e 555/555 on the first run · build · parent re-ran: check 0/0/0, test 1366/1366 in 59 files; the merge tree equals the reviewed tree (`0f3ef44`) | Slice from `811438d` (the T12c record + T12e): medium, 14 files, 438 lines, 1 lens (reliability), approved with 1 advisory warning (`review-7e1cdf503b57bd14`: `mockReset` semantics before Vitest 3; the repo runs Vitest 5.0.2, where it restores the original implementation, so no action) |
 | T12d | done (merged `1704b16`) | `6359bed` the card generator in `scripts/social-card/` (tokens and profile in, PNGs byte-identical to the approved drafts), `a63b66d` lint globals for the generator scripts, `0491db2` `buildSocialMeta` falls back to a default picture and declares its media type, `8694722` the locale's card on every indexable page without a cover, `3754351` `og:image:type` for covers too, `cf32e17` e2e: every indexable page shares a 1200x630 picture, `2b0129b` docs for a project without a cover, `3173e96` the card URL patterns escaped with `String.raw` and the card metadata typed | Strict TDD: builder 2 failed / 14 passed; layout 2 failed / 24 passed; `seo.spec.ts` against the old layout 36 failed / 81 passed; a mutation (the Spanish locale pointed at the English card) failed 5 e2e and 1 unit test, then reverted; `SOCIAL_IMAGE_TYPE` written with its constant (no RED) · writer: lint · format · check 0/0/0 (194 files) · test 1374/1374 in 59 files · e2e 567/567 · build · the merge tree equals the reviewed tree (`74b7812`) | Slice from `fff13be` (the T12e record + T12d): medium, 19 files, 672 lines, 1 lens (reliability), approved with 1 advisory warning and 1 suggestion (`review-ca9cbbcd007cf026`: the font subset choice in the generator; `image/` plus the format), routed to T13 |
 | T12f | done (merged `73530dd`) | `1239a35` the dark icon set generated from the tokens (`scripts/icons/`, `public/icon.svg`, `favicon.ico` 32 + 48, `apple-touch-icon.png` 180) with a test that ties it to the tokens, `4cb6afe` the icon links and one `theme-color` per color scheme on every page, `34ae18d` e2e: the icons are linked from every page and served with their media types | Strict TDD: `icons.test.ts` module not found, then 4 failed / 1 passed; layout 2 failed / 26 passed; `icons.spec.ts` against the old layout 16 failed / 4 passed; a token mutation (`#161a17` -> `#171a17`) failed 3 unit tests, then reverted · writer: lint · format · check 0/0/0 (199 files) · test 1381/1381 in 60 files · e2e 587/587 · build (`dist/client` holds the three icons) · parent re-ran on the T12f tip: check 0 errors, test 1381/1381 in 60 files, and viewed the touch icon (cyan on dark); the merge tree equals the reviewed tree (`c434060`) | Slice from `3173e96` (T12f): medium, 11 files, 478 lines, 1 lens (reliability), approved with 3 suggestions (`review-646b6dd779a45a8a`: touch-icon alpha left to Chromium; `blockAt` without a closing-brace guard; `theme-color` ignores the stored toggle), routed to T13 |
+| T13a | done (merged `f7e0a1d`) | `7f8484c` one source for the security headers (`src/shared/security/headers.ts`, `apply-headers.ts`, `src/middleware.ts`, `public/_headers` tied to the module by a test), `ea4f754` a CSP guard that fails any e2e spec whose page breaks its policy, `b4bd2de` e2e for the headers on every kind of response and a hash for every inline script, `8a8e237` docs (README "Security headers"), `ecdf819` the guard's injected scripts type-checked | Strict TDD: module not found, then the `_headers` tie 1 failed / 40 passed (no file), then 41/41; the guard module not found, then 3/3; the guard proved by a mutation (no drain: 2 failed); the header and hash specs were written after the code, so mutations instead: no middleware and no `_headers`, 30 failed / 37 passed; a corrupted contact hash failed the hash spec. Spikes: `pnpm preview` applies `_headers` (curl on `/icon.svg`, an `/_astro/` CSS with both rules merged, the 404s); Turnstile's CSP page lists `script-src` and `frame-src` only, and `connect-src` stays as the owner default · writer: lint · format · check 0/0/0 (208 files) · test 1422/1422 in 62 files · e2e 657/657 · build · parent re-ran test 1422/1422 in 62 files; the merge tree equals the reviewed tree (`8bcf604`) | Slice from `007277f` (T13a): high, 26 files, 976 lines, 4 lenses, approved with 1 warning and 4 suggestions (`review-0606dabc2a269f22`). Risk and resilience found nothing. The warning (the guard's teardown race) goes to T13b, the suggestions to T13f2 |
 
 ## Change log
 
@@ -909,13 +924,43 @@ the HTML reporter blocks the shell after a failure.
   - The Turnstile verifier ignores the answer's `hostname`.
   - CI has no Lighthouse or link check.
 
+- 2026-10-12: T13a (writer note: Engram, topic `odd/portfolio-astro-rebuild/t13a-writer`).
+  - `src/shared/security/headers.ts` is pure. It defines three kinds: `page`, `contact` and `file` (the PDF route).
+  - `public/_headers` is generated from `renderHeadersFile()` and tied to it by a unit test.
+  - `src/middleware.ts` sets the same headers on every Worker response. It keeps the status, the body, Set-Cookie,
+    the other headers, redirects and 304s.
+  - There are three literal inline scripts, each allowed by hash: the theme script, the `ThemeToggle.astro` script
+    on every page, and the `ContactForm.astro` script on the contact pages. Astro inlines no processed script, so
+    the build config is unchanged. The JSON-LD is a data block.
+  - `X-Frame-Options: DENY` was added as a legacy backup to `frame-ancestors 'none'`. HSTS is one year, with no
+    `includeSubDomains` and no `preload`.
+  - `e2e/support/csp-guard.ts` listens for `securitypolicyviolation` in every frame and fails the test on any
+    violation. 14 browser specs and `contact-test.ts` use it. `e2e/csp-guard.spec.ts` is its negative control.
+  - `e2e/csp-hashes.spec.ts` checks every built page and both contact responses: the hash of each inline script is
+    in that page's policy, no script comes from another origin (except Turnstile on contact), and there are no
+    inline `on*=` handlers.
+  - Owner questions left open: whether to keep `connect-src https://challenges.cloudflare.com` (Cloudflare's CSP
+    page does not require it; kept as the default), whether to keep `style-src 'unsafe-inline'` (kept as approved),
+    and confirming HSTS and `X-Frame-Options`.
+- 2026-10-12: T13a review and merge. The slice from `007277f` was high risk (26 files, 976 lines), so it got 4
+  lenses. Granted, and approved with 1 warning and 4 suggestions (`review-0606dabc2a269f22`); risk and resilience
+  found nothing. The warning goes to T13b and the suggestions to T13f2. Merged `--no-ff` as `f7e0a1d`, whose tree
+  equals the reviewed tree `8bcf604`. The manual checks the e2e cannot cover are listed under T14.
+- 2026-10-12: the owner created the real Turnstile widget and put its site key in `wrangler.jsonc` `vars`. The parent
+  mirrored it under `previews.vars`, as `docs/contact-setup.md` requires, and updated that doc. The hermetic guard
+  still sees the e2e test key, and the checks passed: check, test 1422/1422, e2e 657/657, lint, format. Committed as
+  `b82ad27` (medium, 26 lines, under budget). The owner also has an EmailJS account. Its existing template uses the
+  legacy names (`form_name`, `form_e-mail`, `form_phone`). The parent advised a new template with `from_name`,
+  `reply_to`, `message` and `locale`, keeping the old one until the legacy site retires, and turning on the
+  non-browser API.
+
 ## Next step
 
-T13a (security headers), then T13b, T13c, T13d, T13e and T13f, in the order the T13 entry gives. Then T14 (launch).
-T10d when the owner gives the color direction; the social card and the icons regenerate from the tokens with
-`scripts/social-card/` and `scripts/icons/`. Before a writer runs e2e, stop any `astro dev` on port 4321. Run writers
-in the foreground: a background writer's workspace keeps producing new review candidates for the stop hook. Before
-live checks of the form: create the Turnstile widget (confirm it accepts the
-`carlos15erh.workers.dev` hostname), set up EmailJS (service, template, non-browser API, keys; see
-`docs/contact-setup.md`) and add the Worker secrets. Still unknown: whether `ECONNRESET` matches the e2e retry keyword
+T13b (the axe matrix and keyboard checks, plus the CSP guard's settle step), then T13c, T13d, T13e and T13f, in the
+order the T13 entry gives. Then T14 (launch, with its manual checks). T10d when the owner gives the color direction;
+the social card and the icons regenerate from the tokens with `scripts/social-card/` and `scripts/icons/`. Before a
+writer runs e2e, stop any `astro dev` on port 4321. Run writers in the foreground: a background writer's workspace
+keeps producing new review candidates for the stop hook. Owner, before live checks of the form: create the new
+EmailJS template (`from_name`, `reply_to`, `message`, `locale`), turn on the non-browser API, and add the five Worker
+secrets (`docs/contact-setup.md`). The Turnstile site key is in place. Still unknown: whether `ECONNRESET` matches the e2e retry keyword
 on Linux (the first Linux CI run passed; its log was not read). Optional: the heading-spacing rhythm noted in T10b.
