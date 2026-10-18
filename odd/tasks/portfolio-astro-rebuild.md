@@ -75,15 +75,16 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~29,068 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+- Running count: ~29,392 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
   T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321 + T08 ~1,021 + T09 ~923 + T09b ~217 +
   T10 ~778 + T10b ~88 + T11a ~935 + T11b ~1,698 + T11c ~2,978 + T11c-b ~1,573 + T10c ~244 + T11d ~7,936 + T11e ~535 +
-  T11d-b ~482 + T12a ~674 + T12b ~581 + T12c ~939 + T12e ~438 + T12d ~672 + T12f ~478 + T13a ~976, with tests (binaries excluded), excluding lockfiles and the legacy removal; the terms before T11d sum to 15,357, so the
+  T11d-b ~482 + T12a ~674 + T12b ~581 + T12c ~939 + T12e ~438 + T12d ~672 + T12f ~478 + T13a ~976 + T13b ~324, with tests (binaries excluded), excluding lockfiles and the legacy removal; the terms before T11d sum to 15,357, so the
   earlier total of ~15,124 was an addition slip). It already passes the ~4,300 forecast, mostly from tests, the e2e
   harness and the review follow-up tasks.
-- Last reviewed boundary: `ecdf819`, the T13a tip (the merge `f7e0a1d` has the same tree, `8bcf604`). The records
-  `f2f8254` and `007277f` were assessed passive. `b82ad27` (the Turnstile site key, medium, 26 lines) is under budget,
-  so it waits in the next slice. Before that, `34ae18d`, the T12f tip (the merge `73530dd` has the same tree, `c434060`). Before that,
+- Last reviewed boundary: `f495c11`, the T13b tip (the merge `2227c22` has the same tree, `9e13115`); `b82ad27` (the
+  Turnstile site key) and the T13a record `aa24efa` were reviewed with T13b. Before that, `ecdf819`, the T13a tip (the
+  merge `f7e0a1d` has the same tree, `8bcf604`); the records `f2f8254` and `007277f` were assessed passive. Before
+  that, `34ae18d`, the T12f tip (the merge `73530dd` has the same tree, `c434060`). Before that,
   `3173e96`, the T12d tip (the merge `1704b16` has the same tree, `74b7812`); the T12e record `fff13be` (passive) was
   reviewed with T12d. Before that, `233881c`, the T12e tip (the merge `fa695de` has the same tree, `0f3ef44`); the T12c record
   `811438d` was reviewed with T12e. Before that, `cddfe93`, the T12c tip (the merge `a6c6f67` has the same tree,
@@ -304,7 +305,7 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
       `securitypolicyviolation` guard runs across the e2e suite, with a negative control.
     - Spikes: does `pnpm preview` serve `_headers`? Confirm the Turnstile CSP list. The real widget cannot load in
       the hermetic e2e, so a manual check of the contact page on the preview goes to T14.
-  - [ ] **T13b** An axe matrix over every route in the sitemap plus the 404s (both locales, both schemes) and a
+  - [x] **T13b** (delivered in four commits, see Progress) An axe matrix over every route in the sitemap plus the 404s (both locales, both schemes) and a
     keyboard spec: tab order, skip link, toggle, form, focus ring, no trap (launch gate, ~260). Also, from the T13a
     review (warning): the CSP guard (`e2e/support/csp-guard.ts`) checks its violations right after `use()`, and a
     violation still in flight through `exposeBinding` can miss the check. Add a settle step before the assertion, so
@@ -323,6 +324,22 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
       document spacing between full runs.
     - Read the Linux CI `proxy-retry` causes to settle the `ECONNRESET` keyword. The regex already includes it
       (`e2e/support/contact-test.ts:166`).
+    - From the T13b review (`review-7cc9cd646dc5c8fd`), 2 warnings and 2 suggestions:
+      - The CSP guard's negative control calls `settleCspViolations` itself, so removing the teardown's call would
+        not fail it. Prove the teardown path, e.g. a `test.fail()` test whose last statement provokes a violation.
+        This fits with the `makeTeardown` harness test above.
+      - `e2e/axe-matrix.spec.ts` reads `dist/client/sitemap-0.xml` when Playwright collects tests, before the local
+        webServer builds. CI is safe (its Build step runs first), but locally a missing `dist/` fails the whole run
+        at collection, and a stale one tests the previous build's routes. Read the list in a fixture or a setup
+        step, with a clear error when the sitemap is missing.
+      - The settle step races each frame against a fixed 1 s timer and never clears it. A slow live frame on a
+        loaded worker is skipped silently. Use a longer bound, or fail on a timed-out live frame, and clear the
+        timer.
+      - `tabThrough` in `e2e/keyboard.spec.ts` ends the walk on any backward jump, so a positive `tabindex` fails
+        only later, without naming the element, and a backward jump inside the footer passes. Assert the order
+        explicitly.
+    - Also from T13b: `layout.spec.ts` checks the skip link and runs axe on `/` and `/es/`, which the new specs now
+      cover. Prune the overlap.
   - [ ] **T13f** In two groups.
     - f1, the Turnstile hostname check (launch gate, ~90): accept `carlos15erh.workers.dev` and its subdomains, plus
       an optional `TURNSTILE_ALLOWED_HOSTNAMES` setting for a future custom domain. The fake returns the hostname.
@@ -402,6 +419,7 @@ the HTML reporter blocks the shell after a failure.
 | T12d | done (merged `1704b16`) | `6359bed` the card generator in `scripts/social-card/` (tokens and profile in, PNGs byte-identical to the approved drafts), `a63b66d` lint globals for the generator scripts, `0491db2` `buildSocialMeta` falls back to a default picture and declares its media type, `8694722` the locale's card on every indexable page without a cover, `3754351` `og:image:type` for covers too, `cf32e17` e2e: every indexable page shares a 1200x630 picture, `2b0129b` docs for a project without a cover, `3173e96` the card URL patterns escaped with `String.raw` and the card metadata typed | Strict TDD: builder 2 failed / 14 passed; layout 2 failed / 24 passed; `seo.spec.ts` against the old layout 36 failed / 81 passed; a mutation (the Spanish locale pointed at the English card) failed 5 e2e and 1 unit test, then reverted; `SOCIAL_IMAGE_TYPE` written with its constant (no RED) · writer: lint · format · check 0/0/0 (194 files) · test 1374/1374 in 59 files · e2e 567/567 · build · the merge tree equals the reviewed tree (`74b7812`) | Slice from `fff13be` (the T12e record + T12d): medium, 19 files, 672 lines, 1 lens (reliability), approved with 1 advisory warning and 1 suggestion (`review-ca9cbbcd007cf026`: the font subset choice in the generator; `image/` plus the format), routed to T13 |
 | T12f | done (merged `73530dd`) | `1239a35` the dark icon set generated from the tokens (`scripts/icons/`, `public/icon.svg`, `favicon.ico` 32 + 48, `apple-touch-icon.png` 180) with a test that ties it to the tokens, `4cb6afe` the icon links and one `theme-color` per color scheme on every page, `34ae18d` e2e: the icons are linked from every page and served with their media types | Strict TDD: `icons.test.ts` module not found, then 4 failed / 1 passed; layout 2 failed / 26 passed; `icons.spec.ts` against the old layout 16 failed / 4 passed; a token mutation (`#161a17` -> `#171a17`) failed 3 unit tests, then reverted · writer: lint · format · check 0/0/0 (199 files) · test 1381/1381 in 60 files · e2e 587/587 · build (`dist/client` holds the three icons) · parent re-ran on the T12f tip: check 0 errors, test 1381/1381 in 60 files, and viewed the touch icon (cyan on dark); the merge tree equals the reviewed tree (`c434060`) | Slice from `3173e96` (T12f): medium, 11 files, 478 lines, 1 lens (reliability), approved with 3 suggestions (`review-646b6dd779a45a8a`: touch-icon alpha left to Chromium; `blockAt` without a closing-brace guard; `theme-color` ignores the stored toggle), routed to T13 |
 | T13a | done (merged `f7e0a1d`) | `7f8484c` one source for the security headers (`src/shared/security/headers.ts`, `apply-headers.ts`, `src/middleware.ts`, `public/_headers` tied to the module by a test), `ea4f754` a CSP guard that fails any e2e spec whose page breaks its policy, `b4bd2de` e2e for the headers on every kind of response and a hash for every inline script, `8a8e237` docs (README "Security headers"), `ecdf819` the guard's injected scripts type-checked | Strict TDD: module not found, then the `_headers` tie 1 failed / 40 passed (no file), then 41/41; the guard module not found, then 3/3; the guard proved by a mutation (no drain: 2 failed); the header and hash specs were written after the code, so mutations instead: no middleware and no `_headers`, 30 failed / 37 passed; a corrupted contact hash failed the hash spec. Spikes: `pnpm preview` applies `_headers` (curl on `/icon.svg`, an `/_astro/` CSS with both rules merged, the 404s); Turnstile's CSP page lists `script-src` and `frame-src` only, and `connect-src` stays as the owner default · writer: lint · format · check 0/0/0 (208 files) · test 1422/1422 in 62 files · e2e 657/657 · build · parent re-ran test 1422/1422 in 62 files; the merge tree equals the reviewed tree (`8bcf604`) | Slice from `007277f` (T13a): high, 26 files, 976 lines, 4 lenses, approved with 1 warning and 4 suggestions (`review-0606dabc2a269f22`). Risk and resilience found nothing. The warning (the guard's teardown race) goes to T13b, the suggestions to T13f2 |
+| T13b | done (merged `2227c22`) | `7a5bdaf` axe over every sitemap route plus the two 404s, in both schemes (`e2e/axe-matrix.spec.ts`; the list comes from the built sitemap, 18 routes, with a guard for the known routes), `92b98ea` the CSP guard settles in-flight violations before it checks (`settleCspViolations`, plus a negative control), `01f9eb2` keyboard spec: tab order, skip link, theme toggle, contact form, focus ring, no trap (`e2e/keyboard.spec.ts`), `f495c11` the settle step stops waiting after 1 s on a page with JavaScript off | Strict TDD: a no-op settle and the negative control first, 3 of 3 runs failed (`Expected length: 1, Received length: 0`), then 3 of 3 passed; the first settle hung `contact-nojs.spec.ts` (5 failed), fixed with the 1 s race. The matrix and keyboard specs passed on the site as it was (41 and 16), so mutations instead: no toggle `aria-label` failed the matrix (`button-name`); one combined mutation (skip target renamed, focus outline removed, a positive `tabindex`) failed the tab-through on 7 pages and the skip link in both locales (not isolated per check). No axe violations, no rule excluded. Scheme set by `emulateMedia`, with `data-theme` asserted · writer: lint · check 0/0/0 · test 1422/1422 in 62 files · build · e2e 715/715 (an earlier back-to-back run failed `icons.spec.ts` `/es/` once; it passed alone and on the next full run) · parent: lint, format, and the guard, keyboard and no-JS specs 29/29; the merge tree equals the reviewed tree (`9e13115`) | Slice from `ecdf819` (`b82ad27`, `aa24efa` and T13b): medium, 8 files, 419 lines (slice budget reached), 1 lens (reliability), granted, approved with 2 warnings and 2 suggestions (`review-7cc9cd646dc5c8fd`), all routed to T13e |
 
 ## Change log
 
@@ -953,11 +971,24 @@ the HTML reporter blocks the shell after a failure.
   legacy names (`form_name`, `form_e-mail`, `form_phone`). The parent advised a new template with `from_name`,
   `reply_to`, `message` and `locale`, keeping the old one until the legacy site retires, and turning on the
   non-browser API.
+- 2026-10-18: T13b (writer note: Engram, topic `odd/portfolio-astro-rebuild/t13b-writer`). Route: delegated (two new
+  e2e specs plus the guard, 2+ non-trivial files).
+  - `e2e/axe-matrix.spec.ts` reads the route list from `dist/client/sitemap-0.xml` (18 routes) and adds
+    `/no-such-page` and `/es/no-such-page`, so the real 404 responses are checked. The scheme comes from
+    `page.emulateMedia({ colorScheme })`: with nothing stored, the theme script follows the OS, as on a real visit.
+  - `e2e/keyboard.spec.ts` uses the existing Turnstile stub from `contact-test`, as the contact specs do.
+  - `settleCspViolations` makes a round trip through every frame (two task boundaries), relying on the page
+    answering after the binding messages it sent before. It cannot catch a violation raised after the test ends.
+- 2026-10-18: T13b review and merge. The slice from `ecdf819` (`b82ad27`, `aa24efa` and T13b) was medium risk, 8
+  files and 419 lines, so the slice budget was reached. 1 lens (reliability). The owner granted it, and it was
+  approved with 2 warnings and 2 suggestions (`review-7cc9cd646dc5c8fd`). All four go to T13e. The parent checked
+  the sitemap warning: CI builds before `pnpm test:e2e`, so it only affects local runs. Merged `--no-ff` as
+  `2227c22`, whose tree equals the reviewed tree `9e13115`.
 
 ## Next step
 
-T13b (the axe matrix and keyboard checks, plus the CSP guard's settle step), then T13c, T13d, T13e and T13f, in the
-order the T13 entry gives. Then T14 (launch, with its manual checks). T10d when the owner gives the color direction;
+T13c (the link check; its internal part is a launch gate), then T13d, T13e (now with the T13b review follow-ups)
+and T13f, in the order the T13 entry gives. Writers also run `pnpm format:check`, which CI runs. Then T14 (launch, with its manual checks). T10d when the owner gives the color direction;
 the social card and the icons regenerate from the tokens with `scripts/social-card/` and `scripts/icons/`. Before a
 writer runs e2e, stop any `astro dev` on port 4321. Run writers in the foreground: a background writer's workspace
 keeps producing new review candidates for the stop hook. Owner, before live checks of the form: create the new
