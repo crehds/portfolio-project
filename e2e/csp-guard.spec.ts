@@ -1,4 +1,4 @@
-import { expect, test } from './support/csp-guard';
+import { expect, settleCspViolations, test } from './support/csp-guard';
 
 // The guard (support/csp-guard.ts) makes every spec that uses its `test` fail when the page
 // breaks its own Content-Security-Policy. A guard that never fires would pass for the wrong
@@ -52,6 +52,27 @@ test.describe('the CSP guard', () => {
       effectiveDirective: 'script-src-elem',
       blockedURI: 'https://example.com/x.js',
     });
+
+    cspViolations.length = 0;
+  });
+
+  test('settles a violation still in flight when the test body ends', async ({
+    page,
+    cspViolations,
+  }) => {
+    await page.goto('/');
+
+    // Nothing waits for the report: the script is blocked as the evaluation ends, so the
+    // event reaches the binding after the evaluation's own answer. This is where the test body
+    // ends, and what the guard does before it checks.
+    await page.evaluate(() => {
+      const script = document.createElement('script');
+      script.textContent = 'window.__injected = true;';
+      document.head.appendChild(script);
+    });
+    await settleCspViolations(page.context());
+
+    expect(cspViolations).toHaveLength(1);
 
     cspViolations.length = 0;
   });
