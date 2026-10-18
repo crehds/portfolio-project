@@ -102,6 +102,10 @@ the console must show no "Refused to ..." message, and a submission must go thro
 `curl -sI` the home page, the contact page and `/cv/en.pdf` and compare their headers with the
 table above.
 
+## Link check
+
+`e2e/links.spec.ts` crawls every page in the served sitemap plus the two 404s: each same-origin link and resource must answer 200, each `#fragment` must match an `id`, and `mailto:`/`tel:` must be well formed. A link to another site must be https and its host must be listed in [`src/shared/links/external-hosts.ts`](src/shared/links/external-hosts.ts): to link to a new site, add its host there. External sites are never requested.
+
 ## Roadmap
 
 The rebuild plan, decisions and progress live in
