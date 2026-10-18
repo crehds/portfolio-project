@@ -43,8 +43,7 @@ declare global {
 export async function settleCspViolations(context: BrowserContext) {
   for (const page of context.pages()) {
     for (const frame of page.frames()) {
-      // A frame that is gone or navigating has nothing more to report.
-      await frame
+      const roundTrip = frame
         .evaluate(
           () =>
             new Promise<void>((resolve) =>
@@ -52,6 +51,9 @@ export async function settleCspViolations(context: BrowserContext) {
             ),
         )
         .catch(() => undefined);
+      // A page with JavaScript off never answers, and has no script to raise a violation: do
+      // not wait for it past the time a live page takes.
+      await Promise.race([roundTrip, new Promise((r) => setTimeout(r, 1000))]);
     }
   }
 }
