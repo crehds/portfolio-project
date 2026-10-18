@@ -7,8 +7,10 @@
 //
 // The event reaches Node through a context binding, set before any page script runs, so a
 // violation during the first parse of a document is not lost, and it survives navigations.
-// A test that provokes a violation on purpose takes it out of `cspViolations` itself.
-import { test as base, expect } from '@playwright/test';
+// When the test ends the guard first settles (`settleCspViolations`), so a violation the page
+// raised at the very end of the body is counted too. A test that provokes a violation on
+// purpose takes it out of `cspViolations` itself.
+import { test as base, expect, type BrowserContext } from '@playwright/test';
 
 export { expect };
 
@@ -27,6 +29,30 @@ export interface CspViolation {
 declare global {
   interface Window {
     __reportCspViolation?: (violation: CspViolation) => void;
+  }
+}
+
+/**
+ * Waits for the violations that already happened to reach `violations`. A violation travels
+ * from the page to Node through the binding, which is a message of its own, so the test body
+ * can end (and the guard check) while one is still in flight. The page answers a request after
+ * the messages it sent before it, so a round trip through each of its frames, with a task
+ * boundary in between for the event the test body provoked last to be dispatched, leaves every
+ * earlier violation delivered. It cannot wait for one the page has not raised yet.
+ */
+export async function settleCspViolations(context: BrowserContext) {
+  for (const page of context.pages()) {
+    for (const frame of page.frames()) {
+      // A frame that is gone or navigating has nothing more to report.
+      await frame
+        .evaluate(
+          () =>
+            new Promise<void>((resolve) =>
+              setTimeout(() => setTimeout(resolve, 0), 0),
+            ),
+        )
+        .catch(() => undefined);
+    }
   }
 }
 
@@ -53,6 +79,7 @@ export const test = base.extend<{ cspViolations: CspViolation[] }>({
       });
 
       await use(violations);
+      await settleCspViolations(context);
 
       expect(
         violations,

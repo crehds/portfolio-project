@@ -93,7 +93,8 @@ stay strict.
 `public/_headers` is now stale, the unit test `pnpm test src/shared/security` fails; regenerate it
 with `node --experimental-strip-types -e "import('./src/shared/security/headers.ts').then(m => require('fs').writeFileSync('public/_headers', m.renderHeadersFile()))"`.
 A new inline script needs a new constant and an entry in the policy that serves its page. Every
-browser spec also fails if its page breaks the policy (`e2e/support/csp-guard.ts`).
+browser spec also fails if its page breaks the policy (`e2e/support/csp-guard.ts`, which settles in-flight
+violations before it checks).
 
 **Manual check on the deployed preview** (the real Turnstile cannot load in the hermetic tests):
 open `/contact/` on the preview, with the browser console open. The widget must draw and solve,
