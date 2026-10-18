@@ -75,13 +75,15 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~29,392 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+- Running count: ~30,047 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
   T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321 + T08 ~1,021 + T09 ~923 + T09b ~217 +
   T10 ~778 + T10b ~88 + T11a ~935 + T11b ~1,698 + T11c ~2,978 + T11c-b ~1,573 + T10c ~244 + T11d ~7,936 + T11e ~535 +
-  T11d-b ~482 + T12a ~674 + T12b ~581 + T12c ~939 + T12e ~438 + T12d ~672 + T12f ~478 + T13a ~976 + T13b ~324, with tests (binaries excluded), excluding lockfiles and the legacy removal; the terms before T11d sum to 15,357, so the
+  T11d-b ~482 + T12a ~674 + T12b ~581 + T12c ~939 + T12e ~438 + T12d ~672 + T12f ~478 + T13a ~976 + T13b ~324 + T13c ~655, with tests (binaries excluded), excluding lockfiles and the legacy removal; the terms before T11d sum to 15,357, so the
   earlier total of ~15,124 was an addition slip). It already passes the ~4,300 forecast, mostly from tests, the e2e
   harness and the review follow-up tasks.
-- Last reviewed boundary: `f495c11`, the T13b tip (the merge `2227c22` has the same tree, `9e13115`); `b82ad27` (the
+- Last reviewed boundary: `410f0b4`, the T13c tip (the merge `b0d5f04` has the same tree, `2933ee0`); the T13b record
+  `387a495` was reviewed with T13c. Before that, `f495c11`, the T13b tip (the merge `2227c22` has the same tree,
+  `9e13115`); `b82ad27` (the
   Turnstile site key) and the T13a record `aa24efa` were reviewed with T13b. Before that, `ecdf819`, the T13a tip (the
   merge `f7e0a1d` has the same tree, `8bcf604`); the records `f2f8254` and `007277f` were assessed passive. Before
   that, `34ae18d`, the T12f tip (the merge `73530dd` has the same tree, `c434060`). Before that,
@@ -310,9 +312,10 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
     review (warning): the CSP guard (`e2e/support/csp-guard.ts`) checks its violations right after `use()`, and a
     violation still in flight through `exposeBinding` can miss the check. Add a settle step before the assertion, so
     a late violation fails the test.
-  - [ ] **T13c** Link check (~220). The internal part is a launch gate: same-origin links resolve, fragments match an
-    `id`, `mailto:` and `tel:` are well formed. External hosts must be https and on an allowlist. An online check of
-    external links (weekly or manual) can follow the launch.
+  - [x] **T13c** (delivered in two commits, see Progress) Link check (~220). The internal part is a launch gate:
+    same-origin links resolve, fragments match an `id`, `mailto:` and `tel:` are well formed. External hosts must be
+    https and on an allowlist. The online check of external links (weekly or manual) moved to T13e, after the
+    launch.
   - [ ] **T13d** Lighthouse CI (launch gate, ~120).
     - `@lhci/cli` in a new CI job on the built preview, on its own port (4341), 3 runs per URL, mobile preset,
       ubuntu only.
@@ -340,6 +343,18 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
         explicitly.
     - Also from T13b: `layout.spec.ts` checks the skip link and runs axe on `/` and `/es/`, which the new specs now
       cover. Prune the overlap.
+    - From T13c: the online check of external links (weekly or manual; it requests each allowlisted link and reports
+      the dead ones).
+    - From the T13c review (`review-be1ac20c7ada5282`), 1 warning and 2 suggestions:
+      - The crawl in `e2e/support/link-crawl.ts` only runs against a site with no problems, so a regression in its
+        own decisions (the self-link skip, the non-200 rule, the fragment lookup on another page, the https rule for
+        resources) would still pass. The writer's mutation runs proved each check once; add a lasting negative
+        control (a fixture page with a broken link, a missing `id` and an off-list host, each expected in
+        `result.problems`).
+      - `idsAt` opens any target that has a fragment in the browser. A fragment link to a PDF would abort the whole
+        run with a navigation error instead of reporting a problem. Skip non-HTML targets or report the failure.
+      - The `srcset` parsing splits on every comma, so a URL with a comma (a data URI, a CDN transform) would be
+        cut. No current asset has one.
   - [ ] **T13f** In two groups.
     - f1, the Turnstile hostname check (launch gate, ~90): accept `carlos15erh.workers.dev` and its subdomains, plus
       an optional `TURNSTILE_ALLOWED_HOSTNAMES` setting for a future custom domain. The fake returns the hostname.
@@ -420,6 +435,7 @@ the HTML reporter blocks the shell after a failure.
 | T12f | done (merged `73530dd`) | `1239a35` the dark icon set generated from the tokens (`scripts/icons/`, `public/icon.svg`, `favicon.ico` 32 + 48, `apple-touch-icon.png` 180) with a test that ties it to the tokens, `4cb6afe` the icon links and one `theme-color` per color scheme on every page, `34ae18d` e2e: the icons are linked from every page and served with their media types | Strict TDD: `icons.test.ts` module not found, then 4 failed / 1 passed; layout 2 failed / 26 passed; `icons.spec.ts` against the old layout 16 failed / 4 passed; a token mutation (`#161a17` -> `#171a17`) failed 3 unit tests, then reverted · writer: lint · format · check 0/0/0 (199 files) · test 1381/1381 in 60 files · e2e 587/587 · build (`dist/client` holds the three icons) · parent re-ran on the T12f tip: check 0 errors, test 1381/1381 in 60 files, and viewed the touch icon (cyan on dark); the merge tree equals the reviewed tree (`c434060`) | Slice from `3173e96` (T12f): medium, 11 files, 478 lines, 1 lens (reliability), approved with 3 suggestions (`review-646b6dd779a45a8a`: touch-icon alpha left to Chromium; `blockAt` without a closing-brace guard; `theme-color` ignores the stored toggle), routed to T13 |
 | T13a | done (merged `f7e0a1d`) | `7f8484c` one source for the security headers (`src/shared/security/headers.ts`, `apply-headers.ts`, `src/middleware.ts`, `public/_headers` tied to the module by a test), `ea4f754` a CSP guard that fails any e2e spec whose page breaks its policy, `b4bd2de` e2e for the headers on every kind of response and a hash for every inline script, `8a8e237` docs (README "Security headers"), `ecdf819` the guard's injected scripts type-checked | Strict TDD: module not found, then the `_headers` tie 1 failed / 40 passed (no file), then 41/41; the guard module not found, then 3/3; the guard proved by a mutation (no drain: 2 failed); the header and hash specs were written after the code, so mutations instead: no middleware and no `_headers`, 30 failed / 37 passed; a corrupted contact hash failed the hash spec. Spikes: `pnpm preview` applies `_headers` (curl on `/icon.svg`, an `/_astro/` CSS with both rules merged, the 404s); Turnstile's CSP page lists `script-src` and `frame-src` only, and `connect-src` stays as the owner default · writer: lint · format · check 0/0/0 (208 files) · test 1422/1422 in 62 files · e2e 657/657 · build · parent re-ran test 1422/1422 in 62 files; the merge tree equals the reviewed tree (`8bcf604`) | Slice from `007277f` (T13a): high, 26 files, 976 lines, 4 lenses, approved with 1 warning and 4 suggestions (`review-0606dabc2a269f22`). Risk and resilience found nothing. The warning (the guard's teardown race) goes to T13b, the suggestions to T13f2 |
 | T13b | done (merged `2227c22`) | `7a5bdaf` axe over every sitemap route plus the two 404s, in both schemes (`e2e/axe-matrix.spec.ts`; the list comes from the built sitemap, 18 routes, with a guard for the known routes), `92b98ea` the CSP guard settles in-flight violations before it checks (`settleCspViolations`, plus a negative control), `01f9eb2` keyboard spec: tab order, skip link, theme toggle, contact form, focus ring, no trap (`e2e/keyboard.spec.ts`), `f495c11` the settle step stops waiting after 1 s on a page with JavaScript off | Strict TDD: a no-op settle and the negative control first, 3 of 3 runs failed (`Expected length: 1, Received length: 0`), then 3 of 3 passed; the first settle hung `contact-nojs.spec.ts` (5 failed), fixed with the 1 s race. The matrix and keyboard specs passed on the site as it was (41 and 16), so mutations instead: no toggle `aria-label` failed the matrix (`button-name`); one combined mutation (skip target renamed, focus outline removed, a positive `tabindex`) failed the tab-through on 7 pages and the skip link in both locales (not isolated per check). No axe violations, no rule excluded. Scheme set by `emulateMedia`, with `data-theme` asserted · writer: lint · check 0/0/0 · test 1422/1422 in 62 files · build · e2e 715/715 (an earlier back-to-back run failed `icons.spec.ts` `/es/` once; it passed alone and on the next full run) · parent: lint, format, and the guard, keyboard and no-JS specs 29/29; the merge tree equals the reviewed tree (`9e13115`) | Slice from `ecdf819` (`b82ad27`, `aa24efa` and T13b): medium, 8 files, 419 lines (slice budget reached), 1 lens (reliability), granted, approved with 2 warnings and 2 suggestions (`review-7cc9cd646dc5c8fd`), all routed to T13e |
+| T13c | done (merged `b0d5f04`) | `07c42f0` pure link rules (`src/shared/links/classify-href.ts`, `check-href.ts`, the allowlist in `external-hosts.ts`), `410f0b4` the crawl (`e2e/support/link-crawl.ts`) and `e2e/links.spec.ts` over every sitemap route plus the two 404s, read from the server's sitemap at test time; README "Link check" | Strict TDD: both unit files module not found (19 existing passed), then 77/77 in 3 files. The spec passed on the site as it was, after one fix to the crawl (a 404 page's own `#main` link), so isolated mutations instead, each failing then reverted: a broken internal link (404), `#mainn` (no such `id`), a mailto with no `@`, `gitlab.com` (not on the allowlist), an own-origin absolute URL to `/nope/` (404, so it is treated as internal), and `/icon2.svg` (404). `tel:` and `http:` are covered by unit tests only. No broken links on the site · writer: lint · format · check 0/0/0 (217 files) · test 1480 in 64 files · build · e2e 716/716 · parent: test `src/shared/links` 77/77, `e2e/links.spec.ts` 1/1; the merge tree equals the reviewed tree (`2933ee0`) | Slice from `f495c11` (`387a495` and T13c): medium, 9 files, 702 lines (slice budget reached), 1 lens (reliability), granted, approved with 1 warning and 2 suggestions (`review-be1ac20c7ada5282`), all routed to T13e |
 
 ## Change log
 
@@ -984,11 +1000,24 @@ the HTML reporter blocks the shell after a failure.
   approved with 2 warnings and 2 suggestions (`review-7cc9cd646dc5c8fd`). All four go to T13e. The parent checked
   the sitemap warning: CI builds before `pnpm test:e2e`, so it only affects local runs. Merged `--no-ff` as
   `2227c22`, whose tree equals the reviewed tree `9e13115`.
+- 2026-10-18: the stop hook offered the whole branch from `d583e09` again (370 files, 57,229 lines, high). The owner
+  granted it, and START stopped with `lens_context_budget_exceeded` before anything was created (Engram #533).
+- 2026-10-18: T13c (writer note: Engram, topic `odd/portfolio-astro-rebuild/t13c-writer`). Route: delegated (pure
+  link rules, their unit tests and the crawl, 2+ non-trivial files).
+  - The allowlist holds exact hosts, with no wildcard: a new site on `vercel.app` is added by name. Only `a[href]` is
+    held to it; an external resource only has to be https, since what a page may load is the CSP's job.
+  - mailto: every recipient must match a practical address pattern; headers after `?` are not judged. tel: strict
+    E.164, as the profile stores the number. The site has no `tel:` link today.
+  - Every internal target gets one GET with no redirects followed and must answer 200. A link to the page it sits on
+    skips the request (a 404 page is the page), but its fragment is still checked.
+- 2026-10-18: T13c review and merge. The slice from `f495c11` (`387a495` and T13c) was medium, 9 files and 702
+  lines, 1 lens (reliability). Granted, and approved with 1 warning and 2 suggestions (`review-be1ac20c7ada5282`),
+  all routed to T13e. Merged `--no-ff` as `b0d5f04`, whose tree equals the reviewed tree `2933ee0`.
 
 ## Next step
 
-T13c (the link check; its internal part is a launch gate), then T13d, T13e (now with the T13b review follow-ups)
-and T13f, in the order the T13 entry gives. Writers also run `pnpm format:check`, which CI runs. Then T14 (launch, with its manual checks). T10d when the owner gives the color direction;
+T13d (Lighthouse CI, a launch gate), then T13e (now with the T13b and T13c review follow-ups and the online
+external-link check) and T13f, in the order the T13 entry gives. Writers also run `pnpm format:check`, which CI runs. Then T14 (launch, with its manual checks). T10d when the owner gives the color direction;
 the social card and the icons regenerate from the tokens with `scripts/social-card/` and `scripts/icons/`. Before a
 writer runs e2e, stop any `astro dev` on port 4321. Run writers in the foreground: a background writer's workspace
 keeps producing new review candidates for the stop hook. Owner, before live checks of the form: create the new
