@@ -109,22 +109,23 @@ starts empty (state lives in `.wrangler/state`, which git ignores), so `/cv/en.p
 
 ## Contact settings
 
-The contact form needs eight settings from the Worker's environment (six required, two
-optional test seams) and one binding. `createContactDeps`
+The contact form needs eight settings from the Worker's environment (six required, three
+optional) and one binding. `createContactDeps`
 (`src/modules/contact/adapters/create-contact-deps.ts`) checks them all in one pass, through
 `parseContactConfig` (`src/modules/contact/config.ts`) for the settings, and reports the names
 of whatever is missing or invalid, never a value. A blank value counts as missing.
 
-| Setting                | Required | What it is for                                                                                         |
-| ---------------------- | -------- | ------------------------------------------------------------------------------------------------------ |
-| `TURNSTILE_SITE_KEY`   | yes      | The public key of the Turnstile widget on the contact page. Browsers see it by design.                 |
-| `TURNSTILE_SECRET_KEY` | yes      | Secret. The key the Worker uses to ask Turnstile whether a submission's token is genuine.              |
-| `EMAILJS_SERVICE_ID`   | yes      | The EmailJS email service that sends through the owner's Gmail.                                        |
-| `EMAILJS_TEMPLATE_ID`  | yes      | The EmailJS template that lays out the message the owner receives.                                     |
-| `EMAILJS_PUBLIC_KEY`   | yes      | The EmailJS account's public key.                                                                      |
-| `EMAILJS_PRIVATE_KEY`  | yes      | Secret. The EmailJS account's private key (its access token); only the Worker holds it.                |
-| `EMAILJS_API_URL`      | no       | Test seam: replaces the EmailJS send endpoint. Leave it blank everywhere except the e2e tests.         |
-| `TURNSTILE_VERIFY_URL` | no       | Test seam: replaces Turnstile's verification endpoint. Leave it blank everywhere except the e2e tests. |
+| Setting                       | Required | What it is for                                                                                                          |
+| ----------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `TURNSTILE_SITE_KEY`          | yes      | The public key of the Turnstile widget on the contact page. Browsers see it by design.                                  |
+| `TURNSTILE_SECRET_KEY`        | yes      | Secret. The key the Worker uses to ask Turnstile whether a submission's token is genuine.                               |
+| `EMAILJS_SERVICE_ID`          | yes      | The EmailJS email service that sends through the owner's Gmail.                                                         |
+| `EMAILJS_TEMPLATE_ID`         | yes      | The EmailJS template that lays out the message the owner receives.                                                      |
+| `EMAILJS_PUBLIC_KEY`          | yes      | The EmailJS account's public key.                                                                                       |
+| `EMAILJS_PRIVATE_KEY`         | yes      | Secret. The EmailJS account's private key (its access token); only the Worker holds it.                                 |
+| `EMAILJS_API_URL`             | no       | Test seam: replaces the EmailJS send endpoint. Leave it blank everywhere except the e2e tests.                          |
+| `TURNSTILE_VERIFY_URL`        | no       | Test seam: replaces Turnstile's verification endpoint. Leave it blank everywhere except the e2e tests.                  |
+| `TURNSTILE_ALLOWED_HOSTNAMES` | no       | Hosts, besides `carlos15erh.workers.dev`, a Turnstile token may be solved on: see "Which hostnames the Worker accepts". |
 
 The two seams let the end-to-end tests point the Worker at a fake server on `http://127.0.0.1`.
 Left blank, each provider's own endpoint is used. When set, the value must be an `https:` URL
@@ -249,8 +250,35 @@ How the Worker uses the answer, so a failure is easy to read:
   could not judge the token, is `unavailable`: the fault is on the server's side and trying
   again cannot help, so the visitor is pointed to email and WhatsApp instead of being asked to
   retry.
-- It does not check the `hostname` Turnstile reports back, because previews run on other
-  hostnames than production.
+- It checks the `hostname` Turnstile reports back: see the next section.
+
+### Which hostnames the Worker accepts
+
+A Turnstile site key is public, so a token solved on any other site that uses it is genuine to
+Turnstile. The Worker therefore also checks the `hostname` of a successful answer, and treats a
+token solved anywhere else like a refused one: the visitor sees the same "try again" alert, and
+one warning line is logged (`contact: Turnstile solved a token on a host that is not allowed`,
+with the hostname appended when it is a plain one; never the token or the secret).
+
+- Always allowed: `carlos15erh.workers.dev` and every subdomain of it, which covers the
+  production Worker and the Workers Builds previews. Nothing to set.
+- `TURNSTILE_ALLOWED_HOSTNAMES` (optional, comma-separated, e.g. `example.com,www.example.org`)
+  adds more, for a future custom domain. Each entry also allows its subdomains, like the
+  default, so list only domains you own. Entries are plain hostnames (no scheme, port, path or
+  wildcard); case and one trailing dot do not matter. Blank means only the default. A bad entry
+  names the setting as invalid and the contact page shows its "form unavailable" notice, so a
+  typo cannot pass unnoticed. Set it as a plain variable in `wrangler.jsonc` under `vars` and
+  under `previews.vars` (previews do not inherit), or with `wrangler secret put`; the repository
+  leaves it unset.
+- Matching is on a label boundary: `evilcarlos15erh.workers.dev`,
+  `carlos15erh.workers.dev.attacker.com` and `carlos15erh-workers.dev` are refused, and so is a
+  missing or empty hostname. The rule is `src/modules/contact/allowed-hostname.ts`.
+- Local development: add `TURNSTILE_ALLOWED_HOSTNAMES=localhost` to `.dev.vars` (the template has
+  it). Cloudflare's testing page shows `localhost` as the hostname of a successful answer, and
+  test keys work on any domain; if the local form is still refused, the warning line in the
+  `astro dev` output names the hostname Turnstile reported, so list that one. The e2e tests need
+  nothing: their fake Turnstile answers with an allowed host (and a look-alike for the refusal
+  case).
 
 [Source: server-side validation](https://developers.cloudflare.com/turnstile/get-started/server-side-validation/).
 
@@ -288,6 +316,7 @@ EMAILJS_SERVICE_ID=<your service id>
 EMAILJS_TEMPLATE_ID=<your template id>
 EMAILJS_PUBLIC_KEY=<your public key>
 EMAILJS_PRIVATE_KEY=<your private key>
+TURNSTILE_ALLOWED_HOSTNAMES=localhost
 ```
 
 With real EmailJS values, submitting the local form sends a real email and spends one of the
@@ -383,7 +412,7 @@ without any care on your part:
   unexpected. The run then fails when it ends, naming the method and path of each such request
   and nothing else: the Worker should reach only the two endpoints `.dev.vars.e2e` names, so a
   seam URL is wrong or the site now calls something new. A Turnstile token steers its answer
-  (`pass:<marker>`, `refuse:`, `duplicate:`, `fault:`, `unknown-code:`, `http-500:`), and a
+  (`pass:<marker>`, `foreign-host:`, `refuse:`, `duplicate:`, `fault:`, `unknown-code:`, `http-500:`), and a
   visitor message containing `[[fake-emailjs:500]]` makes the fake EmailJS answer that status.
 - **A check before the first test.** `e2e/support/hermetic-guard.ts` runs in global setup, reads
   the files the server will read, and stops the whole run, listing the problems, unless
