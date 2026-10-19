@@ -47,6 +47,7 @@ pnpm-debug.log*
 .codegraph/
 .atl/
 
-# Lighthouse CI reports
+# Lighthouse CI: .lighthouseci/ is LHCI's working folder (the collected runs), and
+# lighthouse-reports/ is where the reports are written for the CI artifact. Both stay.
 .lighthouseci/
 lighthouse-reports/
