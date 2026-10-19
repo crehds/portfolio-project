@@ -1,6 +1,11 @@
 // Pure: no `astro:*` or `cloudflare:*` import. The structural pieces below are all this
 // needs from the outside, so Vitest drives it with a fake `fetch` and the composition
 // root (`create-contact-deps.ts`) wires the Worker's own in.
+import {
+  isAllowedHostname,
+  isPlainHostname,
+  normalizeHostname,
+} from '../allowed-hostname';
 import type { ContactConfig } from '../config';
 import type { TurnstileVerifier } from '../ports';
 import {
@@ -100,12 +105,38 @@ function listsUnknownCode(errorCodes: unknown): boolean {
   );
 }
 
+const FOREIGN_HOSTNAME_WARNING =
+  'contact: Turnstile solved a token on a host that is not allowed';
+
+/**
+ * Logs one fixed line for a success that was solved on a host that is not ours, with the
+ * hostname appended when it is a plain one. The hostname is the page's own address, not
+ * personal data, but it is text from outside: anything that is not a plain hostname (a
+ * newline, a URL, a very long string) is left out rather than printed.
+ */
+function warnForeignHostname(hostname: unknown): void {
+  const plain =
+    typeof hostname === 'string' ? normalizeHostname(hostname) : undefined;
+
+  console.warn(
+    plain !== undefined && isPlainHostname(plain)
+      ? `${FOREIGN_HOSTNAME_WARNING} (${plain})`
+      : FOREIGN_HOSTNAME_WARNING,
+  );
+}
+
 /**
  * The `TurnstileVerifier` that asks Turnstile's Siteverify endpoint, called from the
  * Worker with the secret key. It resolves:
  *
  * - `true` only for a 200 whose JSON says `success: true`, whatever `error-codes` says
- *   next to it, and nothing else is mistaken for it;
+ *   next to it, and whose `hostname` is one `isAllowedHostname` accepts (the default host,
+ *   its subdomains and the configured `allowedHostnames`), and nothing else is mistaken
+ *   for it;
+ * - `false` for a success whose `hostname` is missing, empty, not a plain hostname or not
+ *   an allowed one: the token was solved on another site, so it is no answer for this one.
+ *   The visitor gets the same answer as for a rejected token, and one warning is logged
+ *   (see `warnForeignHostname`);
  * - `false` for any other 200 answer that only blames the visitor's token (rejected,
  *   expired or spent): one that lists nothing but the documented token codes, or no string
  *   at all (an empty or missing list, a list that is not an array, entries that are not
@@ -129,10 +160,12 @@ function listsUnknownCode(errorCodes: unknown): boolean {
  *   detail.
  *
  * It never retries (a token is single use, so Turnstile would only call a second try a
- * duplicate), and it makes one attempt in `AbortSignal.timeout(8000)`. It checks nothing
- * of the answer's `hostname`: previews run on other hostnames than the production one.
+ * duplicate), and it makes one attempt in `AbortSignal.timeout(8000)`. The `hostname` of an
+ * answer that is not a success is not read.
  *
- * It logs nothing. A rejection reaches `submitContact`, which logs one fixed line, with
+ * It logs nothing, except the one warning for a foreign hostname above (an answer the
+ * verifier itself turns into a `false`, which `submitContact` could not tell from a
+ * rejected token). A rejection reaches `submitContact`, which logs one fixed line, with
  * the status or the code appended when there is one, and fails the submission closed; a
  * line here too would report one failure twice. A `false` is an ordinary answer, not a
  * failure, and is not logged.
@@ -141,7 +174,10 @@ function listsUnknownCode(errorCodes: unknown): boolean {
  * EmailJS keys, and does not need the key the widget uses.
  */
 export function createTurnstileVerifier(
-  config: Pick<ContactConfig['turnstile'], 'secretKey' | 'verifyUrl'>,
+  config: Pick<
+    ContactConfig['turnstile'],
+    'secretKey' | 'verifyUrl' | 'allowedHostnames'
+  >,
   fetchImpl: Fetch = globalFetch,
 ): TurnstileVerifier {
   const url = config.verifyUrl ?? TURNSTILE_VERIFY_URL;
@@ -178,14 +214,26 @@ export function createTurnstileVerifier(
       return false;
     }
 
-    const { success, 'error-codes': errorCodes } = answer as {
+    const {
+      success,
+      hostname,
+      'error-codes': errorCodes,
+    } = answer as {
       success?: unknown;
+      hostname?: unknown;
       'error-codes'?: unknown;
     };
 
-    // Only a boolean `true` verifies, whatever `error-codes` says next to it.
+    // Only a boolean `true` verifies, whatever `error-codes` says next to it, and only for
+    // one of our hosts: the same widget key can be used on any site, and a token solved
+    // there is genuine but not meant for this form.
     if (success === true) {
-      return true;
+      if (isAllowedHostname(hostname, config.allowedHostnames)) {
+        return true;
+      }
+
+      warnForeignHostname(hostname);
+      return false;
     }
 
     const code = firstFaultCode(errorCodes);

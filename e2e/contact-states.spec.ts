@@ -133,6 +133,7 @@ test.describe('a submission Turnstile does not accept', () => {
   const refusals = [
     ['a token Turnstile refuses', 'refuse' as const, 1],
     ['a token that was already used', 'duplicate' as const, 1],
+    ['a genuine token solved on another site', 'foreign-host' as const, 1],
     ['no token at all (the widget never finished)', null, 0],
   ] as const;
 

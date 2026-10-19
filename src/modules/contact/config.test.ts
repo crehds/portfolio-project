@@ -65,6 +65,7 @@ describe('parseContactConfig: a valid environment', () => {
         siteKey: 'site-key',
         secretKey: 'secret-key',
         verifyUrl: 'https://turnstile.example/verify',
+        allowedHostnames: [],
       },
       emailjs: {
         serviceId: 'service-id',
@@ -366,4 +367,52 @@ describe('parseContactConfig: it reports names and never values', () => {
       });
     },
   );
+});
+
+describe('parseContactConfig: TURNSTILE_ALLOWED_HOSTNAMES', () => {
+  const withHosts = (value: unknown) =>
+    parseContactConfig({
+      ...completeEnv(),
+      TURNSTILE_ALLOWED_HOSTNAMES: value,
+    });
+
+  it.each([[undefined], [null], [''], ['  '], [' , ,']])(
+    'is an empty list when unset or blank (%j)',
+    (value) => {
+      expect(
+        succeeded({ ...completeEnv(), TURNSTILE_ALLOWED_HOSTNAMES: value }),
+      ).toMatchObject({ turnstile: { allowedHostnames: [] } });
+    },
+  );
+
+  it('reads a comma-separated list, trimmed, lowercased, one trailing dot dropped', () => {
+    expect(
+      succeeded({
+        ...completeEnv(),
+        TURNSTILE_ALLOWED_HOSTNAMES:
+          ' Example.com. ,www.my-site.dev,, localhost ',
+      }).turnstile.allowedHostnames,
+    ).toEqual(['example.com', 'www.my-site.dev', 'localhost']);
+  });
+
+  it.each([
+    ['a URL', 'https://example.com'],
+    ['a wildcard', '*.example.com'],
+    ['a port', 'example.com:8443'],
+    ['a path', 'example.com/path'],
+    ['a space inside', 'exa mple.com'],
+    ['an underscore', 'my_site.example.com'],
+    ['a bad entry among good ones', 'example.com,not a host'],
+    ['not text', 42],
+  ])('names the setting as invalid for %s', (_label, value) => {
+    expect(withHosts(value)).toEqual({
+      ok: false,
+      missing: [],
+      invalid: ['TURNSTILE_ALLOWED_HOSTNAMES'],
+    });
+  });
+
+  it('never prints the rejected value', () => {
+    expect(JSON.stringify(withHosts(`${SENTINEL}/x`))).not.toContain(SENTINEL);
+  });
 });

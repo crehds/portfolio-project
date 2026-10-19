@@ -80,7 +80,15 @@ function providers(
     if (url === TURNSTILE_URL) {
       return answers.turnstile
         ? answers.turnstile()
-        : new Response(JSON.stringify({ success: true }), { status: 200 });
+        : new Response(
+            JSON.stringify({
+              success: true,
+              hostname: 'carlos15erh.workers.dev',
+            }),
+            {
+              status: 200,
+            },
+          );
     }
     if (url === EMAILJS_URL) {
       return answers.emailjs
@@ -240,6 +248,43 @@ describe('createContactDeps: what each dependency is wired to', () => {
       'http://127.0.0.1:4332/emailjs/send',
       'http://127.0.0.1:4332/turnstile/siteverify',
     ]);
+  });
+
+  it('hands TURNSTILE_ALLOWED_HOSTNAMES to the Turnstile verifier', async () => {
+    const answerOn = (hostname: string) => () =>
+      Promise.resolve(
+        new Response(JSON.stringify({ success: true, hostname }), {
+          status: 200,
+        }),
+      );
+    const env = completeEnv({ TURNSTILE_ALLOWED_HOSTNAMES: 'example.com' });
+
+    const { deps } = succeeded(
+      env,
+      providers({ turnstile: answerOn('www.example.com') }),
+    );
+    await expect(deps.verifyTurnstile('token-abc', undefined)).resolves.toBe(
+      true,
+    );
+
+    const { deps: strict } = succeeded(
+      completeEnv(),
+      providers({ turnstile: answerOn('www.example.com') }),
+    );
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await expect(strict.verifyTurnstile('token-abc', undefined)).resolves.toBe(
+      false,
+    );
+  });
+
+  it('names TURNSTILE_ALLOWED_HOSTNAMES as invalid when an entry is not a hostname', () => {
+    expect(
+      failed(completeEnv({ TURNSTILE_ALLOWED_HOSTNAMES: 'https://x.test' })),
+    ).toEqual({
+      ok: false,
+      missing: [],
+      invalid: ['TURNSTILE_ALLOWED_HOSTNAMES'],
+    });
   });
 
   it('uses the global fetch, looked up when a dependency calls out, when none is given', async () => {

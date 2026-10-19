@@ -12,7 +12,11 @@ import {
 
 // Every test injects a fake `fetch`. Nothing here reaches Turnstile or any network.
 
-const CONFIG = { secretKey: 'secret-key-sentinel-1', verifyUrl: undefined };
+const CONFIG = {
+  secretKey: 'secret-key-sentinel-1',
+  verifyUrl: undefined,
+  allowedHostnames: [] as readonly string[],
+};
 const TOKEN = 'token-sentinel-2.AbC-123_xyz';
 const CLIENT_IP = '203.0.113.7';
 
@@ -281,8 +285,10 @@ describe('createTurnstileVerifier: what Turnstile answers', () => {
     ).resolves.toBe(true);
   });
 
-  it('resolves true when success is the only field', async () => {
-    const fetchFake = fetchAnswering(jsonAnswer({ success: true }));
+  it('resolves true when success and the hostname are the only fields', async () => {
+    const fetchFake = fetchAnswering(
+      jsonAnswer({ success: true, hostname: 'carlos15erh.workers.dev' }),
+    );
 
     await expect(
       createTurnstileVerifier(CONFIG, fetchFake)(TOKEN, CLIENT_IP),
@@ -641,7 +647,13 @@ describe('createTurnstileVerifier: an answer that blames the request or Turnstil
     'resolves true when success is true, whatever it also lists (%s)',
     async (code) => {
       await expect(
-        verifyAnswer(jsonAnswer({ success: true, 'error-codes': [code] })),
+        verifyAnswer(
+          jsonAnswer({
+            success: true,
+            hostname: 'carlos15erh.workers.dev',
+            'error-codes': [code],
+          }),
+        ),
       ).resolves.toBe(true);
     },
   );
@@ -826,7 +838,11 @@ describe('createTurnstileVerifier: an answer with an error code the Worker does 
   it('resolves true when success is true, whatever unknown code it also lists', async () => {
     await expect(
       verifyAnswer(
-        jsonAnswer({ success: true, 'error-codes': [UNKNOWN_CODE] }),
+        jsonAnswer({
+          success: true,
+          hostname: 'carlos15erh.workers.dev',
+          'error-codes': [UNKNOWN_CODE],
+        }),
       ),
     ).resolves.toBe(true);
   });
@@ -1001,6 +1017,117 @@ describe('createTurnstileVerifier: nothing private in an error or a log', () => 
         }),
       )(TOKEN, CLIENT_IP),
     );
+
+    for (const spy of consoleSpies) {
+      expect(spy).not.toHaveBeenCalled();
+    }
+  });
+});
+
+describe('createTurnstileVerifier: the hostname of a success', () => {
+  const answeringHostname = (hostname: unknown) =>
+    jsonAnswer({ success: true, 'error-codes': [], hostname });
+
+  const verifyWith = (
+    allowedHostnames: readonly string[],
+    response: Response,
+  ) =>
+    createTurnstileVerifier(
+      { ...CONFIG, allowedHostnames },
+      fetchAnswering(response),
+    )(TOKEN, CLIENT_IP);
+
+  it.each([
+    'carlos15erh.workers.dev',
+    'portfolio-project.carlos15erh.workers.dev',
+    'Carlos15erh.Workers.Dev.',
+  ])('resolves true for a token solved on %s', async (hostname) => {
+    await expect(verifyWith([], answeringHostname(hostname))).resolves.toBe(
+      true,
+    );
+  });
+
+  it.each([
+    ['another site', 'attacker.example'],
+    ['a look-alike prefix', 'evilcarlos15erh.workers.dev'],
+    ['the host inside another', 'carlos15erh.workers.dev.attacker.com'],
+    ['a hyphen look-alike', 'carlos15erh-workers.dev'],
+    ['an empty hostname', ''],
+    ['a hostname that is not text', 42],
+    ['a hostname that is not a plain hostname', 'carlos15erh.workers.dev/x'],
+  ])(
+    'resolves false for a success on %s, and logs one warning',
+    async (_label, hostname) => {
+      await expect(verifyWith([], answeringHostname(hostname))).resolves.toBe(
+        false,
+      );
+
+      const [, , warn] = consoleSpies;
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(String(warn.mock.calls[0][0])).toMatch(/^contact: Turnstile /);
+    },
+  );
+
+  it('resolves false for a success that names no hostname', async () => {
+    await expect(
+      verifyWith([], jsonAnswer({ success: true, 'error-codes': [] })),
+    ).resolves.toBe(false);
+  });
+
+  it('names the foreign hostname in the warning when it is a plain one', async () => {
+    await verifyWith([], answeringHostname('Attacker.Example.'));
+
+    expect(consoleSpies[2]).toHaveBeenCalledWith(
+      'contact: Turnstile solved a token on a host that is not allowed (attacker.example)',
+    );
+  });
+
+  it('never prints the secret, the token, the IP or a hostname that is not plain', async () => {
+    const hostname = `evil.example
+${LEAKY_TEXT}`;
+
+    await verifyWith([], answeringHostname(hostname));
+
+    const printed = JSON.stringify(consoleSpies.map((spy) => spy.mock.calls));
+    for (const fragment of [
+      'secret-key-sentinel-1',
+      TOKEN,
+      CLIENT_IP,
+      'PROVIDER-BODY-SENTINEL',
+      'evil.example',
+    ]) {
+      expect(printed).not.toContain(fragment);
+    }
+  });
+
+  it('allows a listed host and its subdomains', async () => {
+    await expect(
+      verifyWith(['example.com'], answeringHostname('www.example.com')),
+    ).resolves.toBe(true);
+    await expect(
+      verifyWith(['example.com'], answeringHostname('evilexample.com')),
+    ).resolves.toBe(false);
+  });
+
+  it('logs nothing when the hostname is allowed', async () => {
+    await verifyWith([], answeringHostname('carlos15erh.workers.dev'));
+
+    for (const spy of consoleSpies) {
+      expect(spy).not.toHaveBeenCalled();
+    }
+  });
+
+  it('does not check the hostname of an answer that is not a success', async () => {
+    await expect(
+      verifyWith(
+        [],
+        jsonAnswer({
+          success: false,
+          'error-codes': ['invalid-input-response'],
+          hostname: 'attacker.example',
+        }),
+      ),
+    ).resolves.toBe(false);
 
     for (const spy of consoleSpies) {
       expect(spy).not.toHaveBeenCalled();
