@@ -434,7 +434,8 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   - [ ] Local: the test keys' hostname (above).
   - [x] Merge into `develop`, then `develop` into `main` (production deploys from `main`), each with the owner's
     approval (see the launch item above).
-  - [ ] Analytics (owner decision: whether and which).
+  - [x] Analytics: none (owner, 2026-10-19: "No"). The site stays free of trackers and third-party scripts beyond
+    Turnstile on the contact pages.
   - [ ] Final README pass (the deployment section is current since the launch).
   - [ ] Prune stale branches: the merged `feat/astro-rebuild-*` task branches, local and remote (owner approval).
 
@@ -1145,9 +1146,10 @@ the HTML reporter blocks the shell after a failure.
 
 ## Next step
 
-The site is live (2026-10-19) and the production checks passed. What is left of T14: analytics (owner decision),
-a final README pass, pruning the merged task branches (owner approval) and the local test-key hostname check
-(owner). This record and the README line are on `feat/astro-rebuild`, not pushed yet. After T14: the 3 Dependabot
+The site is live (2026-10-19) and the production checks passed. No analytics (owner). What is left of T14: a final
+README pass, pruning the merged task branches (owner approval) and the local test-key hostname check (owner). The
+launch record, the README line and this note are on `feat/astro-rebuild`, not pushed yet. Next session the owner
+wants to discuss the dark-theme colors (T10d). After T14: the 3 Dependabot
 pull requests, T13e (the T13b, T13c and T13d review follow-ups, the online external-link check and the
 `--no-sandbox` trial) and T13f2. Writers also run `pnpm format:check`, which CI runs. T10d
 when the owner gives the color direction;
