@@ -75,15 +75,17 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~30,946 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+- Running count: ~31,061 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
   T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321 + T08 ~1,021 + T09 ~923 + T09b ~217 +
   T10 ~778 + T10b ~88 + T11a ~935 + T11b ~1,698 + T11c ~2,978 + T11c-b ~1,573 + T10c ~244 + T11d ~7,936 + T11e ~535 +
-  T11d-b ~482 + T12a ~674 + T12b ~581 + T12c ~939 + T12e ~438 + T12d ~672 + T12f ~478 + T13a ~976 + T13b ~324 + T13c ~655 + T13d ~274 + T13f1 ~625, with tests (binaries excluded), excluding lockfiles and the legacy removal; the terms before T11d sum to 15,357, so the
+  T11d-b ~482 + T12a ~674 + T12b ~581 + T12c ~939 + T12e ~438 + T12d ~672 + T12f ~478 + T13a ~976 + T13b ~324 + T13c ~655 + T13d ~274 + T13f1 ~625 + T13d-b ~115, with tests (binaries excluded), excluding lockfiles and the legacy removal; the terms before T11d sum to 15,357, so the
   earlier total of ~15,124 was an addition slip). It already passes the ~4,300 forecast, mostly from tests, the e2e
   harness and the review follow-up tasks.
-- Last reviewed boundary: `4a09a2f`, the reviewed T13f1 commit (tree `25fd594`); `db0e409` (the Lighthouse
-  ready-pattern fix) and the T13d record `6321194` were reviewed with T13f1. `bf1efbc` (a one-word docs fix after the
-  review) waits in the next slice; the merge `48b6c69` holds it (tree `cbc413b`). Before that, `2367668`, the reviewed
+- Last reviewed boundary: `cc15910`, T13d-b1 (tree `81c6e74`); `bf1efbc`, the T13f1 record `9b7fab1` and the T13d-b
+  plan `6131ac8` were reviewed with it. `dbeafd0` (a `.gitignore` comment), b2 (`aad68ae`, `e24562b`) and b3
+  (`a4fc78d`) wait in the next slice: medium, 98 lines, under budget. Before that, `4a09a2f`, the reviewed T13f1
+  commit (tree `25fd594`); `db0e409` (the Lighthouse ready-pattern fix) and the T13d record `6321194` were reviewed
+  with T13f1. Before that, `2367668`, the reviewed
   T13d commit (tree `af243fb`); the T13c record `0a65a28` was reviewed with T13d. Before that, `410f0b4`, the T13c tip (the merge
   `b0d5f04` has the same tree, `2933ee0`); the T13b record `387a495` was reviewed with T13c. Before that, `f495c11`, the T13b tip (the merge `2227c22` has the same tree,
   `9e13115`); `b82ad27` (the
@@ -324,14 +326,17 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
       ubuntu only.
     - Covers 8-9 URLs, with the acceptance budgets. Turnstile's host is blocked during the run.
     - A unit test keeps the URL list inside the sitemap.
-  - [ ] **T13d-b** Lighthouse follow-ups from the first CI run (launch gate; owner, 2026-10-19: "yes, go ahead with
-    T13d-b"). Run 39182026356 passed, but `/skills/` scored 0.91 in performance in all 3 runs (the acceptance
+  - [x] **T13d-b** (delivered in b1-b3, see Progress) Lighthouse follow-ups from the first CI run (launch gate;
+    owner, 2026-10-19: "yes, go ahead with T13d-b"). Run 39182026356 passed, but `/skills/` scored 0.91 in performance in all 3 runs (the acceptance
     criterion is 0.95), and no reports were kept: `actions/upload-artifact` skips hidden files by default, and the
     reports were in `.lighthouseci/`.
-    - b1: write the reports to `lighthouse-reports/` (no leading dot) and upload that. Route: inline (mechanical).
-    - b2: push, read the `/skills/` report from the artifact, find what costs the points, and fix it, so the page
-      reaches 0.95 on the CI runner. Route: decided once the report is read.
-    - b3: push again and confirm the score; then decide the performance warn-to-error switch (T13e).
+    - [x] b1: write the reports to `lighthouse-reports/` (no leading dot) and upload that. Route: inline
+      (mechanical).
+    - [x] b2: push, read the `/skills/` report from the artifact, find what costs the points, and fix it, so the
+      page reaches 0.95 on the CI runner. Route: delegated (the report named a font-swap layout shift; the fix and
+      its e2e check touch the config, the layout and a new spec).
+    - [x] b3: push again and confirm the score; then decide the performance warn-to-error switch. Route: inline
+      (one assertion and its README line).
   - [ ] **T13e** e2e infra (~110, can follow the launch).
     - The teardown harness test (extract `makeTeardown`).
     - #513: serve the e2e on `127.0.0.1` instead of `localhost`/`::1` (measure the sockets before and after), and
@@ -366,9 +371,8 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
         run with a navigation error instead of reporting a problem. Skip non-HTML targets or report the failure.
       - The `srcset` parsing splits on every comma, so a URL with a comma (a data URI, a CDN transform) would be
         cut. No current asset has one.
-    - From T13d, once the `lighthouse` CI job has run on a push: set the performance assertion from `warn` to
-      `error` (with a bar taken from the runner's numbers), and drop `--no-sandbox` if the job passes without it.
-      Also: the axe matrix runs only the `wcag*` tags, so it missed the projects list's `heading-order` problem
+    - From T13d: try the `lighthouse` job without `--no-sandbox` and drop the flag if it passes (the performance
+      switch to `error` was done in T13d-b3). Also: the axe matrix runs only the `wcag*` tags, so it missed the projects list's `heading-order` problem
       that Lighthouse caught; consider adding the best-practice tags.
     - From the T13d review (`review-7beee90060611b01`), suggestions (the ready-pattern warning was fixed in
       `db0e409`; the `require()` one does not apply, since `.nvmrc` is 24):
@@ -469,6 +473,7 @@ the HTML reporter blocks the shell after a failure.
 | T13c | done (merged `b0d5f04`) | `07c42f0` pure link rules (`src/shared/links/classify-href.ts`, `check-href.ts`, the allowlist in `external-hosts.ts`), `410f0b4` the crawl (`e2e/support/link-crawl.ts`) and `e2e/links.spec.ts` over every sitemap route plus the two 404s, read from the server's sitemap at test time; README "Link check" | Strict TDD: both unit files module not found (19 existing passed), then 77/77 in 3 files. The spec passed on the site as it was, after one fix to the crawl (a 404 page's own `#main` link), so isolated mutations instead, each failing then reverted: a broken internal link (404), `#mainn` (no such `id`), a mailto with no `@`, `gitlab.com` (not on the allowlist), an own-origin absolute URL to `/nope/` (404, so it is treated as internal), and `/icon2.svg` (404). `tel:` and `http:` are covered by unit tests only. No broken links on the site · writer: lint · format · check 0/0/0 (217 files) · test 1480 in 64 files · build · e2e 716/716 · parent: test `src/shared/links` 77/77, `e2e/links.spec.ts` 1/1; the merge tree equals the reviewed tree (`2933ee0`) | Slice from `f495c11` (`387a495` and T13c): medium, 9 files, 702 lines (slice budget reached), 1 lens (reliability), granted, approved with 1 warning and 2 suggestions (`review-be1ac20c7ada5282`), all routed to T13e |
 | T13d | done (merged `88ac05e`) | `ec9edb4` the projects list's card titles at `h2` (`ProjectCard` takes `headingLevel`, default 3 for the home page), `3d7167d` one URL list (`lighthouse/urls.mjs`, 9 pages) tied by a unit test to the published pages rebuilt from `src/pages` and the project frontmatter (never `dist/`, since CI tests before it builds), `2367668` `@lhci/cli` 0.15.1, `lighthouserc.cjs` (3 runs, median, mobile default, Turnstile blocked, reports to `.lighthouseci/`) and a `lighthouse` CI job that keeps them as an artifact (7 days; nothing uploaded), README "Lighthouse CI"; parent `db0e409` the ready pattern matches the preview's own ready line | Strict TDD: the URL test module not found, then 4/4; a bogus `/nope/` failed 2 of 4. The first local Lighthouse run failed accessibility on both projects lists (0.98, `heading-order`); the e2e expectation moved to `h2` first (4 failed), then 46/46 with the home spec. Local medians (Windows, Playwright's Chromium): 1/1/1/1 on all 9 pages, except performance 0.99 on `/es/projects/bachatealo/`; Turnstile's request was blocked. Mutation: no `lang` in a built page, accessibility 0.96 and exit 1. The performance warning path was not exercised · writer: lint · format · check 0/0/0 (220 files) · test 1484/1484 in 65 files · build · e2e 716/716 · `pnpm lighthouse` exit 0 · parent: URL test 4/4, lint, format; the ready-pattern race shown on the real preview output (pnpm's echo of the port comes first), then `pnpm lighthouse` 27 runs with every assertion passing. Not provable before a push: the CI job, its Chrome with `--no-sandbox`, Linux scores and the artifact upload | Slice from `410f0b4` (`0a65a28` and T13d): high (the CI workflow), 15 files, 2,441 lines (about 2,126 of them the lockfile), 4 lenses, granted, approved with 2 warnings (the same ready-pattern race, fixed in `db0e409`) and 7 suggestions (`review-7beee90060611b01`); the rest go to T13e |
 | T13f1 | done (merged `48b6c69`) | `d38fca5` a pure matcher (`src/modules/contact/allowed-hostname.ts`): `carlos15erh.workers.dev`, its subdomains, and the same for each `TURNSTILE_ALLOWED_HOSTNAMES` entry, on a label boundary, case-folded, one trailing dot tolerated, plain hostnames only; `9406a74` the setting parsed in `config.ts` (a bad entry makes the form unavailable) and the verifier refusing a success with a missing or foreign hostname, with one fixed warning line (the host appended only when plain); `380eb39` the e2e fake answers with an allowed host and a `foreign-host` scenario is refused like a failed challenge; `4a09a2f` docs (`docs/contact-setup.md` "Which hostnames the Worker accepts", `.dev.vars.example` with `localhost`); parent `bf1efbc` the settings count | Strict TDD: the matcher module not found, then 56/56; config 16 failed / 124 passed, then 140/140; the verifier 10 failed / 181 passed, then green; 13 fakes without a hostname in `create-contact-deps` and `handle-contact` tests fixed, then 946/946 in `src/modules/contact`. The wiring tests passed on first run (the config change had wired them). The e2e refusal cannot fail before the fake has the scenario, so a mutation (the check forced to `true`) failed it in both locales, then 40/40 · writer: lint · format · check 0/0/0 (222 files) · test 1573/1573 in 66 files · build · e2e 718/718 · parent: `src/modules/contact` 946/946, `e2e/contact-states.spec.ts` 40/40, format. The test keys' real hostname is unverified (a T14 local check) | Slice from `2367668` (`db0e409`, `6321194` and T13f1): medium, 14 files, 680 lines (slice budget reached), 1 lens (reliability), granted, approved with 3 suggestions (`review-05cf5b1d8bff7cfd`): the settings miscount fixed in `bf1efbc`, the test-key hostname to T14, the missing-hostname warning assertion to T13f2 |
+| T13d-b | done (merged `738b5d1`, `d672fb5`, `722b884`) | b1 parent `cc15910` reports to `lighthouse-reports/`, uploaded with `if-no-files-found: error`, plus `dbeafd0` a `.gitignore` comment; b2 `aad68ae` `e2e/font-layout-shift.spec.ts` (web fonts held back 800 ms, `local()` fallbacks made unresolvable, CLS at most 0.02 on 6 pages), `e24562b` `display: 'optional'` on both font families and all three fonts preloaded (Ubuntu 400 and 700, Ubuntu Mono); b3 parent `a4fc78d` the performance assertion is an `error` at 0.95 | CI 39182026356 (the first push): `/skills/` 0.91, no reports kept. CI 39183227855 (after b1): the artifact uploaded (7.9 MB); `/skills/` CLS 0.190 from one shift of the skills section, caused by the two fonts loading (Ubuntu 700 and Ubuntu Mono, not preloaded; the generated `local("Arial")`/`local("Courier New")` fallbacks likely missing on Linux). b2 strict TDD: RED on Windows only for `/experience/` (CLS 0.0408, 4 of 4 runs; `/skills/` ~0.004, since Windows has those fonts), GREEN 6/6 twice, CLS 0. CI 39184575804 (after b2): all 9 pages 1/1/1/1, CLS 0. b3: the reports of 39183227855 replayed through the new assertions fail on `/skills/` (exit 1) and those of 39184575804 pass (exit 0) · b2 writer: lint · format · check 0/0/0 · test 1573/1573 · build · e2e 724/724 · `pnpm lighthouse` 1 everywhere (one 0.99 run) · parent: `font-layout-shift` and `csp-hashes` 47/47; CI green on all three pushes, Workers Builds preview green on the first | Slice from `4a09a2f` (`bf1efbc`, `9b7fab1`, `6131ac8`, b1): high (the CI workflow), 8 files, 81 lines, 4 lenses, granted, approved with 2 suggestions (`review-b96bd3b9b052980b`): the `.gitignore` comment done in `dbeafd0`; the upload proven by CI 39183227855. b2 and b3 wait in the next slice (medium, 98 lines) |
 
 ## Change log
 
@@ -1081,13 +1086,29 @@ the HTML reporter blocks the shell after a failure.
   and 680 lines, 1 lens (reliability). Granted, and approved with 3 suggestions (`review-05cf5b1d8bff7cfd`). The
   parent fixed the settings miscount ("eight" for nine) in `bf1efbc`; the test-key hostname goes to T14 and the
   missing-hostname warning assertion to T13f2. Merged `--no-ff` as `48b6c69`.
+- 2026-10-19: the stop hook offered the whole branch again after the T13f1 record, after b1 and after b2 (383-384
+  files, up to 61,002 lines); each time granted, and the same `lens_context_budget_exceeded` stop (Engram #533,
+  firings 37-39).
+- 2026-10-19: T14 started (owner: "yes, go ahead with T14", for the first step, the push). `feat/astro-rebuild`
+  pushed to `origin` (`422625a..9b7fab1`, 78 commits). CI 39182026356 green, Workers Builds preview of the branch
+  green. The Lighthouse job passed with one warning, `/skills/` performance 0.91, and kept no reports (Engram #541).
+  The parent proposed T13d-b before merging into `develop`, and the owner agreed.
+- 2026-10-19: T13d-b. b1 (parent): `actions/upload-artifact` (pinned v7.0.1) defaults `include-hidden-files` to
+  false (checked in its `action.yml`), so the reports moved to `lighthouse-reports/`; reviewed (4 lenses, approved),
+  merged `738b5d1`, pushed, and CI 39183227855 kept the artifact. Its `/skills/` report showed CLS 0.190 from the
+  web fonts. b2 (writer note: Engram, topic `odd/portfolio-astro-rebuild/t13d-b2-writer`): `display: 'optional'`
+  plus preloading all three fonts; a slow cold visit keeps the system font until the next page. Merged `d672fb5`,
+  pushed; CI 39184575804 scored 1 in every category on all 9 pages. b3 (parent): performance is now an `error` at
+  0.95, checked by replaying both runs' reports through the new assertions. Merged `722b884`; not pushed yet.
 
 ## Next step
 
-Every T13 launch gate is done (13a, 13b, 13c's internal part, 13d, 13f1). Next is T14, the launch, which needs the
-owner's approval for the push, the merges into `develop` and `main`, and the production deploy, plus its manual
-checks. T13e (the T13b, T13c and T13d review follow-ups, the online external-link check and the Lighthouse switches
-after the first CI run) and T13f2 can follow the launch. Writers also run `pnpm format:check`, which CI runs. T10d
+Every T13 launch gate is done (13a, 13b, 13c's internal part, 13d, 13d-b, 13f1). T14 is in progress: the branch is
+pushed and green (the b3 merge `722b884` and this record are not pushed yet). Next in T14, each with the owner's
+approval: the manual checks on the branch preview (they need the owner's EmailJS template and Worker secrets for a
+real submission), then the merge into `develop`, then into `main`, and the production deploy. T13e (the T13b, T13c
+and T13d review follow-ups, the online external-link check and the `--no-sandbox` trial) and T13f2 can follow the
+launch. Writers also run `pnpm format:check`, which CI runs. T10d
 when the owner gives the color direction;
 the social card and the icons regenerate from the tokens with `scripts/social-card/` and `scripts/icons/`. Before a
 writer runs e2e, stop any `astro dev` on port 4321. Run writers in the foreground: a background writer's workspace
