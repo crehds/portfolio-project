@@ -62,3 +62,45 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  # Lighthouse CI over the built preview (lighthouserc.cjs): 3 runs of each page in
+  # lighthouse/urls.mjs, on port 4341. LHCI starts the preview itself (it seeds the local R2
+  # bucket first, as the e2e run does), audits with the runner's own Chrome, and writes the
+  # reports to .lighthouseci/. They stay in this run as an artifact; nothing is uploaded to
+  # Google's temporary public storage or to any server.
+  lighthouse:
+    name: Lighthouse CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@d9184bf108216479bc5a137cc391f4d7b14c870b # v6.1.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Built the way the e2e job builds it (see the comment on its Build step): the
+      # fake provider values keep the contact page from reading a real configuration.
+      - name: Build
+        run: pnpm build
+        env:
+          CLOUDFLARE_ENV: e2e
+
+      - name: Lighthouse CI
+        run: pnpm lighthouse
+
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci/
+          retention-days: 7

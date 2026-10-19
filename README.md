@@ -31,6 +31,7 @@ The dev server runs at http://localhost:4321.
 | `pnpm format:check`   | Check formatting without writing changes                     |
 | `pnpm test`           | Run unit tests with Vitest                                   |
 | `pnpm test:e2e`       | Run end-to-end and accessibility tests with Playwright       |
+| `pnpm lighthouse`     | Run Lighthouse CI on the built preview (port 4341)           |
 | `pnpm e2e:seed`       | Fill the local R2 bucket with the test CVs (e2e runs it)     |
 | `pnpm generate-types` | Regenerate `worker-configuration.d.ts` from `wrangler.jsonc` |
 
@@ -105,6 +106,14 @@ table above.
 ## Link check
 
 `e2e/links.spec.ts` crawls every page in the served sitemap plus the two 404s: each same-origin link and resource must answer 200, each `#fragment` must match an `id`, and `mailto:`/`tel:` must be well formed. A link to another site must be https and its host must be listed in [`src/shared/links/external-hosts.ts`](src/shared/links/external-hosts.ts): to link to a new site, add its host there. External sites are never requested.
+
+## Lighthouse CI
+
+`pnpm lighthouse` audits the built site with Lighthouse (the mobile form factor, Lighthouse's default), 3 runs per page, and CI runs it as its own job. Build first (`CLOUDFLARE_ENV=e2e pnpm build`, as the e2e run does); the script then seeds the local R2 bucket and serves the preview on port 4341 itself. Chrome comes from the machine, or from `CHROME_PATH` (Playwright's Chromium works).
+
+The pages are the paths in [`lighthouse/urls.mjs`](lighthouse/urls.mjs): both locales, the home pages, the projects list, a project page per locale, experience, skills and contact. A unit test keeps every path inside the pages the site publishes, read from `src/pages` and the project frontmatter (the sitemap itself only exists after a build). The 404 pages are not audited: Lighthouse refuses a page that answers with a 4xx status.
+
+The median of the 3 runs must score 1 in Accessibility, Best Practices and SEO (an error otherwise), and at least 0.95 in Performance (a warning for now; it becomes an error once CI numbers exist). Turnstile's host (`challenges.cloudflare.com`) is blocked during the run so the widget does not move the scores. The settings are in [`lighthouserc.cjs`](lighthouserc.cjs). The reports are written to `.lighthouseci/` (ignored by git) and kept as the `lighthouse-reports` artifact of the CI run; nothing is uploaded to a remote host.
 
 ## Roadmap
 

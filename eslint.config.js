@@ -11,6 +11,7 @@ export default defineConfig([
     'node_modules/**',
     'coverage/**',
     'playwright-report/**',
+    '.lighthouseci/**',
     'test-results/**',
     '.wrangler/**',
     'worker-configuration.d.ts',
@@ -39,5 +40,14 @@ export default defineConfig([
     languageOptions: {
       globals: { process: 'readonly' },
     },
+  },
+  {
+    // Lighthouse CI only reads a CommonJS config (lighthouserc.cjs), which loads the ES
+    // module that holds the URL list with require().
+    files: ['lighthouserc.cjs'],
+    languageOptions: {
+      globals: { module: 'readonly', process: 'readonly', require: 'readonly' },
+    },
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
   },
 ]);
