@@ -421,10 +421,22 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
     redirect it (2026-10-19). `deploy/vercel-redirect/vercel.json` holds one permanent catch-all redirect to the new
     site, keeping the path (`58b96f7`). Owner, before the `main` merge: set the Vercel project's Root Directory to
     `deploy/vercel-redirect`, so Vercel builds that folder only and never the Astro site.
-  - [ ] Production: the same checks after the deploy, one real submission, and the old Vercel URL redirecting.
+  - [x] Launch (owner: "Go ahead. All set"): `feat/astro-rebuild` into `develop` (`ec62ffd`), `develop` into
+    `main` (`5748081`), all three on tree `be3be86`, pushed. Workers Builds deployed production; CI and Lighthouse
+    green.
+  - [x] Production checks: `/`, `/es/`, both contact pages, both CVs, the sitemap and `robots.txt` answer 200, a
+    missing page 404, with the 7 security headers (parent). The production Worker holds all five secrets, and a
+    real submission arrived in English and Spanish (owner).
+  - [x] The old Vercel URL redirects. The first Vercel builds failed on leftover dashboard overrides (Build Command
+    `npm run build`, Output Directory `dist`) and a Root Directory not yet saved; the owner fixed them. Then `/`
+    and paths ending in `/` returned 404, because Vercel's `/:path*` matches neither; `/:path(.*)` fixed it (`main`
+    `85ee06c`). Now every path answers 308 to the same path on the new site.
   - [ ] Local: the test keys' hostname (above).
-  - [ ] Merge into `develop`, then `develop` into `main` (production deploys from `main`), each with the owner's
-    approval. Then analytics, the final README and pruning stale branches.
+  - [x] Merge into `develop`, then `develop` into `main` (production deploys from `main`), each with the owner's
+    approval (see the launch item above).
+  - [ ] Analytics (owner decision: whether and which).
+  - [ ] Final README pass (the deployment section is current since the launch).
+  - [ ] Prune stale branches: the merged `feat/astro-rebuild-*` task branches, local and remote (owner approval).
 
 ### Phase 4 · Project sync (future)
 
@@ -1124,15 +1136,20 @@ the HTML reporter blocks the shell after a failure.
   not inherit secrets. The owner set them with `wrangler preview secret put`. The first real submission answered
   502 (EmailJS refused): the non-browser API option was off. With it on, the form works in both locales. The docs
   now explain preview secrets and count nine settings (`c1d5efd`).
+- 2026-10-19: launch. The new site is live at https://portfolio-project.carlos15erh.workers.dev (`main` `5748081`,
+  then `85ee06c` for the redirect fix). The legacy Vercel project now only redirects (owner's choice:
+  redirect, not retire), from `deploy/vercel-redirect` as its Root Directory. The live form works in both locales.
+  The launch also brought `.github/dependabot.yml` to `main`, and Dependabot opened 3 pull requests that bump
+  `actions/setup-node` (7.1.0), `actions/upload-artifact` (7.0.2) and `pnpm/action-setup`. They are not reviewed
+  yet. The README now says production serves the rebuild, with the legacy app kept at the `v1-legacy` tag.
 
 ## Next step
 
-Every T13 launch gate is done (13a, 13b, 13c's internal part, 13d, 13d-b, 13f1). T14 is in progress: the branch is
-pushed and green (the b3 merge `722b884`, the T14 docs fix and these records are not pushed yet), and the preview
-checks passed, the real form included. Next in T14, each with the owner's approval: the merge into `develop`, then
-`develop` into `main`, which deploys production, then the production checks. T13e (the T13b, T13c
-and T13d review follow-ups, the online external-link check and the `--no-sandbox` trial) and T13f2 can follow the
-launch. Writers also run `pnpm format:check`, which CI runs. T10d
+The site is live (2026-10-19) and the production checks passed. What is left of T14: analytics (owner decision),
+a final README pass, pruning the merged task branches (owner approval) and the local test-key hostname check
+(owner). This record and the README line are on `feat/astro-rebuild`, not pushed yet. After T14: the 3 Dependabot
+pull requests, T13e (the T13b, T13c and T13d review follow-ups, the online external-link check and the
+`--no-sandbox` trial) and T13f2. Writers also run `pnpm format:check`, which CI runs. T10d
 when the owner gives the color direction;
 the social card and the icons regenerate from the tokens with `scripts/social-card/` and `scripts/icons/`. Before a
 writer runs e2e, stop any `astro dev` on port 4321. Run writers in the foreground: a background writer's workspace
