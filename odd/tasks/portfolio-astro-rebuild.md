@@ -75,15 +75,16 @@ Blog, CMS, authentication, analytics dashboards, changes to the owner's other pr
   then `develop` into `main`, both with owner approval.
 - Forecast: ~4,300 authored changed lines, excluding lockfiles, generated files and the legacy removal
   (T01: deletion-only, ~2,850 authored + ~1,850 vendored asset lines).
-- Running count: ~30,321 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
+- Running count: ~30,946 authored lines (T01 ~270 + T02 ~215 + T03 ~125 + T03b ~35 + T04 ~1,197 + T04b ~268 +
   T05 ~511 + T05b ~47 + T06 ~715 + T06b ~106 + T07 ~1,092 + T07b ~321 + T08 ~1,021 + T09 ~923 + T09b ~217 +
   T10 ~778 + T10b ~88 + T11a ~935 + T11b ~1,698 + T11c ~2,978 + T11c-b ~1,573 + T10c ~244 + T11d ~7,936 + T11e ~535 +
-  T11d-b ~482 + T12a ~674 + T12b ~581 + T12c ~939 + T12e ~438 + T12d ~672 + T12f ~478 + T13a ~976 + T13b ~324 + T13c ~655 + T13d ~274, with tests (binaries excluded), excluding lockfiles and the legacy removal; the terms before T11d sum to 15,357, so the
+  T11d-b ~482 + T12a ~674 + T12b ~581 + T12c ~939 + T12e ~438 + T12d ~672 + T12f ~478 + T13a ~976 + T13b ~324 + T13c ~655 + T13d ~274 + T13f1 ~625, with tests (binaries excluded), excluding lockfiles and the legacy removal; the terms before T11d sum to 15,357, so the
   earlier total of ~15,124 was an addition slip). It already passes the ~4,300 forecast, mostly from tests, the e2e
   harness and the review follow-up tasks.
-- Last reviewed boundary: `2367668`, the reviewed T13d commit (tree `af243fb`); the T13c record `0a65a28` was
-  reviewed with T13d. `db0e409` (the Lighthouse ready-pattern fix, medium, 8 lines) is under budget, so it waits in
-  the next slice; the merge `88ac05e` holds it (tree `bc65e64`). Before that, `410f0b4`, the T13c tip (the merge
+- Last reviewed boundary: `4a09a2f`, the reviewed T13f1 commit (tree `25fd594`); `db0e409` (the Lighthouse
+  ready-pattern fix) and the T13d record `6321194` were reviewed with T13f1. `bf1efbc` (a one-word docs fix after the
+  review) waits in the next slice; the merge `48b6c69` holds it (tree `cbc413b`). Before that, `2367668`, the reviewed
+  T13d commit (tree `af243fb`); the T13c record `0a65a28` was reviewed with T13d. Before that, `410f0b4`, the T13c tip (the merge
   `b0d5f04` has the same tree, `2933ee0`); the T13b record `387a495` was reviewed with T13c. Before that, `f495c11`, the T13b tip (the merge `2227c22` has the same tree,
   `9e13115`); `b82ad27` (the
   Turnstile site key) and the T13a record `aa24efa` were reviewed with T13b. Before that, `ecdf819`, the T13a tip (the
@@ -371,21 +372,28 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
         whole suite. Treat it as unpublished in that locale.
       - `ProjectCard`'s default `headingLevel` (3, on the home page) has no assertion. Check the home cards' level.
   - [ ] **T13f** In two groups.
-    - f1, the Turnstile hostname check (launch gate, ~90): accept `carlos15erh.workers.dev` and its subdomains, plus
-      an optional `TURNSTILE_ALLOWED_HOSTNAMES` setting for a future custom domain. The fake returns the hostname.
-      Look-alike hosts are rejected.
+    - [x] f1 (delivered in five commits, see Progress), the Turnstile hostname check (launch gate, ~90): accept
+      `carlos15erh.workers.dev` and its subdomains, plus an optional `TURNSTILE_ALLOWED_HOSTNAMES` setting for a
+      future custom domain. The fake returns the hostname. Look-alike hosts are rejected.
     - f2, the T12d/T12f advisories above (~120, can follow the launch): `mediaTypeOf(format)`, the font subset
       choice, the touch icon's RGB color type, the `blockAt` guard, `twitter:image:alt`, and type-checking `scripts/`.
       Also the T13a review's suggestions: a package script or generator file for `public/_headers` instead of the
       README one-liner; name the missing-asset case in `e2e/security-headers.spec.ts` (it is not a locale 404);
       scope the auto CSP-guard fixture to tests that use `page` (API-only tests pay for a browser context); and match
-      inline `on*=` handlers only inside start tags in `e2e/csp-hashes.spec.ts`.
+      inline `on*=` handlers only inside start tags in `e2e/csp-hashes.spec.ts`. And from the T13f1 review
+      (`review-05cf5b1d8bff7cfd`): the verifier test for a success with no `hostname` field checks only the `false`,
+      not the warning the doc comment promises; assert it.
 - [ ] **T14** Launch: production deploy, analytics, final README, prune stale branches (owner approval). Route: inline + owner. ~80.
   Manual checks that automation cannot prove (from T13a), on the deployed preview and again in production:
   - The real Turnstile widget loads, renders and solves under the contact CSP, with no "Refused to ..." in the console.
   - A real submission works: the Action POST, the 303, and the `?sent=1` page, with the email in the inbox.
   - `curl -sI` the home page, a 404, an `/_astro/` asset (the `_headers` rule merged with the adapter's immutable
     Cache-Control), `/contact/` (from the middleware) and `/cv/en.pdf`.
+  - From T13f1: one real submission on production and one on a preview pass the hostname check. A refusal logs
+    `contact: Turnstile solved a token on a host that is not allowed (<host>)` in the Worker logs, naming the host.
+  - From T13f1, local: run `astro dev` once with `.dev.vars` updated from `.dev.vars.example`
+    (`TURNSTILE_ALLOWED_HOSTNAMES=localhost`) and the test keys, submit the form, and record the hostname the test
+    keys really report (Cloudflare's docs only show `localhost` in a sample). Fix the template if it differs.
 
 ### Phase 4 · Project sync (future)
 
@@ -452,6 +460,7 @@ the HTML reporter blocks the shell after a failure.
 | T13b | done (merged `2227c22`) | `7a5bdaf` axe over every sitemap route plus the two 404s, in both schemes (`e2e/axe-matrix.spec.ts`; the list comes from the built sitemap, 18 routes, with a guard for the known routes), `92b98ea` the CSP guard settles in-flight violations before it checks (`settleCspViolations`, plus a negative control), `01f9eb2` keyboard spec: tab order, skip link, theme toggle, contact form, focus ring, no trap (`e2e/keyboard.spec.ts`), `f495c11` the settle step stops waiting after 1 s on a page with JavaScript off | Strict TDD: a no-op settle and the negative control first, 3 of 3 runs failed (`Expected length: 1, Received length: 0`), then 3 of 3 passed; the first settle hung `contact-nojs.spec.ts` (5 failed), fixed with the 1 s race. The matrix and keyboard specs passed on the site as it was (41 and 16), so mutations instead: no toggle `aria-label` failed the matrix (`button-name`); one combined mutation (skip target renamed, focus outline removed, a positive `tabindex`) failed the tab-through on 7 pages and the skip link in both locales (not isolated per check). No axe violations, no rule excluded. Scheme set by `emulateMedia`, with `data-theme` asserted · writer: lint · check 0/0/0 · test 1422/1422 in 62 files · build · e2e 715/715 (an earlier back-to-back run failed `icons.spec.ts` `/es/` once; it passed alone and on the next full run) · parent: lint, format, and the guard, keyboard and no-JS specs 29/29; the merge tree equals the reviewed tree (`9e13115`) | Slice from `ecdf819` (`b82ad27`, `aa24efa` and T13b): medium, 8 files, 419 lines (slice budget reached), 1 lens (reliability), granted, approved with 2 warnings and 2 suggestions (`review-7cc9cd646dc5c8fd`), all routed to T13e |
 | T13c | done (merged `b0d5f04`) | `07c42f0` pure link rules (`src/shared/links/classify-href.ts`, `check-href.ts`, the allowlist in `external-hosts.ts`), `410f0b4` the crawl (`e2e/support/link-crawl.ts`) and `e2e/links.spec.ts` over every sitemap route plus the two 404s, read from the server's sitemap at test time; README "Link check" | Strict TDD: both unit files module not found (19 existing passed), then 77/77 in 3 files. The spec passed on the site as it was, after one fix to the crawl (a 404 page's own `#main` link), so isolated mutations instead, each failing then reverted: a broken internal link (404), `#mainn` (no such `id`), a mailto with no `@`, `gitlab.com` (not on the allowlist), an own-origin absolute URL to `/nope/` (404, so it is treated as internal), and `/icon2.svg` (404). `tel:` and `http:` are covered by unit tests only. No broken links on the site · writer: lint · format · check 0/0/0 (217 files) · test 1480 in 64 files · build · e2e 716/716 · parent: test `src/shared/links` 77/77, `e2e/links.spec.ts` 1/1; the merge tree equals the reviewed tree (`2933ee0`) | Slice from `f495c11` (`387a495` and T13c): medium, 9 files, 702 lines (slice budget reached), 1 lens (reliability), granted, approved with 1 warning and 2 suggestions (`review-be1ac20c7ada5282`), all routed to T13e |
 | T13d | done (merged `88ac05e`) | `ec9edb4` the projects list's card titles at `h2` (`ProjectCard` takes `headingLevel`, default 3 for the home page), `3d7167d` one URL list (`lighthouse/urls.mjs`, 9 pages) tied by a unit test to the published pages rebuilt from `src/pages` and the project frontmatter (never `dist/`, since CI tests before it builds), `2367668` `@lhci/cli` 0.15.1, `lighthouserc.cjs` (3 runs, median, mobile default, Turnstile blocked, reports to `.lighthouseci/`) and a `lighthouse` CI job that keeps them as an artifact (7 days; nothing uploaded), README "Lighthouse CI"; parent `db0e409` the ready pattern matches the preview's own ready line | Strict TDD: the URL test module not found, then 4/4; a bogus `/nope/` failed 2 of 4. The first local Lighthouse run failed accessibility on both projects lists (0.98, `heading-order`); the e2e expectation moved to `h2` first (4 failed), then 46/46 with the home spec. Local medians (Windows, Playwright's Chromium): 1/1/1/1 on all 9 pages, except performance 0.99 on `/es/projects/bachatealo/`; Turnstile's request was blocked. Mutation: no `lang` in a built page, accessibility 0.96 and exit 1. The performance warning path was not exercised · writer: lint · format · check 0/0/0 (220 files) · test 1484/1484 in 65 files · build · e2e 716/716 · `pnpm lighthouse` exit 0 · parent: URL test 4/4, lint, format; the ready-pattern race shown on the real preview output (pnpm's echo of the port comes first), then `pnpm lighthouse` 27 runs with every assertion passing. Not provable before a push: the CI job, its Chrome with `--no-sandbox`, Linux scores and the artifact upload | Slice from `410f0b4` (`0a65a28` and T13d): high (the CI workflow), 15 files, 2,441 lines (about 2,126 of them the lockfile), 4 lenses, granted, approved with 2 warnings (the same ready-pattern race, fixed in `db0e409`) and 7 suggestions (`review-7beee90060611b01`); the rest go to T13e |
+| T13f1 | done (merged `48b6c69`) | `d38fca5` a pure matcher (`src/modules/contact/allowed-hostname.ts`): `carlos15erh.workers.dev`, its subdomains, and the same for each `TURNSTILE_ALLOWED_HOSTNAMES` entry, on a label boundary, case-folded, one trailing dot tolerated, plain hostnames only; `9406a74` the setting parsed in `config.ts` (a bad entry makes the form unavailable) and the verifier refusing a success with a missing or foreign hostname, with one fixed warning line (the host appended only when plain); `380eb39` the e2e fake answers with an allowed host and a `foreign-host` scenario is refused like a failed challenge; `4a09a2f` docs (`docs/contact-setup.md` "Which hostnames the Worker accepts", `.dev.vars.example` with `localhost`); parent `bf1efbc` the settings count | Strict TDD: the matcher module not found, then 56/56; config 16 failed / 124 passed, then 140/140; the verifier 10 failed / 181 passed, then green; 13 fakes without a hostname in `create-contact-deps` and `handle-contact` tests fixed, then 946/946 in `src/modules/contact`. The wiring tests passed on first run (the config change had wired them). The e2e refusal cannot fail before the fake has the scenario, so a mutation (the check forced to `true`) failed it in both locales, then 40/40 · writer: lint · format · check 0/0/0 (222 files) · test 1573/1573 in 66 files · build · e2e 718/718 · parent: `src/modules/contact` 946/946, `e2e/contact-states.spec.ts` 40/40, format. The test keys' real hostname is unverified (a T14 local check) | Slice from `2367668` (`db0e409`, `6321194` and T13f1): medium, 14 files, 680 lines (slice budget reached), 1 lens (reliability), granted, approved with 3 suggestions (`review-05cf5b1d8bff7cfd`): the settings miscount fixed in `bf1efbc`, the test-key hostname to T14, the missing-hostname warning assertion to T13f2 |
 
 ## Change log
 
@@ -1047,12 +1056,31 @@ the HTML reporter blocks the shell after a failure.
   output and fixed it in `db0e409` (the pattern is now `localhost:4341/`, Astro's ready line), then ran
   `pnpm lighthouse`: 27 runs, every assertion passed. The same commit made the `--no-sandbox` comment honest. The
   `require()` suggestion does not apply; the rest go to T13e. Merged `--no-ff` as `88ac05e`.
+- 2026-10-19: the stop hook offered the whole branch again after the T13d record (381 files); granted, and the same
+  `lens_context_budget_exceeded` stop (Engram #533).
+- 2026-10-19: T13f1 (writer note: Engram, topic `odd/portfolio-astro-rebuild/t13f1-writer`). Route: delegated (the
+  matcher, the config, the verifier and the e2e fake, 2+ non-trivial files).
+  - Listed hosts also allow their subdomains, as the default does and as Turnstile's own hostname management does.
+    The docs say to list only domains the owner controls.
+  - The warning lives in the verifier, since `submitContact` only sees a boolean. It never prints the token, the
+    secret or the IP.
+  - `TURNSTILE_ALLOWED_HOSTNAMES` is not in `wrangler.jsonc`, so nothing is mirrored under `previews.vars`; the docs
+    say to set it under both if a custom domain comes. No launch action is needed for the default.
+  - Cloudflare's testing page (https://developers.cloudflare.com/turnstile/troubleshooting/testing/) shows
+    `"hostname": "localhost"` only in a sample answer, so the local template allows `localhost` and the real value
+    is a T14 local check.
+- 2026-10-19: T13f1 review and merge. The slice from `2367668` (`db0e409`, `6321194` and T13f1) was medium, 14 files
+  and 680 lines, 1 lens (reliability). Granted, and approved with 3 suggestions (`review-05cf5b1d8bff7cfd`). The
+  parent fixed the settings miscount ("eight" for nine) in `bf1efbc`; the test-key hostname goes to T14 and the
+  missing-hostname warning assertion to T13f2. Merged `--no-ff` as `48b6c69`.
 
 ## Next step
 
-T13f1 (the Turnstile hostname check), the last launch gate in T13. T13e (now with the T13b, T13c and T13d review
-follow-ups, the online external-link check and the Lighthouse switches after the first CI run) and T13f2 can follow
-the launch. Writers also run `pnpm format:check`, which CI runs. Then T14 (launch, with its manual checks). T10d when the owner gives the color direction;
+Every T13 launch gate is done (13a, 13b, 13c's internal part, 13d, 13f1). Next is T14, the launch, which needs the
+owner's approval for the push, the merges into `develop` and `main`, and the production deploy, plus its manual
+checks. T13e (the T13b, T13c and T13d review follow-ups, the online external-link check and the Lighthouse switches
+after the first CI run) and T13f2 can follow the launch. Writers also run `pnpm format:check`, which CI runs. T10d
+when the owner gives the color direction;
 the social card and the icons regenerate from the tokens with `scripts/social-card/` and `scripts/icons/`. Before a
 writer runs e2e, stop any `astro dev` on port 4321. Run writers in the foreground: a background writer's workspace
 keeps producing new review candidates for the stop hook. Owner, before live checks of the form: create the new
