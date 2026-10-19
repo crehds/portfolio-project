@@ -57,7 +57,15 @@ function without(env: Record<string, unknown>, ...names: string[]) {
 function providers() {
   return vi.fn<Fetch>(async (url) =>
     url.includes('siteverify')
-      ? new Response(JSON.stringify({ success: true }), { status: 200 })
+      ? new Response(
+          JSON.stringify({
+            success: true,
+            hostname: 'carlos15erh.workers.dev',
+          }),
+          {
+            status: 200,
+          },
+        )
       : new Response('OK', { status: 200 }),
   );
 }

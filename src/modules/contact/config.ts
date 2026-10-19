@@ -1,5 +1,7 @@
 import { z } from 'astro/zod';
 
+import { isPlainHostname, normalizeHostname } from './allowed-hostname';
+
 /** The settings the contact form cannot work without. */
 export const REQUIRED_CONTACT_SETTINGS = [
   'TURNSTILE_SITE_KEY',
@@ -11,12 +13,15 @@ export const REQUIRED_CONTACT_SETTINGS = [
 ] as const;
 
 /**
- * Test seams: they replace a provider's endpoint so the end-to-end tests can point the
- * Worker at a fake server. Left blank, each provider's own endpoint is used.
+ * Settings the form works without. `EMAILJS_API_URL` and `TURNSTILE_VERIFY_URL` are test
+ * seams: they replace a provider's endpoint so the end-to-end tests can point the Worker
+ * at a fake server (left blank, each provider's own endpoint is used).
+ * `TURNSTILE_ALLOWED_HOSTNAMES` adds hosts a Turnstile token may be solved on.
  */
 export const OPTIONAL_CONTACT_SETTINGS = [
   'EMAILJS_API_URL',
   'TURNSTILE_VERIFY_URL',
+  'TURNSTILE_ALLOWED_HOSTNAMES',
 ] as const;
 
 export type ContactSettingName =
@@ -34,6 +39,11 @@ export interface ContactConfig {
     readonly secretKey: string;
     /** A test seam; `undefined` means Turnstile's own verification endpoint. */
     readonly verifyUrl: string | undefined;
+    /**
+     * Hosts beyond `DEFAULT_ALLOWED_HOSTNAME` that a token may be solved on (their
+     * subdomains too), plain and lowercase. Empty when the setting is not set.
+     */
+    readonly allowedHostnames: readonly string[];
   };
   readonly emailjs: {
     readonly serviceId: string;
@@ -120,6 +130,27 @@ const optionalSeamUrl = z.preprocess(
     .optional(),
 );
 
+/**
+ * A comma-separated list of hostnames: each entry is trimmed, lowercased and loses one
+ * trailing dot, and empty entries are skipped, so blank means an empty list. One entry
+ * that is not a plain hostname (a URL, a wildcard, a port) makes the whole setting
+ * invalid: a typo must show up as a named setting, not as a host that quietly matches
+ * nothing.
+ */
+const hostnameList = z.preprocess(
+  normalize,
+  z
+    .string({ error: INVALID })
+    .transform((text) =>
+      text
+        .split(',')
+        .map((entry) => normalizeHostname(entry.trim()))
+        .filter((entry) => entry !== ''),
+    )
+    .refine((entries) => entries.every(isPlainHostname), { error: INVALID })
+    .optional(),
+);
+
 const settingsSchema = z
   .object({
     TURNSTILE_SITE_KEY: requiredText,
@@ -130,12 +161,14 @@ const settingsSchema = z
     EMAILJS_PRIVATE_KEY: requiredText,
     EMAILJS_API_URL: optionalSeamUrl,
     TURNSTILE_VERIFY_URL: optionalSeamUrl,
+    TURNSTILE_ALLOWED_HOSTNAMES: hostnameList,
   })
   .transform((settings): ContactConfig => ({
     turnstile: {
       siteKey: settings.TURNSTILE_SITE_KEY,
       secretKey: settings.TURNSTILE_SECRET_KEY,
       verifyUrl: settings.TURNSTILE_VERIFY_URL,
+      allowedHostnames: settings.TURNSTILE_ALLOWED_HOSTNAMES ?? [],
     },
     emailjs: {
       serviceId: settings.EMAILJS_SERVICE_ID,
