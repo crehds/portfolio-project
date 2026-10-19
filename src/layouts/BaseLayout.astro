@@ -216,8 +216,11 @@ if (canonical !== undefined) {
     {jsonLd && (
       <script is:inline type="application/ld+json" set:html={jsonLd} />
     )}
-    <Font cssVariable="--font-ubuntu" preload={[{ weight: '400' }]} />
-    <Font cssVariable="--font-ubuntu-mono" />
+    <Font
+      cssVariable="--font-ubuntu"
+      preload={[{ weight: '400' }, { weight: '700' }]}
+    />
+    <Font cssVariable="--font-ubuntu-mono" preload />
   </head>
   <body class="flex min-h-screen flex-col">
     <a href="#main" class="skip-link">

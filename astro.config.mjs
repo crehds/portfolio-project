@@ -46,6 +46,12 @@ export default defineConfig({
   // Stable since Astro 6.0 (no longer `experimental.fonts`). Both families are served
   // from this site's own origin: the Fonts API downloads and caches the provider's files
   // at build time instead of the browser fetching them from Google at request time.
+  // `display: 'optional'`: a font that is not there for the first paint is not swapped in
+  // later. The default (`swap`) moved the layout when the font landed (CLS 0.19 on
+  // `/skills/` in the Lighthouse CI run, where the generated `local()` fallbacks are not
+  // installed and the tag pills wrap differently). The fonts are preloaded in the layout, so
+  // they usually make the first paint; on a cold, slow visit the page keeps the system font
+  // until the next navigation.
   fonts: [
     {
       provider: fontProviders.google(),
@@ -54,6 +60,7 @@ export default defineConfig({
       weights: [400, 700],
       styles: ['normal'],
       subsets: ['latin'],
+      display: 'optional',
       fallbacks: ['ui-sans-serif', 'system-ui', 'sans-serif'],
     },
     {
@@ -63,6 +70,7 @@ export default defineConfig({
       weights: [400],
       styles: ['normal'],
       subsets: ['latin'],
+      display: 'optional',
       fallbacks: ['ui-monospace', 'SFMono-Regular', 'monospace'],
     },
   ],
