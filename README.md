@@ -113,7 +113,7 @@ table above.
 
 The pages are the paths in [`lighthouse/urls.mjs`](lighthouse/urls.mjs): both locales, the home pages, the projects list, a project page per locale, experience, skills and contact. A unit test keeps every path inside the pages the site publishes, read from `src/pages` and the project frontmatter (the sitemap itself only exists after a build). The 404 pages are not audited: Lighthouse refuses a page that answers with a 4xx status.
 
-The median of the 3 runs must score 1 in Accessibility, Best Practices and SEO (an error otherwise), and at least 0.95 in Performance (a warning for now; it becomes an error once CI numbers exist). Turnstile's host (`challenges.cloudflare.com`) is blocked during the run so the widget does not move the scores. The settings are in [`lighthouserc.cjs`](lighthouserc.cjs). The reports are written to `lighthouse-reports/` (ignored by git; no leading dot, because the upload step skips hidden folders) and kept as the `lighthouse-reports` artifact of the CI run; nothing is uploaded to a remote host.
+The median of the 3 runs must score 1 in Accessibility, Best Practices and SEO, and at least 0.95 in Performance; anything lower fails the job. Turnstile's host (`challenges.cloudflare.com`) is blocked during the run so the widget does not move the scores. The settings are in [`lighthouserc.cjs`](lighthouserc.cjs). The reports are written to `lighthouse-reports/` (ignored by git; no leading dot, because the upload step skips hidden folders) and kept as the `lighthouse-reports` artifact of the CI run; nothing is uploaded to a remote host.
 
 ## Roadmap
 
