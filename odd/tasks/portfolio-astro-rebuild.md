@@ -414,7 +414,14 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
     console's "Refused to connect to 'data:,'" lines come from the CSP of Turnstile's own frame, not ours. A real
     submission works in English and Spanish (owner), so the hostname check passes on a preview. The first try
     answered 502: EmailJS's "Allow EmailJS API for non-browser applications" was off; the owner turned it on.
-  - [ ] Production: the same checks after the deploy, and one real submission.
+  - [x] `develop`: `feat/astro-rebuild` merged as `a0cf979` (same tree as the branch, `49b9cfe`) and pushed (owner:
+    "yes, go ahead with develop"); CI 39188077641 green, Lighthouse with performance as an error included. The
+    `develop` preview shows the "form is not available" notice: it holds no secrets, as expected for a new preview.
+  - [x] The legacy Vercel project `portfolio-crehds` (still live, `portfolio-crehds.vercel.app`): the owner chose to
+    redirect it (2026-10-19). `deploy/vercel-redirect/vercel.json` holds one permanent catch-all redirect to the new
+    site, keeping the path (`58b96f7`). Owner, before the `main` merge: set the Vercel project's Root Directory to
+    `deploy/vercel-redirect`, so Vercel builds that folder only and never the Astro site.
+  - [ ] Production: the same checks after the deploy, one real submission, and the old Vercel URL redirecting.
   - [ ] Local: the test keys' hostname (above).
   - [ ] Merge into `develop`, then `develop` into `main` (production deploys from `main`), each with the owner's
     approval. Then analytics, the final README and pruning stale branches.
