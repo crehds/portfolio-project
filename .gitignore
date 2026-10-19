@@ -46,3 +46,6 @@ pnpm-debug.log*
 # local agent tooling
 .codegraph/
 .atl/
+
+# Lighthouse CI reports
+.lighthouseci/

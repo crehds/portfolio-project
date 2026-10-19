@@ -27,7 +27,8 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "e2e:seed": "wrangler r2 object put portfolio-cv/en.pdf --file e2e/fixtures/cv-en.pdf --content-type application/pdf --local --persist-to .wrangler/state && wrangler r2 object put portfolio-cv/es.pdf --file e2e/fixtures/cv-es.pdf --content-type application/pdf --local --persist-to .wrangler/state",
-    "generate-types": "wrangler types"
+    "generate-types": "wrangler types",
+    "lighthouse": "lhci autorun"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.3",
@@ -39,6 +40,7 @@
     "@astrojs/check": "^0.9.10",
     "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^10.0.1",
+    "@lhci/cli": "0.15.1",
     "@playwright/test": "^1.63.0",
     "@tabler/icons": "^3.48.0",
     "@tailwindcss/vite": "^4.3.3",

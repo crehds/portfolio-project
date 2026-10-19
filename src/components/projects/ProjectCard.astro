@@ -20,9 +20,14 @@ interface Props {
    * photo has localized alt text..." test, which locates it as `main img` and expects
    * exactly one). */
   showCover?: boolean;
+  /** The card title's heading level: 3 under a section heading (the home page's featured
+   * list, the default), 2 straight under the page's `<h1>` (the projects list). A level
+   * skipped fails Lighthouse's `heading-order` audit. */
+  headingLevel?: 2 | 3;
 }
 
-const { project, locale, showCover = true } = Astro.props;
+const { project, locale, showCover = true, headingLevel = 3 } = Astro.props;
+const Heading = `h${headingLevel}` as const;
 const { data } = project;
 const dictionary = getDictionary(locale);
 const href = pathnameInLocale(`/projects/${project.slug}/`, locale);
@@ -41,9 +46,9 @@ const href = pathnameInLocale(`/projects/${project.slug}/`, locale);
       class="w-full rounded object-cover"
     />
   )}
-  <h3>
+  <Heading>
     <a href={href}>{data.title}</a>
-  </h3>
+  </Heading>
   <p class="text-sm text-text-muted">{data.summary}</p>
   {data.stack.length > 0 && (
     <ul class="flex flex-wrap gap-2 font-mono text-xs text-text-muted">

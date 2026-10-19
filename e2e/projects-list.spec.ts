@@ -72,7 +72,7 @@ for (const {
 
       const cardHeadings = page
         .getByTestId('projects-list-grid')
-        .getByRole('heading', { level: 3 });
+        .getByRole('heading', { level: 2 });
       await expect(cardHeadings).toHaveText(expectedTitles);
     });
 
@@ -81,7 +81,7 @@ for (const {
 
       const cardHeadings = page
         .getByTestId('projects-list-grid')
-        .getByRole('heading', { level: 3 });
+        .getByRole('heading', { level: 2 });
 
       // Every rendered card, not just the first: a wrong href on any later card must
       // fail this test too.
