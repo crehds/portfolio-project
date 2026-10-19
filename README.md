@@ -60,6 +60,10 @@ required.
 - `main` is the production branch; every other connected branch gets its own preview URL.
 - `main` currently serves the legacy React app. Production switches to this Astro rebuild at
   launch (T14).
+- The legacy site's old Vercel project (`portfolio-crehds.vercel.app`) only redirects here: its
+  Root Directory in the Vercel dashboard is `deploy/vercel-redirect`, which holds nothing but a
+  `vercel.json` with one permanent (308) redirect that keeps the path. Vercel never builds the
+  Astro site.
 - The build image reads the Node version from `.nvmrc` automatically. pnpm defaults to an older
   version there, so the dashboard's build environment variables must set `PNPM_VERSION` to the
   version pinned in `packageManager` in `package.json` (currently `12.3.4`), not a literal copy
