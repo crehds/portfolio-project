@@ -66,8 +66,8 @@ jobs:
   # Lighthouse CI over the built preview (lighthouserc.cjs): 3 runs of each page in
   # lighthouse/urls.mjs, on port 4341. LHCI starts the preview itself (it seeds the local R2
   # bucket first, as the e2e run does), audits with the runner's own Chrome, and writes the
-  # reports to .lighthouseci/. They stay in this run as an artifact; nothing is uploaded to
-  # Google's temporary public storage or to any server.
+  # reports to lighthouse-reports/. They stay in this run as an artifact; nothing is uploaded
+  # to Google's temporary public storage or to any server.
   lighthouse:
     name: Lighthouse CI
     runs-on: ubuntu-latest
@@ -102,5 +102,8 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: lighthouse-reports
-          path: .lighthouseci/
+          # Not .lighthouseci/: this step skips hidden files and folders by default
+          # (include-hidden-files), so that folder would upload nothing.
+          path: lighthouse-reports/
+          if-no-files-found: error
           retention-days: 7

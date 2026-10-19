@@ -47,10 +47,11 @@ module.exports = {
       },
     },
     upload: {
-      // Reports stay on disk, in .lighthouseci/ (CI keeps them as an artifact). Never
+      // Reports stay on disk, in lighthouse-reports/ (CI keeps them as an artifact; the
+      // folder has no leading dot because the upload step skips hidden files). Never
       // `temporary-public-storage` or a server: those publish the reports to a remote host.
       target: 'filesystem',
-      outputDir: '.lighthouseci',
+      outputDir: 'lighthouse-reports',
     },
   },
 };

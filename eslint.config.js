@@ -12,6 +12,7 @@ export default defineConfig([
     'coverage/**',
     'playwright-report/**',
     '.lighthouseci/**',
+    'lighthouse-reports/**',
     'test-results/**',
     '.wrangler/**',
     'worker-configuration.d.ts',
