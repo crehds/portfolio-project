@@ -58,8 +58,9 @@ required.
 - The Worker name configured in the Cloudflare dashboard must match `name` in `wrangler.jsonc`
   (`portfolio-project`), or builds fail.
 - `main` is the production branch; every other connected branch gets its own preview URL.
-- `main` currently serves the legacy React app. Production switches to this Astro rebuild at
-  launch (T14).
+- Production serves this Astro rebuild since 2026-10-19, at
+  <https://portfolio-project.carlos15erh.workers.dev>. The legacy React app is kept at the
+  `v1-legacy` tag.
 - The legacy site's old Vercel project (`portfolio-crehds.vercel.app`) only redirects here: its
   Root Directory in the Vercel dashboard is `deploy/vercel-redirect`, which holds nothing but a
   `vercel.json` with one permanent (308) redirect that keeps the path. Vercel never builds the
