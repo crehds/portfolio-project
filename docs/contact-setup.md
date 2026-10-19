@@ -109,7 +109,7 @@ starts empty (state lives in `.wrangler/state`, which git ignores), so `/cv/en.p
 
 ## Contact settings
 
-The contact form needs eight settings from the Worker's environment (six required, three
+The contact form needs nine settings from the Worker's environment (six required, three
 optional) and one binding. `createContactDeps`
 (`src/modules/contact/adapters/create-contact-deps.ts`) checks them all in one pass, through
 `parseContactConfig` (`src/modules/contact/config.ts`) for the settings, and reports the names
