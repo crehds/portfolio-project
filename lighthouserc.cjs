@@ -41,9 +41,9 @@ module.exports = {
         'categories:accessibility': ['error', { minScore: 1, ...median }],
         'categories:best-practices': ['error', { minScore: 1, ...median }],
         'categories:seo': ['error', { minScore: 1, ...median }],
-        // A warning until the CI runner has produced numbers to set the bar from; then it
-        // becomes an error (T13 in odd/tasks/portfolio-astro-rebuild.md).
-        'categories:performance': ['warn', { minScore: 0.95, ...median }],
+        // The acceptance bar. An error since CI run 39184575804, where every page scored 1 on
+        // the runner; it started as a warning until the runner's numbers were known.
+        'categories:performance': ['error', { minScore: 0.95, ...median }],
       },
     },
     upload: {
