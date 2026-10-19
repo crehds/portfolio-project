@@ -324,6 +324,14 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
       ubuntu only.
     - Covers 8-9 URLs, with the acceptance budgets. Turnstile's host is blocked during the run.
     - A unit test keeps the URL list inside the sitemap.
+  - [ ] **T13d-b** Lighthouse follow-ups from the first CI run (launch gate; owner, 2026-10-19: "yes, go ahead with
+    T13d-b"). Run 39182026356 passed, but `/skills/` scored 0.91 in performance in all 3 runs (the acceptance
+    criterion is 0.95), and no reports were kept: `actions/upload-artifact` skips hidden files by default, and the
+    reports were in `.lighthouseci/`.
+    - b1: write the reports to `lighthouse-reports/` (no leading dot) and upload that. Route: inline (mechanical).
+    - b2: push, read the `/skills/` report from the artifact, find what costs the points, and fix it, so the page
+      reaches 0.95 on the CI runner. Route: decided once the report is read.
+    - b3: push again and confirm the score; then decide the performance warn-to-error switch (T13e).
   - [ ] **T13e** e2e infra (~110, can follow the launch).
     - The teardown harness test (extract `makeTeardown`).
     - #513: serve the e2e on `127.0.0.1` instead of `localhost`/`::1` (measure the sockets before and after), and
