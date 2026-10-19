@@ -32,7 +32,9 @@ export interface FakeUpstreams {
  * How a Turnstile token steers the fake's answer. The token is
  * `<scenario>:<marker>`, so one string says what happens and tags the call.
  *
- * - `pass`: `success: true`.
+ * - `pass`: `success: true`, solved on `carlos15erh.workers.dev`, the host the Worker allows.
+ * - `foreign-host`: `success: true`, but solved on a look-alike of that host: a genuine token
+ *   that belongs to some other site, which the Worker must refuse.
  * - `refuse`: the token is not accepted (`invalid-input-response`).
  * - `duplicate`: the token was already used (`timeout-or-duplicate`).
  * - `fault`: Turnstile blames the secret (`invalid-input-secret`), so it never judged
@@ -42,6 +44,7 @@ export interface FakeUpstreams {
  */
 export const TURNSTILE_SCENARIOS = [
   'pass',
+  'foreign-host',
   'refuse',
   'duplicate',
   'fault',
@@ -106,7 +109,20 @@ function turnstileAnswer(token: string): {
     case 'pass':
       return {
         status: 200,
-        body: { success: true, 'error-codes': [], hostname: 'localhost' },
+        body: {
+          success: true,
+          'error-codes': [],
+          hostname: 'carlos15erh.workers.dev',
+        },
+      };
+    case 'foreign-host':
+      return {
+        status: 200,
+        body: {
+          success: true,
+          'error-codes': [],
+          hostname: 'carlos15erh.workers.dev.attacker.example',
+        },
       };
     case 'duplicate':
       return {
