@@ -49,3 +49,4 @@ pnpm-debug.log*
 
 # Lighthouse CI reports
 .lighthouseci/
+lighthouse-reports/

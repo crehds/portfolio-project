@@ -6,3 +6,4 @@ node_modules
 # the owner's own tables and formatting there, so it's left alone
 odd/
 .lighthouseci
+lighthouse-reports
