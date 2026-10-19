@@ -1,0 +1,133 @@
+# Consumed via the `file()` loader (see `src/content.config.ts`).
+# Schema: `src/modules/skills/schema.ts`. Categories: `src/modules/skills/domain/categories.ts`.
+# Sourced from the owner's CV "SKILLS" section and LinkedIn top skills/headline (see
+# `odd/tasks/portfolio-astro-rebuild.md`, T06). Role-specific tools that appear only in a
+# single `experience.yaml` entry's own `stack` stay there instead of being duplicated here.
+- id: javascript
+  name: JavaScript
+  category: frontend
+- id: typescript
+  name: TypeScript
+  category: frontend
+- id: react
+  name: React
+  category: frontend
+- id: redux
+  name: Redux
+  category: frontend
+- id: vue
+  name: Vue
+  category: frontend
+- id: nextjs
+  name: Next.js
+  category: frontend
+- id: svelte
+  name: Svelte
+  category: frontend
+- id: bootstrap
+  name: Bootstrap
+  category: frontend
+
+- id: ruby
+  name: Ruby
+  category: backend
+- id: ruby-on-rails
+  name: Ruby on Rails
+  category: backend
+- id: expressjs
+  name: Express.js
+  category: backend
+- id: nodejs
+  name: Node.js
+  category: backend
+- id: nestjs
+  name: NestJS
+  category: backend
+- id: sequelize
+  name: Sequelize
+  category: backend
+- id: prisma
+  name: Prisma
+  category: backend
+
+- id: postgresql
+  name: PostgreSQL
+  category: data
+- id: mongodb
+  name: MongoDB
+  category: data
+- id: mongodb-atlas
+  name: MongoDB Atlas
+  category: data
+- id: mysql
+  name: MySQL
+  category: data
+- id: mariadb
+  name: MariaDB
+  category: data
+
+- id: docker
+  name: Docker
+  category: devops
+- id: jenkins
+  name: Jenkins
+  category: devops
+- id: gitlab-ci-cd
+  name: GitLab CI/CD
+  category: devops
+- id: github-actions
+  name: GitHub Actions
+  category: devops
+- id: azure-devops
+  name: Azure DevOps
+  category: devops
+- id: aws
+  name: AWS
+  category: devops
+- id: azure
+  name: Microsoft Azure
+  category: devops
+- id: vercel
+  name: Vercel
+  category: devops
+- id: railway
+  name: Railway
+  category: devops
+- id: gcs
+  name: Google Cloud Storage
+  category: devops
+
+- id: rspec
+  name: RSpec
+  category: testing
+- id: shoulda-matchers
+  name: Shoulda Matchers
+  category: testing
+- id: factorybot
+  name: FactoryBot
+  category: testing
+- id: vitest
+  name: Vitest
+  category: testing
+- id: jest
+  name: Jest
+  category: testing
+- id: playwright
+  name: Playwright
+  category: testing
+- id: mocha
+  name: Mocha
+  category: testing
+- id: supertest
+  name: Supertest
+  category: testing
+
+- id: vscode
+  name: VS Code
+  category: tools
+- id: postman
+  name: Postman
+  category: tools
+- id: insomnia
+  name: Insomnia
+  category: tools

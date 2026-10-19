@@ -1,0 +1,17 @@
+---
+title: Juego con Teclado
+summary: 'Juego de memoria con el teclado al estilo Simon, construido con
+  React y TypeScript.'
+stack:
+  - React
+  - TypeScript
+  - Vite
+  - styled-components
+links:
+  live: https://game-with-keyboard.vercel.app/
+  repo: https://github.com/crehds/gameWithKeyboard
+cover: ./cover.jpg
+featured: true
+status: published
+date: 2026-09-26
+---

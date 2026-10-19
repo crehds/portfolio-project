@@ -1,75 +1,59 @@
 {
-  "name": "portfolio-project",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "webpack serve --config webpack.config.dev.js",
-    "build": "NODE_ENV=production webpack --config webpack.config.js"
-  },
+  "name": "portfolio",
+  "type": "module",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Personal portfolio of Carlos Rodríguez Huerta, full-stack web developer.",
+  "author": "Carlos Rodríguez Huerta",
+  "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/platzi/curso-webpack-react.git"
+    "url": "git+https://github.com/crehds/portfolio-project.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/platzi/curso-webpack-react/issues"
+  "engines": {
+    "node": ">=22.12.0"
   },
-  "homepage": "https://github.com/platzi/curso-webpack-react#readme",
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+  "packageManager": "pnpm@12.3.4",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "wrangler types && astro check",
+    "astro": "astro",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "e2e:seed": "wrangler r2 object put portfolio-cv/en.pdf --file e2e/fixtures/cv-en.pdf --content-type application/pdf --local --persist-to .wrangler/state && wrangler r2 object put portfolio-cv/es.pdf --file e2e/fixtures/cv-es.pdf --content-type application/pdf --local --persist-to .wrangler/state",
+    "generate-types": "wrangler types",
+    "lighthouse": "lhci autorun"
   },
   "dependencies": {
-    "@babel/runtime": "7.13.10",
-    "css-loader": "5.2.0",
-    "i18next": "^22.4.10",
-    "lodash": "^4.17.21",
-    "lodash.debounce": "^4.0.8",
-    "mini-css-extract-plugin": "1.4.0",
-    "react": "17.0.2",
-    "react-dom": "17.0.2",
-    "react-i18next": "^12.2.0",
-    "react-icons": "^4.8.0",
-    "sass": "1.32.8",
-    "sass-loader": "11.0.1",
-    "style-loader": "2.0.0"
+    "@astrojs/cloudflare": "^14.3.3",
+    "@astrojs/sitemap": "^3.7.4",
+    "astro": "^7.3.5",
+    "wrangler": "^4.125.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.13.13",
-    "@babel/plugin-transform-runtime": "^7.13.10",
-    "@babel/preset-env": "^7.13.12",
-    "@babel/preset-react": "^7.13.13",
-    "@pmmmwh/react-refresh-webpack-plugin": "^0.5.10",
-    "babel-loader": "^8.2.2",
-    "clean-terminal-webpack-plugin": "^3.0.0",
-    "clean-webpack-plugin": "^3.0.0",
-    "copy-webpack-plugin": "^8.1.0",
-    "css-minimizer-webpack-plugin": "^3.4.1",
-    "eslint": "^8.10.0",
-    "eslint-plugin-react": "^7.29.1",
-    "file-loader": "^6.2.0",
-    "html-loader": "^2.1.2",
-    "html-webpack-plugin": "^5.3.1",
-    "postcss": "^8.4.7",
-    "postcss-loader": "^6.2.1",
-    "postcss-preset-env": "^7.4.1",
-    "react-refresh": "^0.14.0",
-    "terser-webpack-plugin": "^5.1.1",
-    "url-loader": "^4.1.1",
-    "webpack": "^5.28.0",
-    "webpack-cli": "^4.6.0",
-    "webpack-dev-server": "^4.7.4"
+    "@astrojs/check": "^0.9.10",
+    "@axe-core/playwright": "^4.13.0",
+    "@eslint/js": "^10.0.1",
+    "@lhci/cli": "0.15.1",
+    "@playwright/test": "^1.63.0",
+    "@tabler/icons": "^3.48.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^24.19.0",
+    "eslint": "^10.11.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-astro": "^3.2.1",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "prettier": "^3.9.9",
+    "prettier-plugin-astro": "^1.1.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.1",
+    "vitest": "^5.0.2"
   }
 }

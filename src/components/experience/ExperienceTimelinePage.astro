@@ -1,0 +1,87 @@
+---
+import { getCollection } from 'astro:content';
+
+import { employmentTypeLabel } from '../../modules/experience/domain/employment-type-label';
+import { formatPeriod } from '../../modules/experience/domain/format-period';
+import { formatYearsOfExperience } from '../../modules/experience/domain/format-years-of-experience';
+import { sortExperience } from '../../modules/experience/domain/sort-experience';
+import { yearsOfExperience } from '../../modules/experience/domain/years-of-experience';
+import { localeOfPathname } from '../../shared/i18n/paths';
+import { getDictionary } from '../../shared/i18n/ui';
+
+// Self-contained, like the other dedicated list pages (`ProjectsListPage.astro`):
+// derives its own locale and content instead of taking props. See T10 in
+// odd/tasks/portfolio-astro-rebuild.md.
+const locale = localeOfPathname(Astro.url.pathname);
+const dictionary = getDictionary(locale);
+
+const experienceEntries = await getCollection('experience');
+const roles = experienceEntries.map((entry) => entry.data);
+// Same computed line as the home hero (`Hero.astro`): never hand-typed (see the
+// "Decisions" table's "no fabricated metrics" rule).
+const yearsLine = formatYearsOfExperience(yearsOfExperience(roles), locale);
+// Every role, newest first - unlike `ExperienceSummary.astro`'s `.slice(0, 3)`.
+const orderedRoles = sortExperience(roles);
+---
+
+<div class="flex flex-col gap-8">
+  <!--
+    The years line is the h1's subtitle, so the two form one group with a tight gap
+    (`gap-2`, the home hero's text-group spacing). `mb-0` drops the h1's base bottom
+    margin (see global.css) so it is not added on top of that gap; the timeline below
+    keeps the container's larger `gap-8`.
+  -->
+  <div class="flex flex-col gap-2">
+    <h1 class="mb-0">{dictionary.experiencePageHeading}</h1>
+    <p
+      data-testid="years-of-experience"
+      class="font-mono text-sm text-text-muted"
+    >
+      {yearsLine}
+    </p>
+  </div>
+  <!--
+    A real <ol>: role order is meaningful (newest first), not just a visual list.
+    The vertical line and each entry's dot are pure CSS `::before` generated content -
+    never real DOM nodes - so there is nothing for assistive tech to hide: a screen
+    reader only ever sees the <ol>/<li> structure and the text content below.
+  -->
+  <ol class="relative flex flex-col gap-8 before:absolute before:inset-y-0 before:left-[7px] before:w-0.5 before:bg-border before:content-['']">
+    {orderedRoles.map((role) => (
+      <li
+        data-testid="experience-role"
+        class="relative flex flex-col gap-1 pl-8 before:absolute before:left-0 before:top-1.5 before:h-4 before:w-4 before:rounded-full before:bg-accent before:content-['']"
+      >
+        <h2>{role.company}</h2>
+        <p class="text-text-muted">{role.role[locale]}</p>
+        <p class="text-sm text-text-muted">
+          {employmentTypeLabel(role.type, dictionary)}
+        </p>
+        {role.location && (
+          <p class="text-sm text-text-muted">{role.location[locale]}</p>
+        )}
+        <p
+          data-testid="experience-period"
+          class="font-mono text-sm text-text-muted"
+        >
+          {formatPeriod(role.start, role.end, locale)}
+        </p>
+        <ul
+          data-testid="experience-highlights"
+          class="flex list-disc flex-col gap-1 pl-5 text-sm text-text-muted"
+        >
+          {role.highlights[locale].map((highlight) => (
+            <li>{highlight}</li>
+          ))}
+        </ul>
+        {role.stack.length > 0 && (
+          <ul class="flex flex-wrap gap-2 font-mono text-xs text-text-muted">
+            {role.stack.map((tech) => (
+              <li class="rounded border border-border px-2 py-0.5">{tech}</li>
+            ))}
+          </ul>
+        )}
+      </li>
+    ))}
+  </ol>
+</div>

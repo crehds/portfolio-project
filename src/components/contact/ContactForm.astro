@@ -1,0 +1,228 @@
+---
+import { actions } from 'astro:actions';
+
+import { fieldErrorMessage } from '../../modules/contact/field-error-message';
+import type { ContactValues } from '../../modules/contact/form-values';
+import {
+  VISIBLE_FIELDS,
+  type FieldErrors,
+  type VisibleField,
+} from '../../modules/contact/page-state';
+import { CONTACT_LIMITS } from '../../modules/contact/schema';
+import type { Locale } from '../../shared/i18n/locales';
+import { getDictionary } from '../../shared/i18n/ui';
+
+// The contact form. Presentational: the page root decides what is in it (see
+// `contactPageState`) and passes it in, so this renders from props alone. It posts to the
+// Action through the page itself (`?_action=contact`) and leaves validation to the server
+// (`novalidate`): the server's messages are the same in both locales, state exactly what is
+// wrong and come with a summary, where the browser's own tooltips would be a different
+// wording per browser. The attributes that say what a field takes (`required`, `type`,
+// `maxlength`, `autocomplete`) stay, for the keyboard, the browser's suggestions and
+// assistive technology.
+//
+// Every visitor value is written through Astro's escaping (text and attributes): there is no
+// `set:html` here, and there must never be one.
+//
+// The honeypot: a text field named `website` that people never see, so anything in it means a
+// bot filled in every field it found. It is taken off screen (positioned far to the left), not
+// removed with `display: none`, which a bot may skip; hidden from assistive technology
+// (`aria-hidden`), out of the tab order (`tabindex="-1"`) and kept out of autofill
+// (`autocomplete="off"`). `submitContact` answers it with a silent success.
+//
+// Turnstile's widget: api.js scans the page for `.cf-turnstile` when it loads and puts the
+// token in a hidden `cf-turnstile-response` field of the form, which the Action checks. The
+// widget sits in a wrapper that scrolls, so that a viewport narrower than its 300 px
+// minimum scrolls the widget and not the page. The script and the widget exist only here,
+// so only the contact page loads anything from Cloudflare.
+interface Props {
+  locale: Locale;
+  /** Turnstile's public site key, for the widget. */
+  siteKey: string;
+  /** What the visitor typed, put back when a submission did not go through. */
+  values: ContactValues;
+  fieldErrors: FieldErrors;
+}
+
+const { locale, siteKey, values, fieldErrors } = Astro.props;
+
+const dictionary = getDictionary(locale);
+
+const errors = VISIBLE_FIELDS.flatMap((field) => {
+  const code = fieldErrors[field];
+  return code
+    ? [{ field, message: fieldErrorMessage(field, code, dictionary) }]
+    : [];
+});
+
+const messageOf = (field: VisibleField) =>
+  errors.find((error) => error.field === field)?.message;
+
+// The border says "this one" by its width and its color (the text color: the design has no
+// danger color), next to the visible "Error:" word and the ARIA attributes. Never by color alone.
+const controlClass = (field: VisibleField) =>
+  `w-full rounded bg-surface px-3 py-2 text-text ${
+    messageOf(field) ? 'border-2 border-text' : 'border border-border'
+  }`;
+const describedBy = (field: VisibleField) =>
+  messageOf(field) ? `contact-${field}-error` : undefined;
+const invalid = (field: VisibleField) =>
+  messageOf(field) ? 'true' : undefined;
+---
+
+<form
+  method="POST"
+  action={actions.contact}
+  novalidate
+  class="contact-form-only flex flex-col gap-6"
+>
+  <input type="hidden" name="locale" value={locale} />
+
+  {errors.length > 0 && (
+    <div
+      id="contact-error-summary"
+      role="alert"
+      class="rounded border-2 border-text p-4"
+    >
+      <h2 id="contact-error-summary-heading" class="mb-2 text-xl">
+        {dictionary.contactErrorSummaryHeading}
+      </h2>
+      <ul class="flex list-disc flex-col gap-1 pl-5">
+        {errors.map(({ field, message }) => (
+          <li>
+            <a href={`#contact-${field}`}>
+              <span class="font-bold">{dictionary.contactErrorPrefix}</span>{' '}
+              {message}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )}
+
+  <div class="flex flex-col gap-2">
+    <label id="contact-name-label" for="contact-name" class="font-bold">
+      {dictionary.contactFormNameLabel}
+    </label>
+    {messageOf('name') && (
+      <p id="contact-name-error" class="text-text">
+        <span class="font-bold">{dictionary.contactErrorPrefix}</span>{' '}
+        {messageOf('name')}
+      </p>
+    )}
+    <input
+      id="contact-name"
+      name="name"
+      type="text"
+      autocomplete="name"
+      required
+      maxlength={CONTACT_LIMITS.name}
+      value={values.name}
+      aria-invalid={invalid('name')}
+      aria-describedby={describedBy('name')}
+      class={controlClass('name')}
+    />
+  </div>
+
+  <div class="flex flex-col gap-2">
+    <label id="contact-email-label" for="contact-email" class="font-bold">
+      {dictionary.contactFormEmailLabel}
+    </label>
+    {messageOf('email') && (
+      <p id="contact-email-error" class="text-text">
+        <span class="font-bold">{dictionary.contactErrorPrefix}</span>{' '}
+        {messageOf('email')}
+      </p>
+    )}
+    <input
+      id="contact-email"
+      name="email"
+      type="email"
+      autocomplete="email"
+      required
+      maxlength={CONTACT_LIMITS.email}
+      value={values.email}
+      aria-invalid={invalid('email')}
+      aria-describedby={describedBy('email')}
+      class={controlClass('email')}
+    />
+  </div>
+
+  <div class="flex flex-col gap-2">
+    <label id="contact-message-label" for="contact-message" class="font-bold">
+      {dictionary.contactFormMessageLabel}
+    </label>
+    {messageOf('message') && (
+      <p id="contact-message-error" class="text-text">
+        <span class="font-bold">{dictionary.contactErrorPrefix}</span>{' '}
+        {messageOf('message')}
+      </p>
+    )}
+    <textarea
+      id="contact-message"
+      name="message"
+      rows="8"
+      required
+      maxlength={CONTACT_LIMITS.message}
+      aria-invalid={invalid('message')}
+      aria-describedby={describedBy('message')}
+      class={controlClass('message')}
+    >{values.message}</textarea>
+  </div>
+
+  <div
+    id="contact-honeypot"
+    aria-hidden="true"
+    class="absolute -left-[10000px] top-auto h-px w-px overflow-hidden"
+  >
+    <label id="contact-website-label" for="contact-website">
+      {dictionary.contactHoneypotLabel}
+    </label>
+    <input
+      id="contact-website"
+      name="website"
+      type="text"
+      tabindex="-1"
+      autocomplete="off"
+    />
+  </div>
+
+  <div class="max-w-full overflow-x-auto">
+    <div
+      class="cf-turnstile"
+      data-sitekey={siteKey}
+      data-language={locale}
+      data-size="flexible"
+      data-theme="auto"
+    ></div>
+  </div>
+  <script is:inline>
+    // Turnstile reads `data-theme` once, when its script renders the widget, so this runs
+    // first (an inline script runs when the parser reaches it; the async script below has
+    // not been requested yet). It gives the widget the site's theme, which BaseLayout's head
+    // script set before first paint, instead of the "auto" above, which follows the OS
+    // preference and would clash with a visitor who picked the other theme. A later change
+    // with the theme toggle does not recolor a widget that is already drawn.
+    (function () {
+      const widget = document.querySelector('.cf-turnstile');
+      const theme = document.documentElement.getAttribute('data-theme');
+      if (widget && (theme === 'light' || theme === 'dark')) {
+        widget.setAttribute('data-theme', theme);
+      }
+    })();
+  </script>
+  <script
+    is:inline
+    src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+    async
+    defer
+  ></script>
+  <div>
+    <button
+      type="submit"
+      class="inline-flex min-h-11 items-center justify-center rounded border-2 border-accent px-5 py-2 font-bold text-accent"
+    >
+      {dictionary.contactFormSubmit}
+    </button>
+  </div>
+</form>

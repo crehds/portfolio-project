@@ -1,0 +1,26 @@
+---
+// Both locale pages (`src/pages/index.astro`, `src/pages/es/index.astro`) render this
+// one shared component; each section below derives its own locale and content instead
+// of taking props, matching `LanguageSwitcher.astro`/`ThemeToggle.astro`. See T08 in
+// odd/tasks/portfolio-astro-rebuild.md.
+import ContactCtas from './ContactCtas.astro';
+import ExperienceSummary from './ExperienceSummary.astro';
+import FeaturedProjects from './FeaturedProjects.astro';
+import Hero from './Hero.astro';
+---
+
+<div class="flex flex-col gap-12">
+  <div class="flex max-w-[70ch] flex-col gap-12">
+    <Hero />
+    <ContactCtas />
+  </div>
+  <!-- Unlike the prose blocks above and below, the project cards use the full
+       container width (BaseLayout's shared `max-w-4xl`) instead of the 70ch reading
+       measure - a grid of cards benefits from the extra width more than continuous
+       text does. Left/right edges still match the header/footer since `<main>` no
+       longer imposes its own narrower wrapper (see BaseLayout.astro). -->
+  <FeaturedProjects />
+  <div class="max-w-[70ch]">
+    <ExperienceSummary />
+  </div>
+</div>

@@ -1,0 +1,51 @@
+/*
+ * Design tokens: semantic color custom properties for both themes.
+ *
+ * `:root` holds the light theme (the default). The dark theme applies either because the OS
+ * prefers it (the `@media` block, guarded so an explicit `data-theme="light"` can still opt
+ * out) or because the theme toggle set `data-theme="dark"` explicitly. See
+ * `src/shared/theme/resolve-theme.ts` for the resolution order (stored choice, then OS) and
+ * `BaseLayout.astro` for the inline script that applies it before first paint.
+ *
+ * `src/styles/tokens.test.ts` reads this exact file and asserts every declared
+ * text/background pair meets WCAG AA in both themes, so prefer editing values here over
+ * hand-computing new ones, and keep the two dark blocks below identical.
+ */
+
+:root {
+  --token-bg: #faf9f5;
+  --token-surface: #ffffff;
+  --token-text: #12163c;
+  --token-text-muted: #505678;
+  --token-accent: #0a32b4;
+  --token-highlight: #5a4a14;
+  --token-border: #717571;
+  --token-focus: #0a32b4;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --token-bg: #161a17;
+    --token-surface: #202622;
+    --token-text: #e2e6e3;
+    --token-text-muted: #a2bdd4;
+    --token-accent: #70d4e7;
+    --token-highlight: #d4cfb6;
+    --token-border: #707c75;
+    --token-focus: #70d4e7;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --token-bg: #161a17;
+  --token-surface: #202622;
+  --token-text: #e2e6e3;
+  --token-text-muted: #a2bdd4;
+  --token-accent: #70d4e7;
+  --token-highlight: #d4cfb6;
+  --token-border: #707c75;
+  --token-focus: #70d4e7;
+  color-scheme: dark;
+}

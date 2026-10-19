@@ -1,0 +1,76 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // Pinned to the newest date the bundled Workers runtime actually supports, not to
+  // today. wrangler ships an exact workerd/miniflare pair (see pnpm-lock.yaml); a later
+  // date makes wrangler fall back with a warning instead of applying it. Bump this only
+  // after a `pnpm update wrangler` brings in a newer runtime build (currently
+  // workerd 1.20260925.1 / miniflare 5.20260925.0-alpha, both dated 2026-09-25).
+  "compatibility_date": "2026-09-25",
+  // global_fetch_strictly_public: makes the global fetch() always route as if the
+  // request came from the public Internet, even for requests to this Worker's own zone
+  // (they loop back through Cloudflare's edge instead of dispatching in-process, and may
+  // re-enter this same Worker). Avoids surprising same-zone fast-path behavior.
+  "compatibility_flags": ["global_fetch_strictly_public"],
+  "name": "portfolio-project",
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+  },
+  "observability": {
+    "enabled": true,
+  },
+  // The CV PDFs (`en.pdf` and `es.pdf`) live in this R2 bucket, not in git or in the
+  // build, so the owner can replace one without a redeploy. `src/pages/cv/[locale].pdf.ts`
+  // reads it through this binding. Wrangler does not create a missing bucket on deploy:
+  // create it and upload both files first (docs/contact-setup.md).
+  "r2_buckets": [
+    {
+      "binding": "CV_BUCKET",
+      "bucket_name": "portfolio-cv",
+    },
+  ],
+  // The contact form's rate limit: at most 3 submissions per client IP in any 60 seconds
+  // (`src/modules/contact/adapters/workers-rate-limiter.ts` counts under the
+  // `cf-connecting-ip` key). `period` can only be 10 or 60. Cloudflare counts per
+  // location and does not promise exact numbers, so this is a soft layer in front of
+  // Turnstile. `namespace_id` is a number, written as text, that must be unique among the
+  // account's rate limit bindings: change it if another Worker already uses it.
+  "ratelimits": [
+    {
+      "name": "CONTACT_RATE_LIMIT",
+      "namespace_id": "7301",
+      "simple": { "limit": 3, "period": 60 },
+    },
+  ],
+  // The real Turnstile widget's site key. It is public by design (the contact page renders it),
+  // so it is a plain variable. The secret key and the EmailJS settings are Worker secrets
+  // (docs/contact-setup.md, "Putting the secrets in place"). Local runs and the e2e tests read
+  // Cloudflare's test keys from `.dev.vars` and `.dev.vars.e2e`, which override this value.
+  "vars": {
+    "TURNSTILE_SITE_KEY": "0x4AAAAAAFU9caEmtcEZ1OJK",
+  },
+  // Worker Previews (`wrangler preview`) do not inherit bindings or variables from the top
+  // level, so a preview would have no CV bucket, no rate limiter and no site key without this
+  // mirror. The bucket is the same one: the CV is public, read-only content and there is no
+  // staging copy to keep apart. The rate limiter gets its own namespace, so a preview's
+  // counters never mix with production's. The widget covers the preview subdomains too.
+  "previews": {
+    "vars": {
+      "TURNSTILE_SITE_KEY": "0x4AAAAAAFU9caEmtcEZ1OJK",
+    },
+    "r2_buckets": [
+      {
+        "binding": "CV_BUCKET",
+        "bucket_name": "portfolio-cv",
+      },
+    ],
+    "ratelimits": [
+      {
+        "name": "CONTACT_RATE_LIMIT",
+        "namespace_id": "7302",
+        "simple": { "limit": 3, "period": 60 },
+      },
+    ],
+  },
+}

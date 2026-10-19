@@ -1,0 +1,21 @@
+# The settings the end-to-end tests run the Worker with, and the only ones they use.
+# `CLOUDFLARE_ENV=e2e` makes the Cloudflare plugin read this file instead of `.dev.vars`
+# when it builds, and the build copies it next to the Worker (see playwright.config.ts).
+#
+# Everything here is public or made up, so the file is committed (.gitignore): Cloudflare's
+# published Turnstile test keys, fake EmailJS values, and two loopback URLs that send the
+# Worker's provider calls to the fake server the tests start (e2e/support/fake-upstreams.ts).
+# Never put a real key in this file.
+#
+# The site key is the invisible "always passes" test key, not the visible one the setup
+# docs suggest for a developer's own `.dev.vars` (`...AA`): the tests compare the key the
+# running server renders with this one, so a server that read the developer's file instead
+# is caught before any test submits anything.
+TURNSTILE_SITE_KEY=1x00000000000000000000BB
+TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
+EMAILJS_SERVICE_ID=e2e-service-id
+EMAILJS_TEMPLATE_ID=e2e-template-id
+EMAILJS_PUBLIC_KEY=e2e-public-key
+EMAILJS_PRIVATE_KEY=e2e-private-key
+EMAILJS_API_URL=http://127.0.0.1:4332/emailjs/api/v1.0/email/send
+TURNSTILE_VERIFY_URL=http://127.0.0.1:4332/turnstile/v0/siteverify

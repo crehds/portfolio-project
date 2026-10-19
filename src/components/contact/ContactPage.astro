@@ -1,0 +1,109 @@
+---
+import type { ContactPageState } from '../../modules/contact/page-state';
+import type { DirectContactLink } from '../../modules/profile/domain/direct-contact-links';
+import { localeOfPathname, pathnameInLocale } from '../../shared/i18n/paths';
+import { getDictionary } from '../../shared/i18n/ui';
+import ContactAlert from './ContactAlert.astro';
+import ContactFallback from './ContactFallback.astro';
+import ContactForm from './ContactForm.astro';
+import DirectContactLinks from './DirectContactLinks.astro';
+
+// The contact page's content, shared by both locale pages (`src/pages/contact/index.astro`
+// and `src/pages/es/contact/index.astro`), which are thin roots: they read the Action's
+// answer and the Worker's settings, ask `contactPageState` what to show, and pass it in.
+// Presentational: it renders from props alone, so a test renders every state without a
+// server. See T11d in odd/tasks/portfolio-astro-rebuild.md.
+interface Props {
+  /** What to show. A redirect never reaches the page: the root answers it. */
+  state: Exclude<ContactPageState, { kind: 'redirect_sent' }>;
+  /** Turnstile's public site key; always there when the form is shown. */
+  siteKey?: string;
+  /** Email and WhatsApp: the ways to write without the form. */
+  links: readonly DirectContactLink[];
+}
+
+const { state, siteKey, links } = Astro.props;
+
+const locale = localeOfPathname(Astro.url.pathname);
+const dictionary = getDictionary(locale);
+
+if (state.kind === 'form' && !siteKey) {
+  throw new Error(
+    'The contact form needs the Turnstile site key: the page root shows it only when the Worker is configured.',
+  );
+}
+
+// An alert and the notice that replaces the form carry the email and WhatsApp links
+// themselves; the list below the form is for a page that has neither.
+//
+// Without JavaScript the form cannot get a Turnstile token, so the page hides what needs it
+// (`.contact-form-only`: the lead, the form and that list) and shows `.contact-nojs`, a
+// notice with the same links, in its place. The rules are in global.css, unlayered, under
+// `.no-js`, which BaseLayout's head script removes as soon as JavaScript runs.
+const showsOtherWays = state.kind === 'form' && !state.alert;
+---
+
+<div class="flex max-w-[70ch] flex-col gap-8">
+  <div class="flex flex-col gap-2">
+    <h1 class="mb-0">{dictionary.contactPageHeading}</h1>
+    {state.kind === 'form' && (
+      <p class="contact-form-only text-text-muted">{dictionary.contactLead}</p>
+    )}
+  </div>
+
+  {state.kind === 'sent' && (
+    <div class="flex flex-col gap-4">
+      <p id="contact-sent" role="status">
+        {dictionary.contactSentMessage}
+      </p>
+      <p>
+        <a href={pathnameInLocale('/contact/', locale)}>
+          {dictionary.contactSentAnother}
+        </a>
+      </p>
+    </div>
+  )}
+
+  {state.kind === 'form' && state.alert && (
+    <ContactAlert alert={state.alert} links={links} />
+  )}
+
+  {state.kind === 'form' && siteKey && (
+    <ContactForm
+      locale={locale}
+      siteKey={siteKey}
+      values={state.values}
+      fieldErrors={state.fieldErrors}
+    />
+  )}
+
+  {state.kind === 'form' && (
+    <section
+      id="contact-nojs"
+      aria-labelledby="contact-nojs-heading"
+      class="contact-nojs space-y-4 rounded border-2 border-text p-4"
+    >
+      <h2 id="contact-nojs-heading">{dictionary.contactNoJsHeading}</h2>
+      <p>{dictionary.contactNoJsBody}</p>
+      <DirectContactLinks links={links} />
+    </section>
+  )}
+
+  {state.kind === 'fallback' && (
+    <ContactFallback
+      message={state.message}
+      failed={state.errorTitle}
+      links={links}
+    />
+  )}
+
+  {showsOtherWays && (
+    <section
+      aria-labelledby="contact-other-ways"
+      class="contact-form-only flex flex-col gap-3"
+    >
+      <h2 id="contact-other-ways">{dictionary.contactOtherWaysHeading}</h2>
+      <DirectContactLinks links={links} />
+    </section>
+  )}
+</div>

@@ -1,0 +1,24 @@
+---
+import type { DirectContactLink } from '../../modules/profile/domain/direct-contact-links';
+import ContactCtaButton from '../home/ContactCtaButton.astro';
+
+// The ways to write without the form: WhatsApp and email. The contact page lists them
+// beside the form, and the notices that take the form's place point to them. Presentational:
+// the page root reads the profile and passes the links in (`directContactLinks`), so this
+// renders from props alone. Each link is the same button as on the home page
+// (`ContactCtaButton.astro`). WhatsApp opens in a new tab (see `Link`); the `mailto:` link
+// stays in this one.
+interface Props {
+  links: readonly DirectContactLink[];
+}
+
+const { links } = Astro.props;
+---
+
+<ul class="flex flex-wrap gap-3">
+  {links.map((link) => (
+    <li>
+      <ContactCtaButton id={link.id} href={link.href} />
+    </li>
+  ))}
+</ul>

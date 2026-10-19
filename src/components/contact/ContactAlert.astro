@@ -1,0 +1,37 @@
+---
+import type { FormAlert } from '../../modules/contact/page-state';
+import type { DirectContactLink } from '../../modules/profile/domain/direct-contact-links';
+import { localeOfPathname } from '../../shared/i18n/paths';
+import { getDictionary, type UiDictionary } from '../../shared/i18n/ui';
+import DirectContactLinks from './DirectContactLinks.astro';
+
+// The alert above the form for a submission that was refused for a reason no single field
+// explains: the spam check did not pass, the client is rate limited, the form could not be
+// processed, the message was too large. It says what happened and what to do, and it offers
+// email and WhatsApp right there, so a visitor who would rather not try again has the other
+// way at hand. Presentational: the page root decides which alert and passes the links in.
+interface Props {
+  alert: FormAlert;
+  links: readonly DirectContactLink[];
+}
+
+const { alert, links } = Astro.props;
+
+const dictionary = getDictionary(localeOfPathname(Astro.url.pathname));
+
+const TEXT: Record<FormAlert, keyof UiDictionary> = {
+  verification_failed: 'contactAlertVerificationFailed',
+  rate_limited: 'contactAlertRateLimited',
+  invalid_request: 'contactAlertInvalidRequest',
+  too_large: 'contactAlertTooLarge',
+};
+---
+
+<div
+  id="contact-alert"
+  role="alert"
+  class="flex flex-col gap-4 rounded border-2 border-text p-4"
+>
+  <p>{dictionary[TEXT[alert]]}</p>
+  <DirectContactLinks links={links} />
+</div>
