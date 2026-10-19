@@ -1,0 +1,33 @@
+---
+import { getCollection } from 'astro:content';
+
+import { featuredProjects } from '../../modules/projects/domain/featured-projects';
+import { selectProjectsForLocale } from '../../modules/projects/domain/select-for-locale';
+import { localeOfPathname } from '../../shared/i18n/paths';
+import { getDictionary } from '../../shared/i18n/ui';
+import ProjectCard from './ProjectCard.astro';
+
+// Self-contained, like the home page's sections: derives its own locale and content
+// instead of taking props. See T09 in odd/tasks/portfolio-astro-rebuild.md.
+const locale = localeOfPathname(Astro.url.pathname);
+const dictionary = getDictionary(locale);
+
+const projectEntries = await getCollection('projects');
+// Every published project, featured first then newest first: the same domain ordering
+// as the home page's featured list (see `featuredProjects`), just without its `limit`.
+const projects = featuredProjects(
+  selectProjectsForLocale(projectEntries, locale),
+);
+---
+
+<div class="flex flex-col gap-8">
+  <h1>{dictionary.projectsPageHeading}</h1>
+  <ul
+    data-testid="projects-list-grid"
+    class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+  >
+    {projects.map((project) => (
+      <ProjectCard project={project} locale={locale} headingLevel={2} />
+    ))}
+  </ul>
+</div>

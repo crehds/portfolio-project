@@ -1,0 +1,64 @@
+---
+import { getImage } from 'astro:assets';
+import { getCollection, getEntry } from 'astro:content';
+
+import ProjectDetailPage from '../../components/projects/ProjectDetailPage.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { coverAltText } from '../../modules/projects/domain/cover-alt-text';
+import { selectProjectsForLocale } from '../../modules/projects/domain/select-for-locale';
+import { getDictionary } from '../../shared/i18n/ui';
+import {
+  assertCoverFitsSocialImage,
+  SOCIAL_IMAGE_SIZE,
+  SOCIAL_IMAGE_TRANSFORM,
+  SOCIAL_IMAGE_TYPE,
+} from '../../shared/seo/social-image';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('projects');
+  // Draft projects get no page: a request for one 404s (no static path is generated).
+  const projects = selectProjectsForLocale(entries, 'en').filter(
+    (project) => project.data.status === 'published',
+  );
+
+  return projects.map((project) => ({
+    params: { slug: project.slug },
+    props: { entryId: `${project.slug}/${project.locale}` },
+  }));
+}
+
+const { entryId } = Astro.props;
+const entry = await getEntry('projects', entryId);
+if (!entry) {
+  throw new Error(`Missing project entry "${entryId}".`);
+}
+
+const dictionary = getDictionary('en');
+const title = `${entry.data.title} — ${dictionary.siteTitle}`;
+
+// The cover is the picture of a link preview too, cropped to the size one takes. `getImage`
+// writes the file when the site is built; its address is root-relative, and the layout makes
+// it absolute with the site's. The alt text is the one the cover has on the page. A project
+// without a cover has no picture, and a cover smaller than the picture fails the build: the
+// tags declare the size of the picture, which the image service cannot make from less.
+const { cover } = entry.data;
+if (cover) {
+  assertCoverFitsSocialImage(cover, entry.data.title);
+}
+const socialImage = cover
+  ? {
+      src: (await getImage({ src: cover, ...SOCIAL_IMAGE_TRANSFORM })).src,
+      ...SOCIAL_IMAGE_SIZE,
+      type: SOCIAL_IMAGE_TYPE,
+      alt: coverAltText(entry.data.title, 'en'),
+    }
+  : undefined;
+---
+
+<BaseLayout
+  title={title}
+  description={entry.data.summary}
+  socialImage={socialImage}
+>
+  <ProjectDetailPage entryId={entryId} />
+</BaseLayout>

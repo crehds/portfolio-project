@@ -1,0 +1,72 @@
+---
+import { Picture } from 'astro:assets';
+
+import { coverAltText } from '../../modules/projects/domain/cover-alt-text';
+import type { LocalizedProject } from '../../modules/projects/domain/select-for-locale';
+import type { Locale } from '../../shared/i18n/locales';
+import { pathnameInLocale } from '../../shared/i18n/paths';
+import { getDictionary } from '../../shared/i18n/ui';
+import Link from '../Link.astro';
+
+interface Props {
+  project: LocalizedProject;
+  /** The page's own locale - not necessarily `project.locale`: a project can render
+   * with fallback-locale `data` while the surrounding page (and therefore this card's
+   * own UI strings and link target) stays in the requested locale. */
+  locale: Locale;
+  /** Whether to render the cover image, when the project has one. Defaults to `true`
+   * for the dedicated projects list; the home page's featured cards pass `false` so the
+   * hero photo stays the only `<img>` on that page (see e2e/home.spec.ts's "the hero
+   * photo has localized alt text..." test, which locates it as `main img` and expects
+   * exactly one). */
+  showCover?: boolean;
+  /** The card title's heading level: 3 under a section heading (the home page's featured
+   * list, the default), 2 straight under the page's `<h1>` (the projects list). A level
+   * skipped fails Lighthouse's `heading-order` audit. */
+  headingLevel?: 2 | 3;
+}
+
+const { project, locale, showCover = true, headingLevel = 3 } = Astro.props;
+const Heading = `h${headingLevel}` as const;
+const { data } = project;
+const dictionary = getDictionary(locale);
+const href = pathnameInLocale(`/projects/${project.slug}/`, locale);
+---
+
+<li class="flex flex-col gap-3 rounded border border-border p-4">
+  {showCover && data.cover && (
+    <Picture
+      src={data.cover}
+      formats={['avif', 'webp']}
+      alt={coverAltText(data.title, locale)}
+      width={640}
+      height={400}
+      loading="lazy"
+      decoding="async"
+      class="w-full rounded object-cover"
+    />
+  )}
+  <Heading>
+    <a href={href}>{data.title}</a>
+  </Heading>
+  <p class="text-sm text-text-muted">{data.summary}</p>
+  {data.stack.length > 0 && (
+    <ul class="flex flex-wrap gap-2 font-mono text-xs text-text-muted">
+      {data.stack.map((tech) => (
+        <li class="rounded border border-border px-2 py-0.5">{tech}</li>
+      ))}
+    </ul>
+  )}
+  <ul class="flex gap-4 text-sm">
+    {data.links.live && (
+      <li>
+        <Link href={data.links.live}>{dictionary.projectLiveLabel}</Link>
+      </li>
+    )}
+    {data.links.repo && (
+      <li>
+        <Link href={data.links.repo}>{dictionary.projectRepoLabel}</Link>
+      </li>
+    )}
+  </ul>
+</li>

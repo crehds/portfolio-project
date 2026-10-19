@@ -1,0 +1,23 @@
+# A template for `.dev.vars`, the file `pnpm dev` and `pnpm preview` read the contact form's
+# settings from. Copy it to `.dev.vars` (git ignores that name) and fill in the blanks. This
+# file is committed: never put a real value in it. docs/contact-setup.md explains each
+# setting and where its value comes from.
+#
+# Blank counts as missing: the contact page then shows the "form unavailable" notice
+# instead of the form.
+
+# Cloudflare's published Turnstile test keys. They make the widget and the check pass
+# without a Turnstile account; a real widget's keys replace them for the real thing.
+TURNSTILE_SITE_KEY=1x00000000000000000000AA
+TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
+# The Worker accepts a Turnstile token only if it was solved on carlos15erh.workers.dev or a
+# subdomain. Locally the page is on localhost, so allow it here and nowhere else.
+TURNSTILE_ALLOWED_HOSTNAMES=localhost
+
+# EmailJS. With real values, submitting the local form sends a real email through the
+# owner's Gmail and spends one of the 200 requests a month. With made-up values the form
+# fails safely instead.
+EMAILJS_SERVICE_ID=
+EMAILJS_TEMPLATE_ID=
+EMAILJS_PUBLIC_KEY=
+EMAILJS_PRIVATE_KEY=

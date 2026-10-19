@@ -1,0 +1,37 @@
+---
+import { getEntry } from 'astro:content';
+
+import { buildContactCtas } from '../../modules/profile/domain/build-contact-ctas';
+import { localeOfPathname, pathnameInLocale } from '../../shared/i18n/paths';
+import ContactCtaButton from './ContactCtaButton.astro';
+
+// Self-contained, like `Hero.astro`: derives its own locale and content. See T08 in
+// odd/tasks/portfolio-astro-rebuild.md. Every CTA renders as a `ContactCtaButton`, which
+// goes through `Link`: the external ones (WhatsApp, LinkedIn, GitHub) open in a new tab, the
+// form, email and CV ones do not.
+const locale = localeOfPathname(Astro.url.pathname);
+
+const profile = await getEntry('profile', 'profile');
+if (!profile) {
+  throw new Error(
+    'The "profile" content entry is missing; the contact CTAs need it for their hrefs.',
+  );
+}
+
+const ctas = buildContactCtas({
+  form: pathnameInLocale('/contact/', locale),
+  whatsapp: profile.data.whatsapp,
+  email: profile.data.email,
+  linkedin: profile.data.linkedin,
+  github: profile.data.github,
+  cv: profile.data.cv?.[locale],
+});
+---
+
+<ul class="flex flex-wrap gap-3">
+  {ctas.map((cta) => (
+    <li>
+      <ContactCtaButton id={cta.id} href={cta.href} />
+    </li>
+  ))}
+</ul>

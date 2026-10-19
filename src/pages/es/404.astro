@@ -1,0 +1,17 @@
+---
+import NotFoundPage from '../../components/not-found/NotFoundPage.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getDictionary } from '../../shared/i18n/ui';
+
+// The error page for every address under `/es/` without a page. Astro prefers it to
+// `404.astro` there; see `404.astro` and e2e/not-found.spec.ts.
+const dictionary = getDictionary('es');
+---
+
+<BaseLayout
+  title={dictionary.notFoundPageTitle}
+  description={dictionary.notFoundPageDescription}
+  errorPage
+>
+  <NotFoundPage />
+</BaseLayout>
