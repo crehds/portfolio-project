@@ -20,7 +20,10 @@ module.exports = {
       // The same steps the e2e run takes: fill the local R2 bucket, then `astro preview` of
       // the build in `dist/` (CI builds it with CLOUDFLARE_ENV=e2e, as for the e2e run).
       startServerCommand: `pnpm e2e:seed && pnpm preview --port ${PORT}`,
-      startServerReadyPattern: String(PORT),
+      // Astro's own ready line ("Local    http://localhost:4341/"). The bare port would also
+      // match pnpm's echo of the command (`$ astro preview "--port" "4341"`), which comes
+      // before the server listens.
+      startServerReadyPattern: `localhost:${PORT}/`,
       startServerReadyTimeout: 120_000,
       settings: {
         // Lighthouse's default is the mobile form factor (a Moto G Power on slow 4G with a
@@ -28,7 +31,8 @@ module.exports = {
         // script from Cloudflare; blocking its host keeps a third-party widget out of the
         // scores. The CSP of the contact page allows it, so only this list keeps it out.
         blockedUrlPatterns: ['*challenges.cloudflare.com*'],
-        // The GitHub runner's Chrome cannot start its sandbox as root in a container.
+        // The usual setting for headless Chrome on a CI runner. Not proven there yet (the job
+        // has not run); drop it if the first run passes without it.
         ...(process.env.CI && { chromeFlags: '--no-sandbox' }),
       },
     },
