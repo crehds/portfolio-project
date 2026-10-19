@@ -406,6 +406,18 @@ Route: inline = parent edits directly; delegated = one bounded writer subagent (
   - From T13f1, local: run `astro dev` once with `.dev.vars` updated from `.dev.vars.example`
     (`TURNSTILE_ALLOWED_HOSTNAMES=localhost`) and the test keys, submit the form, and record the hostname the test
     keys really report (Cloudflare's docs only show `localhost` in a sample). Fix the template if it differs.
+  Progress (2026-10-19):
+  - [x] Push `feat/astro-rebuild` (owner: "yes, go ahead with T14"); CI and the Workers Builds preview green.
+  - [x] Preview checks (`feat-astro-rebuild-portfolio-project.carlos15erh.workers.dev`): `curl -sI` of the home page
+    (200), a 404, `/contact/` (the Turnstile CSP and the real site key), `/cv/en.pdf` (200, PDF) and an `/_astro/`
+    CSS (immutable), all with the security headers (parent). The widget loads and solves under our CSP; the
+    console's "Refused to connect to 'data:,'" lines come from the CSP of Turnstile's own frame, not ours. A real
+    submission works in English and Spanish (owner), so the hostname check passes on a preview. The first try
+    answered 502: EmailJS's "Allow EmailJS API for non-browser applications" was off; the owner turned it on.
+  - [ ] Production: the same checks after the deploy, and one real submission.
+  - [ ] Local: the test keys' hostname (above).
+  - [ ] Merge into `develop`, then `develop` into `main` (production deploys from `main`), each with the owner's
+    approval. Then analytics, the final README and pruning stale branches.
 
 ### Phase 4 · Project sync (future)
 
@@ -1100,13 +1112,18 @@ the HTML reporter blocks the shell after a failure.
   plus preloading all three fonts; a slow cold visit keeps the system font until the next page. Merged `d672fb5`,
   pushed; CI 39184575804 scored 1 in every category on all 9 pages. b3 (parent): performance is now an `error` at
   0.95, checked by replaying both runs' reports through the new assertions. Merged `722b884`; not pushed yet.
+- 2026-10-19: T14 preview checks. The owner asked the parent to check the secrets: with the owner's wrangler login
+  (names only), production held all five, and the Worker Preview `feat/astro-rebuild` held none, since previews do
+  not inherit secrets. The owner set them with `wrangler preview secret put`. The first real submission answered
+  502 (EmailJS refused): the non-browser API option was off. With it on, the form works in both locales. The docs
+  now explain preview secrets and count nine settings (`c1d5efd`).
 
 ## Next step
 
 Every T13 launch gate is done (13a, 13b, 13c's internal part, 13d, 13d-b, 13f1). T14 is in progress: the branch is
-pushed and green (the b3 merge `722b884` and this record are not pushed yet). Next in T14, each with the owner's
-approval: the manual checks on the branch preview (they need the owner's EmailJS template and Worker secrets for a
-real submission), then the merge into `develop`, then into `main`, and the production deploy. T13e (the T13b, T13c
+pushed and green (the b3 merge `722b884`, the T14 docs fix and these records are not pushed yet), and the preview
+checks passed, the real form included. Next in T14, each with the owner's approval: the merge into `develop`, then
+`develop` into `main`, which deploys production, then the production checks. T13e (the T13b, T13c
 and T13d review follow-ups, the online external-link check and the `--no-sandbox` trial) and T13f2 can follow the
 launch. Writers also run `pnpm format:check`, which CI runs. T10d
 when the owner gives the color direction;

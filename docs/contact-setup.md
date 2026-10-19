@@ -284,7 +284,7 @@ with the hostname appended when it is a plain one; never the token or the secret
 
 ## Putting the secrets in place
 
-Five of the eight settings are secrets: `TURNSTILE_SECRET_KEY` and the four `EMAILJS_*`
+Five of the nine settings are secrets: `TURNSTILE_SECRET_KEY` and the four `EMAILJS_*`
 settings. Never write a value into the repository, an issue or a log.
 
 **Production.** Store each secret on the deployed Worker, one command per setting. Wrangler
@@ -298,6 +298,23 @@ pnpm exec wrangler secret put EMAILJS_TEMPLATE_ID
 pnpm exec wrangler secret put EMAILJS_PUBLIC_KEY
 pnpm exec wrangler secret put EMAILJS_PRIVATE_KEY
 ```
+
+**Previews.** A branch preview (Workers Builds, `<branch>-portfolio-project.carlos15erh.workers.dev`)
+is a Worker Preview, and it does not inherit the production Worker's secrets: without its own
+copies, its contact page answers with the "form is not available" notice. Store the same five
+secrets on each preview whose form you want to try, from the repository with that branch checked
+out (the preview is named after the current git branch). Each command makes a new preview
+deployment:
+
+```sh
+pnpm exec wrangler preview secret put TURNSTILE_SECRET_KEY
+pnpm exec wrangler preview secret put EMAILJS_SERVICE_ID
+pnpm exec wrangler preview secret put EMAILJS_TEMPLATE_ID
+pnpm exec wrangler preview secret put EMAILJS_PUBLIC_KEY
+pnpm exec wrangler preview secret put EMAILJS_PRIVATE_KEY
+```
+
+`pnpm exec wrangler preview secret list` shows which names a preview holds (never the values).
 
 `TURNSTILE_SITE_KEY` is public, so it is a plain variable, not a secret: it belongs in
 `wrangler.jsonc` under `vars`, and under `previews.vars` too, because previews do not inherit
