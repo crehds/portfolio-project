@@ -32,6 +32,7 @@ const locales: {
           'Expresión Latina',
           'Pysa',
           'Game With Keyboard',
+          'Organizador',
           'Bachatealo',
         ],
       },
@@ -44,6 +45,7 @@ const locales: {
       'Automotriz MGRL': '/projects/automotrizmgrl/',
       Nidito: '/projects/nidito/',
       Bachatealo: '/projects/bachatealo/',
+      Organizador: '/projects/organizador/',
     },
   },
   {
@@ -62,6 +64,7 @@ const locales: {
           'Expresión Latina',
           'Pysa Gaming',
           'Juego con Teclado',
+          'Organizador',
           'Bachatealo',
         ],
       },
@@ -74,6 +77,7 @@ const locales: {
       'Automotriz MGRL': '/es/projects/automotrizmgrl/',
       Nidito: '/es/projects/nidito/',
       Bachatealo: '/es/projects/bachatealo/',
+      Organizador: '/es/projects/organizador/',
     },
   },
 ];

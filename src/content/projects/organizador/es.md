@@ -17,7 +17,7 @@ links:
   repo: https://github.com/crehds/organizador
 cover: ./cover.jpg
 kind: personal
-featured: true
+featured: false
 status: published
 date: 2026-11-16
 ---
