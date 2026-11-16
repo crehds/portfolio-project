@@ -18,6 +18,7 @@ const PROFILE_FILE = fileURLToPath(new URL('./profile.yaml', import.meta.url));
 const LOCALES = ['en', 'es'] as const;
 const VALID_STATUS_VALUES = new Set(['draft', 'published']);
 const VALID_FEATURED_VALUES = new Set(['true', 'false']);
+const VALID_KIND_VALUES = new Set(['freelance', 'personal']);
 
 function projectSlugs(): string[] {
   return readdirSync(PROJECTS_DIR, { withFileTypes: true })
@@ -228,16 +229,18 @@ describe('projects content integrity', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('declares an explicit status and featured value for every project', () => {
+  it('declares an explicit status, featured and kind value for every project', () => {
     const offenders = projectSlugs().flatMap((slug) =>
       LOCALES.filter((locale) => existsSync(localeFile(slug, locale)))
         .filter((locale) => {
           const filePath = localeFile(slug, locale);
           const status = readFrontmatterField(filePath, 'status');
           const featured = readFrontmatterField(filePath, 'featured');
+          const kind = readFrontmatterField(filePath, 'kind');
           return (
             !VALID_STATUS_VALUES.has(status ?? '') ||
-            !VALID_FEATURED_VALUES.has(featured ?? '')
+            !VALID_FEATURED_VALUES.has(featured ?? '') ||
+            !VALID_KIND_VALUES.has(kind ?? '')
           );
         })
         .map((locale) => `${slug}/${locale}.md`),

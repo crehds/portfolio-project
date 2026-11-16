@@ -9,6 +9,7 @@ function project(
   return {
     title: 'Portfolio rebuild',
     summary: 'A fast, accessible Astro portfolio.',
+    kind: 'personal',
     stack: ['astro'],
     links: {},
     featured: false,

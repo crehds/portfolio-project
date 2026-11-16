@@ -29,6 +29,9 @@ const PUBLISHED_PROJECT_SLUGS = [
   'expresion-latina',
   'pysa',
   'game-with-keyboard',
+  'yoteregalo',
+  'automotrizmgrl',
+  'nidito',
   'bachatealo',
 ];
 
@@ -82,8 +85,8 @@ test.describe('the pages this spec checks', () => {
     expect(prerenderedPathsInBuild()).toEqual(
       PRERENDERED.map(({ path }) => path).sort(),
     );
-    // 16 static pages and the 2 contact pages.
-    expect(PAGES).toHaveLength(18);
+    // 22 static pages and the 2 contact pages.
+    expect(PAGES).toHaveLength(24);
   });
 });
 

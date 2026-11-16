@@ -33,13 +33,23 @@ const locales: {
     roles: [
       {
         company: 'FullStack Labs',
-        highlightCount: 6,
-        periodPattern: new RegExp(`^May 2024 ${DASH} Present$`),
+        highlightCount: 8,
+        periodPattern: new RegExp(`^Mar 2025 ${DASH} Present$`),
+      },
+      {
+        company: 'FullStack Labs',
+        highlightCount: 8,
+        periodPattern: new RegExp(`^May 2024 ${DASH} Feb 2025$`),
       },
       {
         company: 'TechyWe',
-        highlightCount: 5,
-        periodPattern: new RegExp(`^Jan 2023 ${DASH} Apr 2024$`),
+        highlightCount: 9,
+        periodPattern: new RegExp(`^Jul 2023 ${DASH} Apr 2024$`),
+      },
+      {
+        company: 'TechyWe',
+        highlightCount: 4,
+        periodPattern: new RegExp(`^Jan 2023 ${DASH} Jul 2023$`),
       },
       {
         company: 'Freelance',
@@ -72,13 +82,23 @@ const locales: {
     roles: [
       {
         company: 'FullStack Labs',
-        highlightCount: 6,
-        periodPattern: new RegExp(`^may\\.? 2024 ${DASH} Actualidad$`, 'i'),
+        highlightCount: 8,
+        periodPattern: new RegExp(`^mar\\.? 2025 ${DASH} Actualidad$`, 'i'),
+      },
+      {
+        company: 'FullStack Labs',
+        highlightCount: 8,
+        periodPattern: new RegExp(`^may\\.? 2024 ${DASH} feb\\.? 2025$`, 'i'),
       },
       {
         company: 'TechyWe',
-        highlightCount: 5,
-        periodPattern: new RegExp(`^ene\\.? 2023 ${DASH} abr\\.? 2024$`, 'i'),
+        highlightCount: 9,
+        periodPattern: new RegExp(`^jul\\.? 2023 ${DASH} abr\\.? 2024$`, 'i'),
+      },
+      {
+        company: 'TechyWe',
+        highlightCount: 4,
+        periodPattern: new RegExp(`^ene\\.? 2023 ${DASH} jul\\.? 2023$`, 'i'),
       },
       {
         company: 'Freelance',
@@ -165,7 +185,7 @@ for (const {
       expect(gaps.yearsToTimeline).toBeGreaterThanOrEqual(24);
     });
 
-    test('lists exactly the 5 roles, as an ordered list, in domain order, with their periods and highlight counts', async ({
+    test('lists exactly the 7 roles, as an ordered list, in domain order, with their periods and highlight counts', async ({
       page,
     }) => {
       await page.goto(path);
