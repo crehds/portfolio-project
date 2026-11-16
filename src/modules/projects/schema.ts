@@ -12,6 +12,8 @@ export const projectsSchema = ({ image }: SchemaContext) =>
     title: z.string(),
     summary: z.string(),
     role: z.string().optional(),
+    // Which section of the projects list shows it: client work, or the owner's own.
+    kind: z.enum(['freelance', 'personal']),
     stack: z.array(z.string()),
     links: z.object({
       live: z.url().optional(),

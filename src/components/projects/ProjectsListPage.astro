@@ -18,16 +18,31 @@ const projectEntries = await getCollection('projects');
 const projects = featuredProjects(
   selectProjectsForLocale(projectEntries, locale),
 );
+// Client work first, then the owner's own projects. A kind without a published project
+// gets no section, so a heading never stands over an empty list.
+const sections = [
+  { heading: dictionary.projectsFreelanceHeading, kind: 'freelance' },
+  { heading: dictionary.projectsPersonalHeading, kind: 'personal' },
+]
+  .map(({ heading, kind }) => ({
+    heading,
+    projects: projects.filter((project) => project.data.kind === kind),
+  }))
+  .filter((section) => section.projects.length > 0);
 ---
 
 <div class="flex flex-col gap-8">
   <h1>{dictionary.projectsPageHeading}</h1>
-  <ul
-    data-testid="projects-list-grid"
-    class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
-  >
-    {projects.map((project) => (
-      <ProjectCard project={project} locale={locale} headingLevel={2} />
+  <div data-testid="projects-list-grid" class="flex flex-col gap-10">
+    {sections.map((section) => (
+      <section class="flex flex-col gap-4">
+        <h2>{section.heading}</h2>
+        <ul class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {section.projects.map((project) => (
+            <ProjectCard project={project} locale={locale} />
+          ))}
+        </ul>
+      </section>
     ))}
-  </ul>
+  </div>
 </div>

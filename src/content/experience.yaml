@@ -2,113 +2,292 @@
 # Schema: `src/modules/experience/schema.ts`. Sourced from the owner's CV and LinkedIn
 # export (see `odd/tasks/portfolio-astro-rebuild.md`, T06). `id` is a stable slug, not
 # rendered.
-- id: fullstack-labs
+- id: fullstack-labs-js-ts
   company: FullStack Labs
   role:
-    en: Mid-level Full-Stack Web Developer
-    es: Desarrollador Full-Stack de nivel medio
+    en: Full-Stack Software Engineer (JS, TS)
+    es: Ingeniero de Software Full-Stack (JS, TS)
+  type: full-time
+  location:
+    en: United States
+    es: Estados Unidos
+  start: '2025-03'
+  end: null
+  highlights:
+    en:
+      - Designed and implemented two kinds of account-creation tests for
+        Compassion's QA automation, one for new donors who register for the
+        first time and another for donors with a history in the organization
+        who activate their web access.
+      - Automated the exit from Compassion's program, from the notification
+        to the acceptance of a replacement child, by building a test data
+        generator that creates real exit events in Salesforce.
+      - Stabilized the payment-method tests by setting the consent cookie
+        once in the shared browser, which uncovered a real product bug.
+      - Built a contextual alert with a one-time payment option, with fully
+        tested eligibility logic and translated into three languages, for
+        donors who sign up at the end of the month and still owe that month.
+      - Co-developed the gift feature for donors, responsible for the
+        farewell-gift engine, its unit tests and the interfaces for children
+        leaving the program.
+      - Identified, reported and hotfixed a page that froze during checkout
+        when a donation failed to submit, so donors no longer had to reload
+        the page to try again.
+      - Built a proxy API function (AWS Lambda and API Gateway) and its SDK
+        to validate campaign source codes against Compassion's internal API,
+        designed so any other team can use it.
+      - Updated the OpenSearch service with several sorting options by
+        relevance and date, and a new "urgent" option in the GraphQL schema
+        and its generated SDK.
+    es:
+      - Diseñó e implementó dos tipos de pruebas de creación de cuentas para
+        la automatización de QA de Compassion, una para donantes nuevos que
+        se registran por primera vez y otra para donantes con historial en
+        la organización que activan su acceso web.
+      - Automatizó la salida del programa de Compassion, desde la
+        notificación hasta la aceptación de un niño de reemplazo,
+        construyendo un generador de datos de prueba que crea eventos de
+        salida reales en Salesforce.
+      - Estabilizó las pruebas de métodos de pago configurando la cookie de
+        consentimiento una sola vez en el navegador compartido, lo que
+        permitió descubrir un bug real del producto.
+      - Desarrolló una alerta contextual con opción de pago único, con
+        lógica de elegibilidad completamente probada y traducida a tres
+        idiomas, para donantes que se registran a fin de mes y aún deben ese
+        mes.
+      - Co-desarrolló la funcionalidad de regalos para donantes, como
+        responsable del motor de regalos de despedida, sus pruebas unitarias
+        y las interfaces para niños que dejan el programa.
+      - Identificó, reportó y corrigió con un hotfix una página que se
+        congelaba en el checkout cuando fallaba el envío de una donación, de
+        modo que los donantes ya no tuvieron que recargar la página para
+        reintentar.
+      - Implementó una función proxy de API (AWS Lambda y API Gateway) y su
+        SDK para validar el código de origen de campaña con la API interna
+        de Compassion, diseñada para que cualquier otro equipo la use.
+      - Actualizó el servicio de OpenSearch con varias opciones de
+        ordenamiento por relevancia y fecha, y una nueva opción "urgente" en
+        el esquema GraphQL y su SDK generado.
+  stack:
+    - Next.js
+    - TypeScript
+    - GraphQL
+    - AWS Lambda
+    - API Gateway
+    - OpenSearch
+    - Playwright
+    - Vitest
+    - Contentful
+    - Salesforce
+    - GitLab
+
+- id: fullstack-labs-ror-js
+  company: FullStack Labs
+  role:
+    en: Full-Stack Software Engineer (RoR, JS)
+    es: Ingeniero de Software Full-Stack (RoR, JS)
   type: full-time
   location:
     en: United States
     es: Estados Unidos
   start: '2024-05'
-  end: null
+  end: '2025-02'
   highlights:
     en:
-      - Automated the Compassion program's child-exit flow end to end, from
-        notification to replacement-child acceptance, by building a test data
-        generator that creates real exit events in Salesforce.
-      - Built a contextual, fully tested one-time-payment alert for donors who
-        still owe at month's end, translated into three languages.
-      - Co-developed Compassion's farewell-gift feature for donors, including
-        the gift engine, its unit tests and the user interface.
-      - Shipped an in-house SEO preview field (Google and social previews)
-        plus title/slug controls, auto-generated tables of contents and an
-        email-subscribe form for the content editor.
-      - Built a proxy API (AWS Lambda and API Gateway) and its SDK to
-        validate campaign source codes against Compassion's internal API,
-        designed for reuse by other teams.
-      - Led a system-wide migration from Pagy to will_paginate for WiddyUp,
-        refactoring the application's core pagination logic with full RSpec
-        coverage.
+      - Built from scratch the Apache Kafka integration that queues donation
+        notifications for the chairpersons and administrators of WiddyUp, a
+        platform for school fundraising campaigns, replacing the Active Job
+        background job.
+      - Ran a critical, system-wide migration from the Pagy gem to
+        will_paginate to fix a compatibility problem with Rails 6.1,
+        refactoring the pagination logic in about 8 controllers and 12 views
+        and securing the change with RSpec tests.
+      - Co-developed the model and the reversible migrations for
+        customizable categories, which let chairpersons group and filter a
+        campaign's students by what they had to present in their videos.
+      - Built the HTML and JSON endpoints for the categories on the same
+        controllers, and added the categories to the paginated table of the
+        chairperson dashboard with Hotwire and Stimulus.
+      - Implemented the new five-page onboarding in which a chairperson sets
+        up a whole campaign (location, school, fundraising goal), building
+        the interfaces designed in Figma with Hotwire, Stimulus and vanilla
+        JavaScript.
+      - Extended the existing Stripe integration with a webhook that
+        confirms payment operations and error handling that gives the user
+        feedback, and redesigned the payment form from Figma designs.
+      - Edited and created three email templates (donation confirmation,
+        onboarding and reminders) with Rails utilities and the existing
+        Twilio integration.
+      - Resolved five to seven support tickets a week reported by users,
+        shipping hotfixes and correcting data created by platform bugs.
     es:
-      - Automatizó de extremo a extremo el flujo de salida de niños del
-        programa Compassion, desde la notificación hasta la aceptación del
-        niño de reemplazo, construyendo un generador de datos de prueba que
-        crea eventos reales en Salesforce.
-      - Desarrolló una alerta contextual de pago único, completamente
-        probada, para donantes que aún deben al cierre del mes, traducida a
-        tres idiomas.
-      - Co-desarrolló la función de regalo de despedida de Compassion para
-        donantes, incluyendo el motor de regalos, sus pruebas unitarias y la
-        interfaz de usuario.
-      - Implementó un campo de vista previa SEO propio (Google y redes
-        sociales), controles de título/slug, tablas de contenido
-        autogeneradas y un formulario de suscripción por correo para el
-        editor de contenido.
-      - Construyó una API proxy (AWS Lambda y API Gateway) y su SDK para
-        validar códigos de campaña contra la API interna de Compassion,
-        diseñada para que otros equipos la reutilizaran.
-      - Lideró una migración integral de Pagy a will_paginate para WiddyUp,
-        refactorizando la lógica central de paginación con cobertura completa
-        de pruebas RSpec.
+      - Construyó desde cero la integración con Apache Kafka que encola las
+        notificaciones de donaciones para los chairpersons y administradores
+        de WiddyUp, una plataforma de campañas escolares de recaudación de
+        fondos, reemplazando el job en segundo plano con Active Job.
+      - Ejecutó una migración crítica en todo el sistema de la gema Pagy a
+        will_paginate para resolver un problema de compatibilidad con Rails
+        6.1, refactorizando la lógica de paginación en aproximadamente 8
+        controladores y 12 vistas y asegurando la transición con pruebas en
+        RSpec.
+      - Co-desarrolló el modelo y las migraciones reversibles de las
+        categorías personalizables, que permitieron a los chairpersons
+        agrupar y filtrar a los estudiantes de una campaña según lo que
+        debían presentar en sus videos.
+      - Desarrolló los endpoints HTML y JSON de las categorías reutilizando
+        los mismos controladores, y agregó las categorías a la tabla
+        paginada del dashboard del chairperson con Hotwire y Stimulus.
+      - Implementó el nuevo proceso de onboarding de cinco páginas en el que
+        un chairperson configura toda la campaña (ubicación, escuela, monto
+        objetivo), creando las interfaces diseñadas en Figma con Hotwire,
+        Stimulus y JavaScript vanilla.
+      - Extendió la integración existente con Stripe con un webhook para
+        confirmar operaciones de pago y un manejo de errores que muestra
+        feedback al usuario, y rediseñó el formulario de pago a partir de
+        diseños en Figma.
+      - Editó y generó tres plantillas de email (confirmación de donación,
+        onboarding y recordatorios) con las utilidades de Rails y la
+        integración existente con Twilio.
+      - Resolvió de cinco a siete tickets de soporte por semana reportados
+        por usuarios, generando hotfixes y corrigiendo datos creados por
+        bugs de la plataforma.
   stack:
-    - Next.js
-    - TypeScript
-    - Playwright
-    - GitLab
-    - AWS Lambda
-    - API Gateway
-    - Salesforce
-    - Vitest
-    - Figma
-    - Contentful
-    - GraphQL
     - Ruby on Rails
-    - Vanilla JavaScript
-    - Apache Kafka
-    - AWS EC2
-    - Docker
+    - Hotwire
+    - Stimulus
     - RSpec
+    - Apache Kafka
+    - Stripe
+    - Twilio
+    - Docker
+    - AWS EC2
+    - JavaScript
+    - Figma
 
-- id: techywe
+- id: techywe-js-ts
   company: TechyWe
   role:
-    en: Full-Stack Developer (Ruby on Rails, JavaScript)
-    es: Desarrollador Full-Stack (Ruby on Rails, JavaScript)
+    en: Mid-level Full-Stack Developer (JS, TS)
+    es: Desarrollador Full-Stack de nivel medio (JS, TS)
+  type: full-time
+  location:
+    en: El Salvador
+    es: El Salvador
+  start: '2023-07'
+  end: '2024-04'
+  highlights:
+    en:
+      - Designed and implemented an event-driven microservice for Belize
+        Bank Limited's Wire Transfer, Secured Loan and Unsecured Loan
+        projects, to communicate with the client's existing reverse proxy,
+        which orchestrated all its other microservices.
+      - Designed and implemented the endpoints the front end consumes,
+        applying the Builder pattern so a transaction can be built step by
+        step and, when needed, taken apart.
+      - Implemented the LoopBack connector in the services that talk to the
+        client's SOAP API, built on a DB2 database.
+      - Implemented a two-token authentication system, with a login token
+        for session handling and an OTP confirmation token to strengthen
+        security in critical operations.
+      - Refactored existing services, controllers and routes for
+        readability, maintainability and performance following practices
+        such as SOLID, which significantly cut ticket resolution times
+        because technical debt weighed heavily on estimates.
+      - Wrote integration tests with LoopBack's test suite (Mocha, testlab),
+        focused on authentication and on guaranteeing the creation of
+        unsecured loans.
+      - Guided, reviewed and gave feedback to the team behind the
+        secured-loan project so it followed the Strategy, Factory and
+        Decorator patterns that LoopBack is built on.
+      - Designed and implemented the MySQL tables for international
+        transfers, secured loans and unsecured-loan applications, and
+        integrated them with the client's existing tables to make
+        information easier to reuse.
+      - Provided ongoing support and maintenance after the unsecured-loan
+        module went live, handling production incidents and shipping
+        improvements.
+    es:
+      - Diseñó e implementó un microservicio orientado a eventos para los
+        proyectos Wire Transfer, Secured Loan y Unsecured Loan de Belize
+        Bank Limited, para comunicarse con el reverse proxy existente del
+        cliente, que orquestaba todos sus demás microservicios.
+      - Diseñó e implementó los endpoints requeridos para el consumo del
+        front-end, aplicando el patrón Builder para permitir la construcción
+        paso a paso de la transacción y, de ser necesario, su
+        deconstrucción.
+      - Implementó el conector de LoopBack en los servicios responsables de
+        comunicarse con la API SOAP del cliente, construida sobre una base
+        de datos DB2.
+      - Implementó un sistema de autenticación de doble token, con un token
+        de login para el manejo de sesión y un token de confirmación OTP
+        para reforzar la seguridad en operaciones críticas.
+      - Refactorizó servicios, controladores y rutas existentes para mejorar
+        legibilidad, mantenibilidad y rendimiento siguiendo buenas prácticas
+        como SOLID, lo que redujo significativamente los tiempos de
+        resolución de tickets, ya que la deuda técnica era un factor clave
+        en las estimaciones.
+      - Desarrolló pruebas de integración con la suite de pruebas de
+        LoopBack (Mocha, testlab), enfocadas en la autenticación y en
+        garantizar la creación de préstamos sin garantía.
+      - Guio, revisó y dio feedback al equipo responsable del proyecto de
+        préstamos con garantía para asegurar que siguiera los patrones
+        Strategy, Factory y Decorator, base del framework LoopBack.
+      - Diseñó e implementó las tablas MySQL para transferencias
+        internacionales, préstamos con garantía y solicitudes de préstamos
+        sin garantía, y las integró con las tablas existentes del cliente
+        para facilitar la reutilización de información.
+      - Brindó soporte y mantenimiento continuo tras el despliegue del
+        módulo de préstamos sin garantía, atendiendo incidencias en
+        producción e implementando mejoras.
+  stack:
+    - LoopBack 4
+    - TypeScript
+    - MySQL
+    - Postman
+    - SSH
+    - Azure DevOps
+
+- id: techywe-ror
+  company: TechyWe
+  role:
+    en: Mid-level Back-End Developer (Ruby on Rails)
+    es: Desarrollador Back-End de nivel medio (Ruby on Rails)
   type: full-time
   location:
     en: El Salvador
     es: El Salvador
   start: '2023-01'
-  end: '2024-04'
+  end: '2023-07'
   highlights:
     en:
-      - Built a third-party gamification module connected to and managed
-        through an external API.
-      - Developed and integrated services for communicating with
-        third-party systems.
-      - Worked with a Trailblazer-based architecture for Ruby on Rails
-        applications.
-      - Integrated the GWEN API with an Android application over WebSockets
-        and a REST API.
-      - Automated API testing with Postman.
+      - Built services for FIADO's Rails API, the back end of its mobile
+        app, that consume endpoints of GWEN (a third-party service) using
+        the Decorator and Factory patterns and dependency injection, to
+        implement and manage user gamification features.
+      - Built routes, controllers and error handlers for consuming
+        third-party services with the Trailblazer architecture.
+      - Improved performance by using the Rails cache to store requests and
+        reuse them in similar flows.
+      - Automated integration tests with RSpec to verify the connection
+        between the API and GWEN.
     es:
-      - Desarrolló un módulo de gamificación con terceros, conectado y
-        administrado a través de una API externa.
-      - Desarrolló e integró servicios para la comunicación con sistemas de
-        terceros.
-      - Trabajó con una arquitectura basada en Trailblazer para aplicaciones
-        Ruby on Rails.
-      - Integró la API de GWEN con una aplicación Android mediante
-        WebSockets y una API REST.
-      - Automatizó pruebas de API con Postman.
+      - Desarrolló servicios para la API en Rails de FIADO, el back-end de
+        su app móvil, que consumen endpoints de GWEN (servicio de terceros)
+        usando los patrones Decorator y Factory e inyección de dependencias,
+        para implementar y gestionar funcionalidades de gamificación de
+        usuarios.
+      - Desarrolló rutas, controladores y manejadores de errores para el
+        consumo de servicios de terceros usando la arquitectura Trailblazer.
+      - Mejoró el rendimiento usando la caché de Rails para almacenar
+        solicitudes y reutilizarlas en flujos similares.
+      - Automatizó pruebas de integración con RSpec para verificar la
+        conexión entre la API y GWEN.
   stack:
     - Ruby on Rails
-    - JavaScript
     - Trailblazer
-    - WebSockets
-    - Postman
+    - RSpec
+    - Docker
+    - Azure DevOps
 
 - id: freelance-independent
   company: Freelance

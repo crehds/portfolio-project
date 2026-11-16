@@ -9,6 +9,7 @@ links:
   live: https://bachatealo.carlos15erh.workers.dev/
   repo: https://github.com/crehds/bachatealo
 cover: ./cover.jpg
+kind: personal
 featured: false
 status: published
 date: 2026-09-23

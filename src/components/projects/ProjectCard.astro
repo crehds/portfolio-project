@@ -31,9 +31,21 @@ const Heading = `h${headingLevel}` as const;
 const { data } = project;
 const dictionary = getDictionary(locale);
 const href = pathnameInLocale(`/projects/${project.slug}/`, locale);
+
+// The whole card opens the project page: the title's link is stretched over the card
+// through its `::after` box, so there is still one link to the project (one tab stop, one
+// name for a screen reader) and no script. The live site and repository links are
+// positioned above that box, so they keep working as links of their own.
+//
+// Under the pointer (or holding the focus) the card gets a thicker accent frame, the
+// `surface` background and an underlined title. The two links look like buttons and
+// fill with the accent color, and the title drops its underline while the pointer is on
+// one of them, so it is clear which of the two a click will follow.
+const actionClass =
+  'relative z-10 inline-block rounded border border-accent px-3 py-1 font-medium transition-colors hover:bg-accent hover:text-bg focus-visible:bg-accent focus-visible:text-bg';
 ---
 
-<li class="flex flex-col gap-3 rounded border border-border p-4">
+<li class="group relative flex flex-col gap-3 rounded border border-border p-4 transition focus-within:border-accent focus-within:bg-surface focus-within:ring-2 focus-within:ring-accent hover:border-accent hover:bg-surface hover:ring-2 hover:ring-accent">
   {showCover && data.cover && (
     <Picture
       src={data.cover}
@@ -47,7 +59,12 @@ const href = pathnameInLocale(`/projects/${project.slug}/`, locale);
     />
   )}
   <Heading>
-    <a href={href}>{data.title}</a>
+    <a
+      href={href}
+      class="decoration-2 underline-offset-4 group-hover:underline group-has-[[data-card-action]:hover]:no-underline after:absolute after:inset-0 after:rounded"
+    >
+      {data.title}
+    </a>
   </Heading>
   <p class="text-sm text-text-muted">{data.summary}</p>
   {data.stack.length > 0 && (
@@ -57,15 +74,19 @@ const href = pathnameInLocale(`/projects/${project.slug}/`, locale);
       ))}
     </ul>
   )}
-  <ul class="flex gap-4 text-sm">
+  <ul class="flex flex-wrap gap-3 text-sm">
     {data.links.live && (
       <li>
-        <Link href={data.links.live}>{dictionary.projectLiveLabel}</Link>
+        <Link href={data.links.live} class={actionClass} data-card-action>
+          {dictionary.projectLiveLabel}
+        </Link>
       </li>
     )}
     {data.links.repo && (
       <li>
-        <Link href={data.links.repo}>{dictionary.projectRepoLabel}</Link>
+        <Link href={data.links.repo} class={actionClass} data-card-action>
+          {dictionary.projectRepoLabel}
+        </Link>
       </li>
     )}
   </ul>

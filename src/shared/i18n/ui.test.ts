@@ -57,6 +57,8 @@ describe('getDictionary', () => {
       projectsPageDescription:
         'Projects built by Carlos Rodríguez Huerta, full-stack web developer.',
       projectsPageHeading: 'Projects',
+      projectsFreelanceHeading: 'Freelance projects',
+      projectsPersonalHeading: 'Personal projects',
       projectsBackLabel: 'Back to projects',
       experienceHeading: 'Experience',
       experiencePageTitle: 'Experience — Carlos Rodríguez Huerta',
@@ -167,6 +169,8 @@ describe('getDictionary', () => {
       projectsPageDescription:
         'Proyectos construidos por Carlos Rodríguez Huerta, desarrollador web full-stack.',
       projectsPageHeading: 'Proyectos',
+      projectsFreelanceHeading: 'Proyectos freelance',
+      projectsPersonalHeading: 'Proyectos propios',
       projectsBackLabel: 'Volver a proyectos',
       experienceHeading: 'Experiencia',
       experiencePageTitle: 'Experiencia — Carlos Rodríguez Huerta',
