@@ -337,10 +337,11 @@ for (const { path, lang } of homePages) {
       // Deterministic: no ties among the top 3 by `sortExperience`'s rules
       // (current-first, then end desc, then start desc) - see
       // src/modules/experience/domain/sort-experience.ts and experience.yaml.
+      // FullStack Labs twice: its current role and the one before it, as on LinkedIn.
       await expect(entryHeadings).toHaveText([
         'FullStack Labs',
+        'FullStack Labs',
         'TechyWe',
-        'Freelance',
       ]);
     });
 
