@@ -19,6 +19,7 @@ export const ALLOWED_EXTERNAL_HOSTS: readonly string[] = [
   'game-with-keyboard.vercel.app',
   'hagaloverde.vercel.app',
   'marielis.vercel.app',
+  'organizador-production-59cdf977.up.railway.app',
   'pysa.vercel.app',
   'somosnidito.com',
   'www.yoteregalo.com',
