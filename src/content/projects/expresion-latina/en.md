@@ -11,6 +11,7 @@ links:
   live: https://expresion-latina.vercel.app/
   repo: https://github.com/crehds/expresion-latina
 cover: ./cover.jpg
+kind: personal
 featured: true
 status: published
 date: 2026-09-28

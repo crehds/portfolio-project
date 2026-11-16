@@ -20,6 +20,7 @@ const schema = projectsSchema({ image: stubImage });
 const validProject = {
   title: 'Portfolio rebuild',
   summary: 'A fast, accessible Astro portfolio.',
+  kind: 'personal',
   stack: ['astro', 'typescript'],
   links: {
     live: 'https://example.com',
@@ -51,6 +52,20 @@ describe('projectsSchema', () => {
     const result = schema.parse(withoutStatus);
 
     expect(result.status).toBe('published');
+  });
+
+  it('requires a kind, either freelance or personal', () => {
+    const withoutKind: Record<string, unknown> = { ...validProject };
+    delete withoutKind.kind;
+
+    expect(() => schema.parse(withoutKind)).toThrow();
+    expect(() => schema.parse({ ...validProject, kind: 'client' })).toThrow();
+    expect(schema.parse({ ...validProject, kind: 'freelance' }).kind).toBe(
+      'freelance',
+    );
+    expect(schema.parse({ ...validProject, kind: 'personal' }).kind).toBe(
+      'personal',
+    );
   });
 
   it('rejects an invalid date', () => {

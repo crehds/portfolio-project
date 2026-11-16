@@ -13,10 +13,13 @@ export const ALLOWED_EXTERNAL_HOSTS: readonly string[] = [
   'www.linkedin.com',
   'wa.me',
   // The live sites of the projects.
+  'app.automotrizmgrl.com',
   'bachatealo.carlos15erh.workers.dev',
   'expresion-latina.vercel.app',
   'game-with-keyboard.vercel.app',
   'hagaloverde.vercel.app',
   'marielis.vercel.app',
   'pysa.vercel.app',
+  'somosnidito.com',
+  'www.yoteregalo.com',
 ];

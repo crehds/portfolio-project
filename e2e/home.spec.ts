@@ -11,19 +11,18 @@ const homePages: { path: string; lang: string }[] = [
 
 for (const { path, lang } of homePages) {
   test.describe(`home page (${lang})`, () => {
-    // `featuredProjects` sorts by date descending, then by slug ascending as a
-    // deterministic tie-break for projects sharing the same date (see
-    // src/modules/projects/domain/featured-projects.ts): "expresion-latina" and
-    // "pysa" both date 2026-09-28 (expresion-latina sorts first, alphabetically),
-    // and "game-with-keyboard" (2026-09-26) is strictly older, so it is always
-    // last. The slug tie-break is locale-independent, so this exact order holds in
-    // both locales. Shared by every featured-card test below, so a card that stops
-    // rendering (or renders out of order) fails loudly instead of an "at least one
-    // card" check silently passing with fewer cards checked.
-    const expectedFeaturedTitles =
-      lang === 'en'
-        ? ['Expresión Latina', 'Pysa', 'Game With Keyboard']
-        : ['Expresión Latina', 'Pysa Gaming', 'Juego con Teclado'];
+    // `featuredProjects` sorts by date descending (see
+    // src/modules/projects/domain/featured-projects.ts) and the home page shows the
+    // first 3: "yoteregalo" (2026-11-12), "automotrizmgrl" (2026-11-02) and "nidito"
+    // (2026-10-21). The older featured projects stay on the projects list only. The
+    // titles are the same in both locales. Shared by every featured-card test below,
+    // so a card that stops rendering (or renders out of order) fails loudly instead of
+    // an "at least one card" check silently passing with fewer cards checked.
+    const expectedFeaturedTitles = [
+      'Yo te regalo',
+      'Automotriz MGRL',
+      'Nidito',
+    ];
 
     test('has the expected landmarks and metadata', async ({ page }) => {
       await page.goto(path);
@@ -204,14 +203,14 @@ for (const { path, lang } of homePages) {
       const expectedHrefByHeading: Record<string, string> =
         lang === 'en'
           ? {
-              'Expresión Latina': '/projects/expresion-latina/',
-              Pysa: '/projects/pysa/',
-              'Game With Keyboard': '/projects/game-with-keyboard/',
+              'Yo te regalo': '/projects/yoteregalo/',
+              'Automotriz MGRL': '/projects/automotrizmgrl/',
+              Nidito: '/projects/nidito/',
             }
           : {
-              'Expresión Latina': '/es/projects/expresion-latina/',
-              'Pysa Gaming': '/es/projects/pysa/',
-              'Juego con Teclado': '/es/projects/game-with-keyboard/',
+              'Yo te regalo': '/es/projects/yoteregalo/',
+              'Automotriz MGRL': '/es/projects/automotrizmgrl/',
+              Nidito: '/es/projects/nidito/',
             };
 
       // Exact count and order, not "at least one card": a featured card that stops
@@ -234,7 +233,8 @@ for (const { path, lang } of homePages) {
       }
     });
 
-    test('every featured project card links to its live site and repository', async ({
+    // The featured projects are client work: the site is public, the source is private.
+    test('every featured project card links to its live site and to no repository', async ({
       page,
     }) => {
       await page.goto(path);
@@ -257,30 +257,10 @@ for (const { path, lang } of homePages) {
       // whose heading is missing from this map fails loudly below instead of the test
       // silently skipping it, which is how this test previously checked only 2 of the
       // 3 rendered cards (missing "Expresión Latina").
-      const expectedLinksByHeading: Record<
-        string,
-        { live: string; repo: string }
-      > = {
-        'Expresión Latina': {
-          live: 'https://expresion-latina.vercel.app/',
-          repo: 'https://github.com/crehds/expresion-latina',
-        },
-        Pysa: {
-          live: 'https://pysa.vercel.app',
-          repo: 'https://github.com/crehds/pysa',
-        },
-        'Pysa Gaming': {
-          live: 'https://pysa.vercel.app',
-          repo: 'https://github.com/crehds/pysa',
-        },
-        'Game With Keyboard': {
-          live: 'https://game-with-keyboard.vercel.app/',
-          repo: 'https://github.com/crehds/gameWithKeyboard',
-        },
-        'Juego con Teclado': {
-          live: 'https://game-with-keyboard.vercel.app/',
-          repo: 'https://github.com/crehds/gameWithKeyboard',
-        },
+      const expectedLiveByHeading: Record<string, string> = {
+        'Yo te regalo': 'https://www.yoteregalo.com',
+        'Automotriz MGRL': 'https://app.automotrizmgrl.com',
+        Nidito: 'https://somosnidito.com',
       };
 
       // Exact count and order, not "at least one card": a featured card that stops
@@ -295,15 +275,15 @@ for (const { path, lang } of homePages) {
           .innerText();
         expect(cardHeading).toBe(expectedFeaturedTitles[i]);
 
-        const expected = expectedLinksByHeading[cardHeading];
-        if (!expected) {
+        const expectedLive = expectedLiveByHeading[cardHeading];
+        if (!expectedLive) {
           throw new Error(
-            `No expected live/repository links recorded for featured card "${cardHeading}".`,
+            `No expected live link recorded for featured card "${cardHeading}".`,
           );
         }
 
-        await expect(card.locator(`a[href="${expected.live}"]`)).toHaveCount(1);
-        await expect(card.locator(`a[href="${expected.repo}"]`)).toHaveCount(1);
+        await expect(card.locator(`a[href="${expectedLive}"]`)).toHaveCount(1);
+        await expect(card.locator('a[href*="github.com"]')).toHaveCount(0);
       }
     });
 

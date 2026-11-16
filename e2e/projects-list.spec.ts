@@ -9,8 +9,9 @@ const locales: {
   listPath: string;
   primaryNavLabel: string;
   projectsLabel: string;
-  // In domain order: featured first (date desc, slug tie-break), then the rest.
-  expectedTitles: string[];
+  // The page's sections in order: client work, then the owner's own projects. Inside each,
+  // the titles in domain order: featured first (date desc, slug tie-break), then the rest.
+  expectedSections: { heading: string; titles: string[] }[];
   // Keyed by heading text (localized): every rendered card's title must link to its
   // own project page, not just the first one.
   expectedHrefByTitle: Record<string, string>;
@@ -20,16 +21,28 @@ const locales: {
     listPath: '/projects/',
     primaryNavLabel: 'Primary navigation',
     projectsLabel: 'Projects',
-    expectedTitles: [
-      'Expresión Latina',
-      'Pysa',
-      'Game With Keyboard',
-      'Bachatealo',
+    expectedSections: [
+      {
+        heading: 'Freelance projects',
+        titles: ['Yo te regalo', 'Automotriz MGRL', 'Nidito'],
+      },
+      {
+        heading: 'Personal projects',
+        titles: [
+          'Expresión Latina',
+          'Pysa',
+          'Game With Keyboard',
+          'Bachatealo',
+        ],
+      },
     ],
     expectedHrefByTitle: {
       'Expresión Latina': '/projects/expresion-latina/',
       Pysa: '/projects/pysa/',
       'Game With Keyboard': '/projects/game-with-keyboard/',
+      'Yo te regalo': '/projects/yoteregalo/',
+      'Automotriz MGRL': '/projects/automotrizmgrl/',
+      Nidito: '/projects/nidito/',
       Bachatealo: '/projects/bachatealo/',
     },
   },
@@ -38,16 +51,28 @@ const locales: {
     listPath: '/es/projects/',
     primaryNavLabel: 'Navegación principal',
     projectsLabel: 'Proyectos',
-    expectedTitles: [
-      'Expresión Latina',
-      'Pysa Gaming',
-      'Juego con Teclado',
-      'Bachatealo',
+    expectedSections: [
+      {
+        heading: 'Proyectos freelance',
+        titles: ['Yo te regalo', 'Automotriz MGRL', 'Nidito'],
+      },
+      {
+        heading: 'Proyectos propios',
+        titles: [
+          'Expresión Latina',
+          'Pysa Gaming',
+          'Juego con Teclado',
+          'Bachatealo',
+        ],
+      },
     ],
     expectedHrefByTitle: {
       'Expresión Latina': '/es/projects/expresion-latina/',
       'Pysa Gaming': '/es/projects/pysa/',
       'Juego con Teclado': '/es/projects/game-with-keyboard/',
+      'Yo te regalo': '/es/projects/yoteregalo/',
+      'Automotriz MGRL': '/es/projects/automotrizmgrl/',
+      Nidito: '/es/projects/nidito/',
       Bachatealo: '/es/projects/bachatealo/',
     },
   },
@@ -58,11 +83,13 @@ for (const {
   listPath,
   primaryNavLabel,
   projectsLabel,
-  expectedTitles,
+  expectedSections,
   expectedHrefByTitle,
 } of locales) {
+  const expectedTitles = expectedSections.flatMap(({ titles }) => titles);
+
   test.describe(`projects list page (${lang})`, () => {
-    test('lists exactly the published projects, featured first then newest, with no drafts', async ({
+    test('lists exactly the published projects, freelance work first then personal projects, with no drafts', async ({
       page,
     }) => {
       await page.goto(listPath);
@@ -70,10 +97,20 @@ for (const {
       await expect(page.locator('html')).toHaveAttribute('lang', lang);
       await expect(page.locator('h1')).toHaveCount(1);
 
-      const cardHeadings = page
+      const sections = page
         .getByTestId('projects-list-grid')
-        .getByRole('heading', { level: 2 });
-      await expect(cardHeadings).toHaveText(expectedTitles);
+        .locator(':scope > section');
+      await expect(sections).toHaveCount(expectedSections.length);
+
+      for (const [index, { heading, titles }] of expectedSections.entries()) {
+        const section = sections.nth(index);
+        await expect(section.getByRole('heading', { level: 2 })).toHaveText(
+          heading,
+        );
+        await expect(section.getByRole('heading', { level: 3 })).toHaveText(
+          titles,
+        );
+      }
     });
 
     test('each card title links to its own project page', async ({ page }) => {
@@ -81,7 +118,7 @@ for (const {
 
       const cardHeadings = page
         .getByTestId('projects-list-grid')
-        .getByRole('heading', { level: 2 });
+        .getByRole('heading', { level: 3 });
 
       // Every rendered card, not just the first: a wrong href on any later card must
       // fail this test too.

@@ -29,12 +29,12 @@ const pages: {
   minimumExternalLinks: number;
 }[] = [
   // Footer, the WhatsApp, LinkedIn and GitHub CTAs, and 3 featured cards with a live
-  // site and a repository each.
-  { path: '/', lang: 'en', minimumExternalLinks: 2 + 3 + 3 * 2 },
-  { path: '/es/', lang: 'es', minimumExternalLinks: 2 + 3 + 3 * 2 },
-  // Footer and 4 cards with a live site and a repository each.
-  { path: '/projects/', lang: 'en', minimumExternalLinks: 2 + 4 * 2 },
-  { path: '/es/projects/', lang: 'es', minimumExternalLinks: 2 + 4 * 2 },
+  // site each (client work: no repository link).
+  { path: '/', lang: 'en', minimumExternalLinks: 2 + 3 + 3 },
+  { path: '/es/', lang: 'es', minimumExternalLinks: 2 + 3 + 3 },
+  // Footer, 4 cards with a live site and a repository each, and 3 with a live site only.
+  { path: '/projects/', lang: 'en', minimumExternalLinks: 2 + 4 * 2 + 3 },
+  { path: '/es/projects/', lang: 'es', minimumExternalLinks: 2 + 4 * 2 + 3 },
   // "pysa", like projects-detail.spec.ts: it has both a live site and a repository.
   { path: '/projects/pysa/', lang: 'en', minimumExternalLinks: 2 + 2 },
   { path: '/es/projects/pysa/', lang: 'es', minimumExternalLinks: 2 + 2 },

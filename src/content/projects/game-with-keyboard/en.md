@@ -11,6 +11,7 @@ links:
   live: https://game-with-keyboard.vercel.app/
   repo: https://github.com/crehds/gameWithKeyboard
 cover: ./cover.jpg
+kind: personal
 featured: true
 status: published
 date: 2026-09-26

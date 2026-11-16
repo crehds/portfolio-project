@@ -5,6 +5,7 @@ stack: []
 links:
   live: https://marielis.vercel.app
   repo: https://github.com/crehds/marielis
+kind: personal
 featured: false
 status: draft
 date: 2022-03-01
