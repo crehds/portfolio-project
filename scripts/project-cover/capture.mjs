@@ -1,7 +1,7 @@
 // Recaptures a project's cover, src/content/projects/<slug>/cover.jpg (1280x800), from its
 // live site.
 //
-//   node scripts/project-cover/capture.mjs <slug>
+//   pnpm cover <slug>
 //
 // A manual tool: it is not part of the build or of CI. Run it after the project's live site
 // changes, look at the new picture, and commit it.
@@ -20,7 +20,7 @@ const repoRoot = path.resolve(
 const slug = process.argv[2] ?? '';
 // The slug becomes part of a path, so it may only be a folder name.
 if (!/^[a-z0-9-]+$/.test(slug)) {
-  throw new Error('Usage: node scripts/project-cover/capture.mjs <slug>');
+  throw new Error('Usage: pnpm cover <slug>');
 }
 
 const projectDir = path.join(repoRoot, 'src', 'content', 'projects', slug);
