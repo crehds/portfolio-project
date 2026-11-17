@@ -32,6 +32,7 @@ const locales: {
           'Expresión Latina',
           'Pysa',
           'Game With Keyboard',
+          'eatIt',
           'Organizador',
           'Bachatealo',
         ],
@@ -46,6 +47,7 @@ const locales: {
       Nidito: '/projects/nidito/',
       Bachatealo: '/projects/bachatealo/',
       Organizador: '/projects/organizador/',
+      eatIt: '/projects/eatit/',
     },
   },
   {
@@ -64,6 +66,7 @@ const locales: {
           'Expresión Latina',
           'Pysa Gaming',
           'Juego con Teclado',
+          'eatIt',
           'Organizador',
           'Bachatealo',
         ],
@@ -78,6 +81,7 @@ const locales: {
       Nidito: '/es/projects/nidito/',
       Bachatealo: '/es/projects/bachatealo/',
       Organizador: '/es/projects/organizador/',
+      eatIt: '/es/projects/eatit/',
     },
   },
 ];
