@@ -17,6 +17,10 @@ const repoRoot = path.resolve(
   '../..',
 );
 
+// Projects whose live address is an entry page: the button to press, by its text, before the
+// capture. Organizador's creates a temporary demo account that the app deletes after 24 hours.
+const BUTTON_BEFORE_CAPTURE = new Map([['organizador', 'Probar el demo']]);
+
 const slug = process.argv[2] ?? '';
 // The slug becomes part of a path, so it may only be a folder name.
 if (!/^[a-z0-9-]+$/.test(slug)) {
@@ -52,6 +56,14 @@ try {
     throw new Error(
       `${live} answered ${response?.status() ?? 'nothing'}; cover not changed.`,
     );
+  }
+  const button = BUTTON_BEFORE_CAPTURE.get(slug);
+  if (button) {
+    const entryUrl = page.url();
+    await page.getByRole('button', { name: button }).click();
+    // Fails, leaving the cover as it was, when the button does not lead anywhere.
+    await page.waitForURL((url) => url.href !== entryUrl);
+    await page.waitForLoadState('networkidle');
   }
   const file = path.join(projectDir, 'cover.jpg');
   await page.screenshot({ path: file, type: 'jpeg', quality: 82 });
