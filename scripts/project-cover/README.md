@@ -15,6 +15,11 @@ The script opens the `links.live` address of `src/content/projects/<slug>/en.md`
 `cover.jpg`. Look at the new picture, then commit it. This is a manual tool: neither the build
 nor CI runs it.
 
+A project whose live address is an entry page names the button to press first, in
+`BUTTON_BEFORE_CAPTURE` at the top of `capture.mjs`. Organizador is the only one: the script
+presses "Probar el demo" and captures the task list. Each capture creates a temporary demo
+account there, which the app deletes after 24 hours.
+
 | When                                                                             | What to do                                                                       |
 | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | The site answers an error (a site that sleeps when idle can answer 502 at first) | The cover is left as it was. Run the command again.                              |
