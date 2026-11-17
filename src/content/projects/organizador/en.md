@@ -13,7 +13,7 @@ stack:
   - Minitest
   - Railway
 links:
-  live: https://organizador-production-59cdf977.up.railway.app/test
+  live: https://organizador-production-59cdf977.up.railway.app/
   repo: https://github.com/crehds/organizador
 cover: ./cover.jpg
 kind: personal
@@ -33,4 +33,6 @@ time, with an integration test suite I added that stayed green at every step.
 I also fixed bugs the course project still had, such as notes that any
 signed-in user could add to any task.
 
-The live link signs you in as the demo user, with no password.
+On the live site, the "Probar el demo" button creates a temporary account of
+your own with sample data and signs you in, with no password. The account and
+its data are deleted after 24 hours.
