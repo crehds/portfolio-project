@@ -20,6 +20,7 @@
     "preview": "astro preview",
     "check": "wrangler types && astro check",
     "astro": "astro",
+    "cover": "node scripts/project-cover/capture.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

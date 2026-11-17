@@ -6,8 +6,10 @@ The picture of a project on its card and its page: `src/content/projects/<slug>/
 To recapture one, after its live site changes:
 
 ```sh
-node scripts/project-cover/capture.mjs <slug>
+pnpm cover <slug>
 ```
+
+`pnpm cover` runs `node scripts/project-cover/capture.mjs`, which takes the same argument.
 
 The script opens the `links.live` address of `src/content/projects/<slug>/en.md` and replaces
 `cover.jpg`. Look at the new picture, then commit it. This is a manual tool: neither the build
