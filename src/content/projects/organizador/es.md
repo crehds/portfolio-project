@@ -13,7 +13,7 @@ stack:
   - Minitest
   - Railway
 links:
-  live: https://organizador-production-59cdf977.up.railway.app/test
+  live: https://organizador-production-59cdf977.up.railway.app/
   repo: https://github.com/crehds/organizador
 cover: ./cover.jpg
 kind: personal
@@ -33,5 +33,6 @@ pruebas de integración que agregué y que se mantuvo en verde en cada paso.
 También corregí errores que el proyecto del curso todavía tenía, como notas que
 cualquier usuario con sesión iniciada podía agregar a cualquier tarea.
 
-El enlace al sitio inicia sesión con el usuario de demostración, sin
-contraseña.
+En el sitio, el botón "Probar el demo" crea una cuenta temporal propia con
+datos de ejemplo e inicia sesión, sin contraseña. La cuenta y sus datos se
+borran a las 24 horas.
