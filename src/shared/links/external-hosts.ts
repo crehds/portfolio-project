@@ -15,6 +15,7 @@ export const ALLOWED_EXTERNAL_HOSTS: readonly string[] = [
   // The live sites of the projects.
   'app.automotrizmgrl.com',
   'bachatealo.carlos15erh.workers.dev',
+  'eatit-production-acb74386.up.railway.app',
   'expresion-latina.vercel.app',
   'game-with-keyboard.vercel.app',
   'hagaloverde.vercel.app',

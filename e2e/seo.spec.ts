@@ -34,6 +34,7 @@ const PUBLISHED_PROJECT_SLUGS = [
   'nidito',
   'bachatealo',
   'organizador',
+  'eatit',
 ];
 
 // One page per published project, in each locale. They are the pages with a cover, which a link
@@ -86,8 +87,8 @@ test.describe('the pages this spec checks', () => {
     expect(prerenderedPathsInBuild()).toEqual(
       PRERENDERED.map(({ path }) => path).sort(),
     );
-    // 24 static pages and the 2 contact pages.
-    expect(PAGES).toHaveLength(26);
+    // 26 static pages and the 2 contact pages.
+    expect(PAGES).toHaveLength(28);
   });
 });
 
