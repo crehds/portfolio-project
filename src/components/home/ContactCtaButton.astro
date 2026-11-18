@@ -10,7 +10,10 @@ import { CONTACT_CTA_ICONS } from './contact-cta-icons';
 // direct links (`DirectContactLinks.astro`) render each of their entries with it, so the two
 // lists keep one look and one wording. It goes through `Link`, which opens the external
 // addresses (WhatsApp, LinkedIn, GitHub) in a new tab and leaves the form, email and CV ones
-// alone. Self-contained, like `LanguageSwitcher.astro`: the locale comes from the URL.
+// alone. The CV one also carries `download`: a PDF viewer extension (such as PDF.js) would
+// otherwise open the file in place of the page, despite the route's
+// `Content-Disposition: attachment`. Self-contained, like `LanguageSwitcher.astro`: the
+// locale comes from the URL.
 interface Props {
   id: ContactCtaId;
   href: string;
@@ -32,6 +35,7 @@ const LABEL_KEYS: Record<ContactCtaId, keyof UiDictionary> = {
 
 <Link
   href={href}
+  download={id === 'cv' ? true : undefined}
   class="inline-flex min-h-11 items-center gap-2 rounded border border-border px-3 py-2 text-text"
 >
   <Fragment set:html={CONTACT_CTA_ICONS[id]} />

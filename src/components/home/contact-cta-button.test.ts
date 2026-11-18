@@ -70,4 +70,22 @@ describe.each(LOCALES)('the contact CTA button (%s)', (locale) => {
       expect(text).toBe(LABELS[locale][id]);
     },
   );
+
+  // A PDF viewer extension (such as PDF.js) opens the CV in place of the page despite the
+  // route's `Content-Disposition: attachment`; `download` makes it a download again. With no
+  // value, so the file keeps the name the route gives it.
+  it('marks the CV link as a download, with no file name of its own', async () => {
+    const html = await render('cv', locale);
+
+    expect(html).toMatch(/<a\b[^>]*\sdownload[\s>]/);
+  });
+
+  it.each(ids.filter((id) => id !== 'cv'))(
+    'leaves %s a plain link, not a download',
+    async (id) => {
+      const html = await render(id, locale);
+
+      expect(html).not.toMatch(/<a\b[^>]*\sdownload\b/);
+    },
+  );
 });

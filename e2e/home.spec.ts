@@ -167,6 +167,8 @@ for (const { path, lang } of homePages) {
       });
       await expect(cv).toHaveCount(1);
       await expect(cv).toHaveAttribute('href', `/cv/${lang}.pdf`);
+      // A download, so a PDF viewer extension cannot take the visitor off the site.
+      await expect(cv).toHaveAttribute('download', '');
     });
 
     test('renders exactly the 3 featured projects, with no drafts', async ({
